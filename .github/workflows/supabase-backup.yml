@@ -14,16 +14,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create SQL Dump via pg_dump
+      - name: Dump database
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_FILE="backup_${TIMESTAMP}.sql"
-          echo "Generating database backup to ${BACKUP_FILE}..."
-          pg_dump "$SUPABASE_DB_URL" > "$BACKUP_FILE"
+          echo "Generating database backup to ${BACKUP_FILE} using Docker..."
+          docker run --rm postgres:17 pg_dump "$SUPABASE_DB_URL" > "${BACKUP_FILE}"
           echo "BACKUP_FILENAME=${BACKUP_FILE}" >> $GITHUB_ENV
-          ls -lh "$BACKUP_FILE"
+          ls -lh "${BACKUP_FILE}"
 
       - name: Upload Backup Artifact
         uses: actions/upload-artifact@v4
