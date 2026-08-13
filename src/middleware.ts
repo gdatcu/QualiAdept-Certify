@@ -1,53 +1,66 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
 import { getToken } from 'next-auth/jwt';
+import { routing } from './i18n/routing';
+
+const intlMiddleware = createMiddleware(routing);
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'qualiadept-secret-key-2026';
+  const secret =
+    process.env.NEXTAUTH_SECRET ||
+    process.env.AUTH_SECRET ||
+    'qualiadept-secret-key-2026';
+
+  // Normalize path by stripping /en or /ro prefix for role checks
+  const pathnameWithoutLocale = pathname.replace(/^\/(en|ro)(\/|$)/, '/');
 
   const token = await getToken({ req, secret });
 
   // Protect /trainer route (Strictly TRAINER role required)
-  if (pathname.startsWith('/trainer')) {
+  if (pathnameWithoutLocale.startsWith('/trainer')) {
     if (!token) {
-      const loginUrl = new URL('/', req.url);
+      const loginUrl = new URL('/en', req.url);
       loginUrl.searchParams.set('error', 'Unauthenticated');
       return NextResponse.redirect(loginUrl);
     }
 
     if (token.role !== 'TRAINER') {
-      const homeUrl = new URL('/', req.url);
+      const homeUrl = new URL('/en', req.url);
       homeUrl.searchParams.set('error', 'AccessDenied');
       return NextResponse.redirect(homeUrl);
     }
   }
 
   // Protect /admin route (Strictly isAdmin or TRAINER required)
-  if (pathname.startsWith('/admin')) {
+  if (pathnameWithoutLocale.startsWith('/admin')) {
     if (!token) {
-      const loginUrl = new URL('/', req.url);
+      const loginUrl = new URL('/en', req.url);
       loginUrl.searchParams.set('error', 'Unauthenticated');
       return NextResponse.redirect(loginUrl);
     }
 
     if (!token.isAdmin && token.role !== 'TRAINER') {
-      const homeUrl = new URL('/', req.url);
+      const homeUrl = new URL('/en', req.url);
       homeUrl.searchParams.set('error', 'AccessDenied');
       return NextResponse.redirect(homeUrl);
     }
   }
 
-  // Protect /assignment route (Strictly Enrolled or TRAINER required)
-  if (pathname.startsWith('/assignment') || pathname.startsWith('/leaderboard')) {
+  // Protect /assignment and /leaderboard routes
+  if (
+    pathnameWithoutLocale.startsWith('/assignment') ||
+    pathnameWithoutLocale.startsWith('/leaderboard')
+  ) {
     if (!token) {
-      const loginUrl = new URL('/', req.url);
+      const loginUrl = new URL('/en', req.url);
       loginUrl.searchParams.set('error', 'Unauthenticated');
       return NextResponse.redirect(loginUrl);
     }
 
     if (token.role !== 'TRAINER' && !token.isEnrolled) {
-      const enrollUrl = new URL('/enroll', req.url);
+      const enrollUrl = new URL('/en/enroll', req.url);
       return NextResponse.redirect(enrollUrl);
     }
   }
@@ -60,17 +73,13 @@ export async function middleware(req: NextRequest) {
         { status: 401 }
       );
     }
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // Delegate UI page routes to next-intl middleware
+  return intlMiddleware(req);
 }
 
 export const config = {
-  matcher: [
-    '/admin/:path*',
-    '/trainer/:path*',
-    '/assignment/:path*',
-    '/leaderboard/:path*',
-    '/api/validate/static',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)', '/api/validate/static'],
 };

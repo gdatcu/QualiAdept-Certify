@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function HeaderAuth() {
   const { data: session, status: authStatus } = useSession();
@@ -10,6 +11,8 @@ export default function HeaderAuth() {
 
   return (
     <div className="flex items-center gap-3">
+      <LanguageSwitcher />
+
       {authStatus === 'loading' ? (
         <div className="h-8 w-32 bg-zinc-900 rounded-full animate-pulse border border-zinc-800"></div>
       ) : session?.user ? (

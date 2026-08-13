@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import HeaderAuth from '@/components/HeaderAuth';
@@ -8,6 +9,7 @@ import EditProfileModal from '@/components/EditProfileModal';
 export const dynamic = 'force-dynamic';
 
 export default async function StudentDashboard() {
+  const t = await getTranslations('Index');
   const session = await getAuthSession();
 
   // Fetch all active assignments ordered by module integer ascending
@@ -129,26 +131,26 @@ export default async function StudentDashboard() {
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono mb-3">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                QA Automation Curriculum
+                {t('curriculumBadge')}
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-50 tracking-tight">
-                Student LMS Dashboard
+                {t('dashboardTitle')}
               </h1>
               <p className="text-zinc-400 text-sm mt-2 leading-relaxed">
-                Master QA Automation through hands-on coding modules. Complete each assignment with automated assertion feedback to unlock progressive modules.
+                {t('subtitle')}
               </p>
             </div>
 
             {/* Overall Progress Gauge Card */}
             <div className="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 flex flex-col gap-3 min-w-[260px] shadow-lg">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Curriculum Progress</span>
+                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">{t('progressLabel')}</span>
                 <span className="text-xs font-mono font-bold text-emerald-400">{progressPercent}%</span>
               </div>
 
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-zinc-50 font-mono">{completedCount}</span>
-                <span className="text-xs text-zinc-400 font-mono">/ {totalCount} Modules Passed</span>
+                <span className="text-xs text-zinc-400 font-mono">/ {totalCount} {t('modulesPassed')}</span>
               </div>
 
               <div className="w-full bg-zinc-900 h-2.5 rounded-full overflow-hidden p-0.5 border border-zinc-800">

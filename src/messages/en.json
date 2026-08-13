@@ -1,0 +1,47 @@
+{
+  "Index": {
+    "title": "QualiAdept Auto-Validation Platform",
+    "subtitle": "Master QA Automation through hands-on coding modules. Complete each assignment with automated assertion feedback to unlock progressive modules.",
+    "curriculumBadge": "QA Automation Curriculum",
+    "dashboardTitle": "Student LMS Dashboard",
+    "progressLabel": "Curriculum Progress",
+    "modulesPassed": "Modules Passed",
+    "learningModules": "Learning Modules",
+    "sequentialPath": "Sequential progressive assessment path",
+    "completedBadge": "Completed",
+    "unlockedBadge": "Unlocked",
+    "lockedBadge": "Locked",
+    "reviewWorkspace": "Review Workspace",
+    "startModule": "Start Module",
+    "passModuleFirst": "Pass Module {module} First",
+    "comingSoon": "Coming Soon",
+    "unlocksOn": "Unlocks on {date}",
+    "downloadCertificate": "Download Your Certificate (PDF)",
+    "congratsTitle": "Congratulations! You completed the QualiAdept Bootcamp.",
+    "congratsDescription": "You have successfully validated all practical modules and E2E tests. Your official PDF certificate is generated and ready for download."
+  },
+  "Header": {
+    "dashboard": "Dashboard",
+    "leaderboard": "Leaderboard",
+    "adminPanel": "Admin Panel",
+    "signOut": "Sign Out",
+    "signIn": "Sign In"
+  },
+  "Navigation": {
+    "language": "Language",
+    "english": "English 🇬🇧",
+    "romanian": "Romanian 🇷🇴"
+  },
+  "Leaderboard": {
+    "title": "Hall of Fame",
+    "subtitle": "QualiAdept Student Rankings & Completion Wall",
+    "rank": "Rank",
+    "student": "Student",
+    "progress": "Progress",
+    "score": "Score"
+  },
+  "Admin": {
+    "title": "God Mode Admin Dashboard",
+    "subtitle": "Platform Metrics & Student Oversight"
+  }
+}

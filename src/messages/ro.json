@@ -1,0 +1,47 @@
+{
+  "Index": {
+    "title": "Platforma de Auto-Validare QualiAdept",
+    "subtitle": "Învață QA Automation prin module practice de cod. Completează fiecare cerință cu validare automată pentru a debloca modulele următoare.",
+    "curriculumBadge": "Curriculum QA Automation",
+    "dashboardTitle": "Tablou de Bord Student LMS",
+    "progressLabel": "Progres Curriculum",
+    "modulesPassed": "Module Absolvite",
+    "learningModules": "Module de Învățare",
+    "sequentialPath": "Cale de evaluare secvențială progresivă",
+    "completedBadge": "Completat",
+    "unlockedBadge": "Deblocat",
+    "lockedBadge": "Blocat",
+    "reviewWorkspace": "Revizuiește Spațiul de Lucru",
+    "startModule": "Începe Modulul",
+    "passModuleFirst": "Treci de Modulul {module} Mai Întâi",
+    "comingSoon": "În Curând",
+    "unlocksOn": "Se deblochează pe {date}",
+    "downloadCertificate": "Descarcă Certificatul Tău (PDF)",
+    "congratsTitle": "Felicitări! Ai absolvit Bootcamp-ul QualiAdept.",
+    "congratsDescription": "Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare."
+  },
+  "Header": {
+    "dashboard": "Dashboard",
+    "leaderboard": "Clasament",
+    "adminPanel": "Panou Admin",
+    "signOut": "Deconectare",
+    "signIn": "Autentificare"
+  },
+  "Navigation": {
+    "language": "Limbă",
+    "english": "Engleză 🇬🇧",
+    "romanian": "Română 🇷🇴"
+  },
+  "Leaderboard": {
+    "title": "Hall of Fame",
+    "subtitle": "Clasamentul Studenților QualiAdept & Peretele de Progres",
+    "rank": "Loc",
+    "student": "Student",
+    "progress": "Progres",
+    "score": "Punctaj"
+  },
+  "Admin": {
+    "title": "Panou Admin God Mode",
+    "subtitle": "Metrici Platformă & Monitorizare Studenți"
+  }
+}
