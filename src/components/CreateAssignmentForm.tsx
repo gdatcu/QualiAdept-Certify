@@ -16,6 +16,9 @@ export default function CreateAssignmentForm() {
   const [passingSample, setPassingSample] = useState('');
   const [failingSample, setFailingSample] = useState('');
 
+  const [isPublished, setIsPublished] = useState<boolean>(true);
+  const [unlockDate, setUnlockDate] = useState<string>('');
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsPending(true);
@@ -31,6 +34,8 @@ export default function CreateAssignmentForm() {
       formData.append('validationRules', validationRules);
       formData.append('passingSample', passingSample);
       formData.append('failingSample', failingSample);
+      formData.append('isPublished', isPublished ? 'true' : 'false');
+      formData.append('unlockDate', unlockDate);
 
       await createAssignment(formData);
 
@@ -99,6 +104,35 @@ export default function CreateAssignmentForm() {
             <option value="STATIC">STATIC (DOM/Cheerio)</option>
             <option value="DYNAMIC">DYNAMIC (Playwright E2E)</option>
           </select>
+        </div>
+      </div>
+
+      {/* Drip Content & Publish Controls */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-950/60 p-3.5 rounded-xl border border-zinc-800/80">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-mono font-semibold text-zinc-300">
+            Publish Status (Drip Toggle)
+          </label>
+          <select
+            value={isPublished ? 'true' : 'false'}
+            onChange={(e) => setIsPublished(e.target.value === 'true')}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 font-mono"
+          >
+            <option value="true">✅ Published (Available if unlocked)</option>
+            <option value="false">🔒 Draft / Unpublished (Coming Soon)</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-mono font-semibold text-zinc-300">
+            Schedule Unlock Date &amp; Time (Optional Drip)
+          </label>
+          <input
+            type="datetime-local"
+            value={unlockDate}
+            onChange={(e) => setUnlockDate(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 font-mono"
+          />
         </div>
       </div>
 

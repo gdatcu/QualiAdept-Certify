@@ -49,6 +49,11 @@ export async function createAssignment(formData: FormData) {
     throw new Error(`An assignment with Module #${moduleNum} already exists ("${existingModule.title}").`);
   }
 
+  const isPublishedRaw = formData.get('isPublished');
+  const isPublished = isPublishedRaw === null ? true : isPublishedRaw === 'true';
+  const unlockDateRaw = (formData.get('unlockDate') as string)?.trim();
+  const unlockDate = unlockDateRaw ? new Date(unlockDateRaw) : null;
+
   const newAssignment = await prisma.assignment.create({
     data: {
       title,
@@ -59,6 +64,8 @@ export async function createAssignment(formData: FormData) {
       passingSample,
       failingSample,
       isActive: true,
+      isPublished,
+      unlockDate,
     },
   });
 
@@ -93,6 +100,30 @@ export async function toggleAssignmentStatus(id: string, currentStatus: boolean)
   return { success: true, assignment: updatedAssignment };
 }
 
+export async function togglePublishStatus(id: string, currentPublished: boolean) {
+  const session = await getAuthSession();
+  if (!session || session.user?.role !== 'TRAINER') {
+    throw new Error('Unauthorized: Trainer access required.');
+  }
+
+  if (!id) {
+    throw new Error('Assignment ID is required.');
+  }
+
+  const updatedAssignment = await prisma.assignment.update({
+    where: { id },
+    data: {
+      isPublished: !currentPublished,
+    },
+  });
+
+  revalidatePath('/trainer/assignments');
+  revalidatePath('/trainer');
+  revalidatePath('/');
+
+  return { success: true, assignment: updatedAssignment };
+}
+
 export async function updateAssignment(id: string, formData: FormData) {
   const session = await getAuthSession();
   if (!session || session.user?.role !== 'TRAINER') {
@@ -110,6 +141,11 @@ export async function updateAssignment(id: string, formData: FormData) {
   const validationRules = (formData.get('validationRules') as string)?.trim() || null;
   const passingSample = (formData.get('passingSample') as string)?.trim() || null;
   const failingSample = (formData.get('failingSample') as string)?.trim() || null;
+
+  const isPublishedRaw = formData.get('isPublished');
+  const isPublished = isPublishedRaw === null ? true : isPublishedRaw === 'true';
+  const unlockDateRaw = (formData.get('unlockDate') as string)?.trim();
+  const unlockDate = unlockDateRaw ? new Date(unlockDateRaw) : null;
 
   if (!title || !description || !moduleRaw || !validationType) {
     throw new Error('All fields (Module #, Title, Validation Type, Description) are required.');
@@ -155,6 +191,8 @@ export async function updateAssignment(id: string, formData: FormData) {
       validationRules,
       passingSample,
       failingSample,
+      isPublished,
+      unlockDate,
     },
   });
 

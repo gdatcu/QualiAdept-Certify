@@ -75,6 +75,8 @@ model Assignment {
   passingSample   String?     // Optional sample code payload that passes validation
   failingSample   String?     // Optional sample code payload that fails validation
   isActive       Boolean      @default(true)
+  isPublished    Boolean      @default(true)
+  unlockDate     DateTime?
   submissions    Submission[]
 }
 

@@ -142,17 +142,33 @@ export default async function TrainerAssignmentsPage() {
                         )}
                       </td>
                       <td className="py-4 px-4 whitespace-nowrap">
-                        {assignment.isActive ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800 font-semibold text-[11px]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                            ACTIVE
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-950/80 text-rose-400 border border-rose-800 font-semibold text-[11px]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
-                            INACTIVE
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1 items-start">
+                          {assignment.isActive ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800 font-semibold text-[10px]">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                              ACTIVE
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-800 font-semibold text-[10px]">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+                              INACTIVE
+                            </span>
+                          )}
+
+                          {assignment.isPublished === false ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-900 text-amber-400 border border-amber-800/80 font-mono text-[9px] font-bold">
+                              🔒 Draft (Unpublished)
+                            </span>
+                          ) : assignment.unlockDate && new Date(assignment.unlockDate) > new Date() ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800/80 font-mono text-[9px] font-bold">
+                              ⏳ Scheduled ({new Date(assignment.unlockDate).toLocaleDateString('ro-RO')})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900 font-mono text-[9px]">
+                              ✅ Published
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">

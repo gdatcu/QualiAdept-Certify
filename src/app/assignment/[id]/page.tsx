@@ -41,6 +41,16 @@ export default async function AssignmentPage({ params }: PageProps) {
     redirect('/enroll');
   }
 
+  // Server-side Drip Content Guard (Publish status + unlockDate check)
+  if (currentUser.role !== 'TRAINER') {
+    if (assignment.isPublished === false) {
+      redirect('/');
+    }
+    if (assignment.unlockDate && new Date() < new Date(assignment.unlockDate)) {
+      redirect('/');
+    }
+  }
+
   // Server-side guard: If assignment's module > 1, verify user has a "PASS" submission for module - 1
   if (assignment.module > 1) {
     if (!session?.user?.id) {

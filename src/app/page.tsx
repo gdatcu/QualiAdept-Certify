@@ -56,21 +56,38 @@ export default async function StudentDashboard() {
     }
   });
 
+  const now = new Date();
+
   // Compute state for each assignment (COMPLETED, UNLOCKED, LOCKED)
   const moduleCards = assignments.map((assignment) => {
-    const isCompleted = passedAssignmentIds.has(assignment.id);
-    const isUnlocked = assignment.module === 1 || completedModules.has(assignment.module - 1);
+    const isPassed = passedAssignmentIds.has(assignment.id);
+    const isPrevPassed = assignment.module === 1 || completedModules.has(assignment.module - 1);
+    const isPublished = assignment.isPublished !== false;
+    const isTimeUnlocked =
+      !assignment.unlockDate || new Date(assignment.unlockDate) <= now;
 
     let status: 'COMPLETED' | 'UNLOCKED' | 'LOCKED' = 'LOCKED';
-    if (isCompleted) {
+    let lockReason: 'PREV_NOT_PASSED' | 'NOT_PUBLISHED' | 'FUTURE_UNLOCK' = 'PREV_NOT_PASSED';
+
+    if (isPassed) {
       status = 'COMPLETED';
-    } else if (isUnlocked) {
+    } else if (isPrevPassed && isPublished && isTimeUnlocked) {
       status = 'UNLOCKED';
+    } else {
+      status = 'LOCKED';
+      if (!isPublished) {
+        lockReason = 'NOT_PUBLISHED';
+      } else if (!isTimeUnlocked) {
+        lockReason = 'FUTURE_UNLOCK';
+      } else {
+        lockReason = 'PREV_NOT_PASSED';
+      }
     }
 
     return {
       ...assignment,
       status,
+      lockReason,
     };
   });
 
@@ -290,11 +307,25 @@ export default async function StudentDashboard() {
                         </svg>
                       </div>
                     ) : (
-                      <div className="w-full py-2.5 px-4 rounded-xl bg-zinc-950 border border-zinc-800/60 text-zinc-500 text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-not-allowed">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-full py-2.5 px-3 rounded-xl bg-zinc-950 border border-zinc-800/60 text-zinc-400 text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-not-allowed text-center">
+                        <svg className="w-3.5 h-3.5 text-zinc-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        <span>Pass Module {assignment.module - 1} First</span>
+                        <span>
+                          {assignment.lockReason === 'NOT_PUBLISHED'
+                            ? '🔒 În curând (Coming Soon)'
+                            : assignment.lockReason === 'FUTURE_UNLOCK'
+                            ? `🔒 Se deblochează pe ${
+                                assignment.unlockDate
+                                  ? new Date(assignment.unlockDate).toLocaleDateString('ro-RO', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })
+                                  : ''
+                              }`
+                            : `Pass Module ${assignment.module - 1} First`}
+                        </span>
                       </div>
                     )}
                   </div>
