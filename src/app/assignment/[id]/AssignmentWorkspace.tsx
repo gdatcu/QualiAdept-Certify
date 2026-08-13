@@ -837,9 +837,13 @@ export default function AssignmentWorkspace({
                   {/* Virtual Mentor AI Code Review Card */}
                   {validationResult?.aiFeedback && (
                     <div className="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-purple-950/40 rounded-xl border border-purple-800/60 p-4 shadow-xl flex flex-col gap-3 relative overflow-hidden">
-                      <div className="flex items-center justify-between gap-2 border-b border-purple-900/40 pb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">🤖</span>
+                      <div className="flex items-center justify-between gap-2 border-b border-purple-900/40 pb-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-7 w-7 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold shadow-[0_0_12px_rgba(168,85,247,0.25)] shrink-0">
+                            <svg className="w-4 h-4 fill-current text-purple-300" viewBox="0 0 24 24">
+                              <path d="M12 2L14.85 9.15L22 12L14.85 14.85L12 22L9.15 14.85L2 12L9.15 9.15L12 2Z" />
+                            </svg>
+                          </div>
                           <h4 className="text-xs font-bold text-purple-200 font-mono tracking-wide">
                             Virtual Mentor AI Code Review
                           </h4>
@@ -865,7 +869,7 @@ export default function AssignmentWorkspace({
                       </p>
 
                       <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1.5 pt-0.5">
-                        <span className="text-purple-400">⚡ Powered by Gemini 1.5 Flash</span>
+                        <span className="text-purple-400">⚡ Powered by Gemini AI</span>
                         <span>•</span>
                         <span>Clean Code &amp; Selector Analysis</span>
                       </div>
