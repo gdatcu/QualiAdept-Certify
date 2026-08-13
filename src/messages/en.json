@@ -88,15 +88,33 @@
     "moduleBadge": "Module {module}"
   },
   "Leaderboard": {
-    "title": "Hall of Fame",
-    "subtitle": "QualiAdept Student Rankings & Completion Wall",
-    "rank": "Rank",
-    "student": "Student",
-    "progress": "Progress",
-    "score": "Score"
+    "title": "QualiAdept Hall of Fame",
+    "subtitle": "Real-time Leaderboard & Verified Progression Wall",
+    "rank": "RANK",
+    "student": "QA STUDENT",
+    "passed": "MODULES PASSED",
+    "score": "TOTAL SCORE",
+    "status": "STATUS",
+    "enrolled": "ENROLLED",
+    "trainer": "TRAINER",
+    "viewPortfolio": "View Verifiable Portfolio"
   },
   "Admin": {
-    "title": "God Mode Admin Dashboard",
-    "subtitle": "Platform Metrics & Student Oversight"
+    "title": "Student Administrative Panel",
+    "subtitle": "Platform Oversight & Student Access Management",
+    "totalUsers": "TOTAL USERS",
+    "enrolled": "ENROLLED",
+    "trainers": "TRAINERS",
+    "enrollStudent": "Enroll Student",
+    "toggleEnrollment": "Toggle Enrollment"
+  },
+  "Trainer": {
+    "title": "Trainer Control Center",
+    "subtitle": "Curriculum Management & Submission Audit",
+    "totalSubmissions": "TOTAL SUBMISSIONS",
+    "passRate": "PASS RATE",
+    "activeStudents": "ACTIVE STUDENTS",
+    "curriculum": "Manage Curriculum",
+    "submissions": "Student Submissions"
   }
 }

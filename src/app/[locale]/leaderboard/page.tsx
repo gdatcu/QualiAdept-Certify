@@ -1,17 +1,19 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 
 export const metadata: Metadata = {
-  title: 'Clasament & Leaderboard | QualiAdept Auto-Validation',
-  description: 'Topul cursanților și progresul tehnic în cadrul platformei QualiAdept.',
+  title: 'QualiAdept Certify | Leaderboard',
+  description: 'Top student rankings and verified technical progress wall on QualiAdept.',
 };
 
 export const dynamic = 'force-dynamic';
 
 export default async function LeaderboardPage() {
+  const t = await getTranslations('Leaderboard');
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
@@ -124,14 +126,14 @@ export default async function LeaderboardPage() {
                 🏆
               </div>
               <span className="font-semibold text-zinc-100 text-xs sm:text-sm font-mono tracking-wide">
-                QualiAdept Hall of Fame
+                {t('title')}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono">
             <span className="bg-emerald-950/60 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60">
-              Rank-ul Tău: #{currentUserRank > 0 ? currentUserRank : '-'}
+              Rank: #{currentUserRank > 0 ? currentUserRank : '-'}
             </span>
           </div>
         </div>
@@ -149,18 +151,18 @@ export default async function LeaderboardPage() {
                 <span>🥇 Gamified Evaluation Engine</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-zinc-50 tracking-tight">
-                Clasamentul Cursanților QualiAdept
+                {t('title')}
               </h1>
               <p className="text-xs text-zinc-400 font-mono mt-1 max-w-2xl leading-relaxed">
-                Clasament actualizat în timp real pe baza modulelor deblocat și a punctajelor obținute în testele automate.
+                {t('subtitle')}
               </p>
             </div>
 
             <div className="bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shrink-0 self-start sm:self-auto min-w-[160px]">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Total Cursanți</span>
+              <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('student')}</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black text-emerald-400 font-mono">{leaderboardEntries.length}</span>
-                <span className="text-xs text-zinc-400 font-mono">Înscriși</span>
+                <span className="text-xs text-zinc-400 font-mono">{t('enrolled')}</span>
               </div>
             </div>
           </div>

@@ -88,15 +88,33 @@
     "moduleBadge": "Modulul {module}"
   },
   "Leaderboard": {
-    "title": "Hall of Fame",
-    "subtitle": "Clasamentul Studenților QualiAdept & Peretele de Progres",
-    "rank": "Loc",
-    "student": "Student",
-    "progress": "Progres",
-    "score": "Punctaj"
+    "title": "Clasamentul Cursanților",
+    "subtitle": "Clasament actualizat în timp real și Perete de Progres",
+    "rank": "RANG",
+    "student": "CURSANT QA",
+    "passed": "MODULE TRECUTE",
+    "score": "SCOR TOTAL",
+    "status": "STATUS",
+    "enrolled": "ÎNROLAT",
+    "trainer": "INSTRUCTOR",
+    "viewPortfolio": "Vezi Portofoliul Verificabil"
   },
   "Admin": {
-    "title": "Panou Admin God Mode",
-    "subtitle": "Metrici Platformă & Monitorizare Studenți"
+    "title": "Panou Administrativ Cursanți",
+    "subtitle": "Supervizare Platformă și Gestionare Acces",
+    "totalUsers": "TOTAL UTILIZATORI",
+    "enrolled": "ÎNROLAȚI",
+    "trainers": "INSTRUCTORI",
+    "enrollStudent": "Înrolează Cursant",
+    "toggleEnrollment": "Comută Înrolare"
+  },
+  "Trainer": {
+    "title": "Centru de Control Trainer",
+    "subtitle": "Gestionare Curriculum și Audit Submisii",
+    "totalSubmissions": "TOTAL SUBMISII",
+    "passRate": "RATĂ DE PROMOVARE",
+    "activeStudents": "CURSANȚI ACTIVI",
+    "curriculum": "Gestionare Curriculum",
+    "submissions": "Submisii Cursanți"
   }
 }

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import LanguageSwitcher from './LanguageSwitcher';
 
 export default function HeaderAuth() {

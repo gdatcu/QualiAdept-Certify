@@ -1,17 +1,19 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 
 export const metadata: Metadata = {
-  title: 'God Mode Admin Dashboard | QualiAdept',
-  description: 'Panou administrativ de monitorizare cursanți, securitate tokenuri și metrici platformă.',
+  title: 'QualiAdept Certify | Admin Panel',
+  description: 'Administrative student oversight and enrollment access panel.',
 };
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
+  const t = await getTranslations('Admin');
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
@@ -128,7 +130,7 @@ export default async function AdminDashboardPage() {
                 🛡️
               </div>
               <span className="font-semibold text-zinc-100 text-xs sm:text-sm font-mono tracking-wide">
-                QualiAdept God Mode Admin
+                {t('title')}
               </span>
             </div>
           </div>
@@ -153,10 +155,10 @@ export default async function AdminDashboardPage() {
                 🛡️ System Governance &amp; Security Overview
               </span>
               <h1 className="text-2xl sm:text-3xl font-black text-zinc-50 tracking-tight">
-                Panou Administrativ Cursanți
+                {t('title')}
               </h1>
               <p className="text-xs text-zinc-400 font-mono mt-1 max-w-2xl leading-relaxed">
-                Monitorizare în timp real a înregistrărilor, ratelor de blocare token, modulelor deblocate și stării de participare.
+                {t('subtitle')}
               </p>
             </div>
           </div>
@@ -165,18 +167,16 @@ export default async function AdminDashboardPage() {
         {/* Executive Metric Cards */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Total Utilizatori</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('totalUsers')}</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-3xl font-black text-zinc-100 font-mono">{users.length}</span>
-              <span className="text-xs text-zinc-400 font-mono">Înregistrați</span>
             </div>
           </div>
 
           <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Cursanți Înscriși</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('enrolled')}</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{totalEnrolledCount}</span>
-              <span className="text-xs text-zinc-400 font-mono">Cu Access Code</span>
             </div>
           </div>
 

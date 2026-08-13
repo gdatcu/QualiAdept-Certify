@@ -1,11 +1,20 @@
-import Link from 'next/link';
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import SubmissionsTable, { SubmissionRecord } from './SubmissionsTable';
+
+export const metadata: Metadata = {
+  title: 'QualiAdept Certify | Trainer God Mode',
+  description: 'Trainer Control Center for assignment management and submission auditing.',
+};
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function TrainerDashboardPage() {
+  const t = await getTranslations('Trainer');
+
   // Fetch all submissions with User and Assignment relations ordered by newest first
   const rawSubmissions = await prisma.submission.findMany({
     include: {
@@ -50,7 +59,7 @@ export default async function TrainerDashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-zinc-100 tracking-wide text-sm sm:text-base">
-                  QualiAdept Admin
+                  {t('title')}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono font-bold">
                   God Mode
@@ -66,7 +75,7 @@ export default async function TrainerDashboardPage() {
               href="/trainer/assignments"
               className="text-xs text-purple-200 hover:text-white bg-purple-950/80 hover:bg-purple-900 border border-purple-800 px-3.5 py-1.5 rounded-full font-mono flex items-center gap-1.5 transition-colors shadow-sm font-semibold"
             >
-              <span>Manage Curriculum ⚙️</span>
+              <span>{t('curriculum')} ⚙️</span>
             </Link>
             <Link
               href="/"
@@ -96,10 +105,10 @@ export default async function TrainerDashboardPage() {
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50 tracking-tight">
-                Trainer Control Center
+                {t('title')}
               </h1>
               <p className="text-zinc-400 text-sm mt-1 max-w-2xl leading-relaxed">
-                Real-time evaluation analytics, raw code inspection, assertion breakdowns, and instant manual override management.
+                {t('subtitle')}
               </p>
             </div>
 
@@ -114,7 +123,7 @@ export default async function TrainerDashboardPage() {
           {/* Card 1: Total Submissions */}
           <div className="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-5 shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400">
-              <span className="text-xs font-mono uppercase tracking-wider">Total Submissions</span>
+              <span className="text-xs font-mono uppercase tracking-wider">{t('totalSubmissions')}</span>
               <div className="h-8 w-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l-5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -130,7 +139,7 @@ export default async function TrainerDashboardPage() {
           {/* Card 2: Overall Pass Rate */}
           <div className="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-5 shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400">
-              <span className="text-xs font-mono uppercase tracking-wider">Pass Rate</span>
+              <span className="text-xs font-mono uppercase tracking-wider">{t('passRate')}</span>
               <div className="h-8 w-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -164,7 +173,7 @@ export default async function TrainerDashboardPage() {
           {/* Card 4: Active Students */}
           <div className="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-5 shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400">
-              <span className="text-xs font-mono uppercase tracking-wider">Active Students</span>
+              <span className="text-xs font-mono uppercase tracking-wider">{t('activeStudents')}</span>
               <div className="h-8 w-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
