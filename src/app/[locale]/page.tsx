@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
@@ -7,6 +8,15 @@ import ShareProfileButton from '@/components/ShareProfileButton';
 import EditProfileModal from '@/components/EditProfileModal';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await getAuthSession();
+  const displayName = session?.user?.name || session?.user?.email?.split('@')[0];
+
+  return {
+    title: displayName ? `QualiAdept Certify | ${displayName}` : 'QualiAdept Certify',
+  };
+}
 
 export default async function StudentDashboard() {
   const t = await getTranslations('Index');

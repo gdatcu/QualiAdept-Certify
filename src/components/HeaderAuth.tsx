@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -10,6 +11,15 @@ export default function HeaderAuth() {
   const { data: session, status: authStatus } = useSession();
   const isTrainer = session?.user?.role === 'TRAINER';
   const isAdmin = session?.user?.isAdmin === true || isTrainer;
+
+  useEffect(() => {
+    if (session?.user) {
+      const displayName = session.user.name || session.user.email?.split('@')[0];
+      if (displayName) {
+        document.title = `QualiAdept Certify | ${displayName}`;
+      }
+    }
+  }, [session]);
 
   return (
     <div className="flex items-center gap-3">

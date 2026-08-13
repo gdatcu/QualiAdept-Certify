@@ -21,8 +21,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'QualiAdept Auto-Validation Platform',
+  title: {
+    default: 'QualiAdept Certify',
+    template: 'QualiAdept Certify | %s',
+  },
   description: 'Automated LMS & Evaluation Platform for QA Automation Students',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export function generateStaticParams() {
