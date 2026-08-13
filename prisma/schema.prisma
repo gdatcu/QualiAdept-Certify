@@ -21,6 +21,7 @@ model User {
   aboutMe         String?
   isProfilePublic Boolean      @default(true)
   isEnrolled      Boolean      @default(false)
+  isAdmin         Boolean      @default(false)
   failedAttempts  Int          @default(0)
   lockoutUntil    DateTime?
   accounts      Account[]

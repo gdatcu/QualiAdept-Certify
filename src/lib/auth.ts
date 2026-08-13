@@ -26,15 +26,17 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role || 'STUDENT';
         token.isEnrolled = (user as { isEnrolled?: boolean }).isEnrolled ?? false;
+        token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
       }
       if (token?.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, isEnrolled: true },
+          select: { role: true, isEnrolled: true, isAdmin: true },
         });
         if (dbUser) {
           token.role = dbUser.role || 'STUDENT';
           token.isEnrolled = dbUser.isEnrolled ?? false;
+          token.isAdmin = dbUser.isAdmin ?? false;
         }
       }
       return token;
@@ -44,6 +46,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = (token.role as string) || 'STUDENT';
         session.user.isEnrolled = (token.isEnrolled as boolean) ?? false;
+        session.user.isAdmin = (token.isAdmin as boolean) ?? false;
       }
       return session;
     },

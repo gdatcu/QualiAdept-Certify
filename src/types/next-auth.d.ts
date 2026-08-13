@@ -6,6 +6,7 @@ declare module 'next-auth' {
       id: string;
       role: string;
       isEnrolled?: boolean;
+      isAdmin?: boolean;
     } & DefaultSession['user'];
   }
 
@@ -13,6 +14,8 @@ declare module 'next-auth' {
     id: string;
     role?: string;
     isEnrolled?: boolean;
+    isAdmin?: boolean;
   }
 }
+
 

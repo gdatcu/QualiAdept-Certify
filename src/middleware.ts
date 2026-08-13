@@ -23,6 +23,21 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Protect /admin route (Strictly isAdmin or TRAINER required)
+  if (pathname.startsWith('/admin')) {
+    if (!token) {
+      const loginUrl = new URL('/', req.url);
+      loginUrl.searchParams.set('error', 'Unauthenticated');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (!token.isAdmin && token.role !== 'TRAINER') {
+      const homeUrl = new URL('/', req.url);
+      homeUrl.searchParams.set('error', 'AccessDenied');
+      return NextResponse.redirect(homeUrl);
+    }
+  }
+
   // Protect /assignment route (Strictly Enrolled or TRAINER required)
   if (pathname.startsWith('/assignment') || pathname.startsWith('/leaderboard')) {
     if (!token) {
@@ -51,5 +66,11 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/trainer/:path*', '/assignment/:path*', '/leaderboard/:path*', '/api/validate/static'],
+  matcher: [
+    '/admin/:path*',
+    '/trainer/:path*',
+    '/assignment/:path*',
+    '/leaderboard/:path*',
+    '/api/validate/static',
+  ],
 };

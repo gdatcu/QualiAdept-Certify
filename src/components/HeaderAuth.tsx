@@ -6,6 +6,7 @@ import Link from 'next/link';
 export default function HeaderAuth() {
   const { data: session, status: authStatus } = useSession();
   const isTrainer = session?.user?.role === 'TRAINER';
+  const isAdmin = session?.user?.isAdmin === true || isTrainer;
 
   return (
     <div className="flex items-center gap-3">
@@ -19,6 +20,14 @@ export default function HeaderAuth() {
           >
             <span>🏆 Leaderboard</span>
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-mono font-bold transition-all shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+            >
+              <span>🛡️ Admin Panel</span>
+            </Link>
+          )}
           {isTrainer && (
             <Link
               href="/trainer"
