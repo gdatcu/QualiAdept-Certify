@@ -151,6 +151,42 @@ export default async function StudentDashboard() {
           </div>
         </section>
 
+        {/* 100% Curriculum Completion Certificate Banner */}
+        {progressPercent === 100 && (
+          <section className="bg-gradient-to-r from-amber-950/60 via-zinc-900 to-sky-950/60 rounded-2xl border border-amber-500/50 p-6 sm:p-8 shadow-[0_0_30px_rgba(245,158,11,0.2)] flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full filter blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+            <div className="flex items-start gap-4 relative z-10">
+              <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold text-2xl shadow-[0_0_15px_rgba(245,158,11,0.4)] shrink-0">
+                🏆
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold uppercase tracking-wider mb-1">
+                  Curriculum Mastered • 100% Completion
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-zinc-50 tracking-tight">
+                  Felicitări! Ai absolvit Bootcamp-ul QualiAdept.
+                </h2>
+                <p className="text-xs text-zinc-300 font-mono mt-1 max-w-xl leading-relaxed">
+                  Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="/api/certificate"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-sky-400 hover:from-amber-400 hover:to-sky-300 text-zinc-950 font-black text-xs font-mono transition-all shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_25px_rgba(245,158,11,0.6)] flex items-center justify-center gap-2.5 shrink-0 hover:scale-105 cursor-pointer uppercase tracking-wider relative z-10"
+            >
+              <span>🏆 Descarcă Certificatul Tău (PDF)</span>
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+              </svg>
+            </a>
+          </section>
+        )}
+
         {/* Modules Grid Section */}
         <section className="flex flex-col gap-5">
           <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
