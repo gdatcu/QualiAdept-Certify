@@ -20,32 +20,32 @@ export async function generateMetadata(
   const { userId } = await params;
   if (!userId) {
     return {
-      title: 'QualiAdept Certified Portfolio',
+      title: { absolute: 'QualiAdept Certify | Certified portfolio' },
     };
   }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true },
+    select: { name: true, email: true },
   });
 
-  const userName = user?.name || 'QA Student';
-  const title = `QualiAdept Certified Portfolio | ${userName}`;
+  const userName = user?.name || user?.email?.split('@')[0] || 'QA Student';
+  const fullTitle = `QualiAdept Certify | Certified portfolio | ${userName}`;
   const description = `View the verified QA Automation scripts and E2E testing portfolio of ${userName}.`;
 
   return {
-    title,
+    title: { absolute: fullTitle },
     description,
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       type: 'website',
       images: [
         {
-          url: '/og-image.jpg',
-          width: 1200,
-          height: 630,
-          alt: `QualiAdept Certified Portfolio | ${userName}`,
+          url: '/icon.svg',
+          width: 512,
+          height: 512,
+          alt: fullTitle,
         },
       ],
     },
