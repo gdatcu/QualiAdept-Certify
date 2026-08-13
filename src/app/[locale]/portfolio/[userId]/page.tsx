@@ -1,6 +1,7 @@
 import type { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import CodeBlock from '@/components/CodeBlock';
 
@@ -53,6 +54,7 @@ export async function generateMetadata(
 
 export default async function PublicPortfolioPage({ params }: PageProps) {
   const { userId } = await params;
+  const t = await getTranslations('Portfolio');
 
   if (!userId) {
     notFound();
@@ -95,7 +97,7 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                   Q
                 </div>
                 <span className="font-semibold text-zinc-100 tracking-wide text-sm hidden sm:inline">
-                  QualiAdept Public Verification Portal
+                  {t('portalTitle')}
                 </span>
               </div>
             </div>
@@ -107,16 +109,16 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
             <div className="h-16 w-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-3xl mx-auto mb-4 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
               🔒
             </div>
-            <h2 className="text-xl font-bold text-zinc-100">Private Profile</h2>
+            <h2 className="text-xl font-bold text-zinc-100">{t('privateTitle')}</h2>
             <p className="text-xs text-zinc-400 mt-2 leading-relaxed font-mono">
-              This engineer&apos;s portfolio is currently set to private.
+              {t('privateDesc')}
             </p>
           </div>
         </main>
 
         <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-6 md:px-8">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 font-mono gap-2 text-center sm:text-left">
-            <div>QualiAdept Public Verification Portal &copy; {new Date().getFullYear()}</div>
+            <div>{t('portalTitle')} &copy; {new Date().getFullYear()}</div>
             <div className="flex items-center gap-4">
               <span className="text-zinc-500">● Private Access</span>
               <span>app.qualiadept.eu</span>
@@ -169,14 +171,14 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                 Q
               </div>
               <span className="font-semibold text-zinc-100 tracking-wide text-xs sm:text-sm hidden md:inline">
-                QualiAdept Public Verification Portal
+                {t('portalTitle')}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-emerald-800/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] shrink-0">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-            <span className="whitespace-nowrap">Verifiable Portfolio</span>
+            <span className="whitespace-nowrap">{t('verifiableBadge')}</span>
           </div>
         </div>
       </header>
@@ -214,12 +216,12 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                     {user.name || 'QA Student'}
                   </h1>
                   <span className="text-[10px] sm:text-xs font-mono px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0">
-                    QualiAdept Verified QA Engineer
+                    {t('verifiedRole')}
                   </span>
                 </div>
 
                 <p className="text-[11px] sm:text-xs text-zinc-400 font-mono mb-2 break-all">
-                  Member since {memberSince} &bull; Verified ID: {user.id.substring(0, 12)}...
+                  {t('memberSince')} {memberSince} &bull; {t('verifiedId')}: {user.id.substring(0, 12)}...
                 </p>
 
                 {/* About Me Bio */}
@@ -281,25 +283,25 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
             {/* Quick Metrics Grid (Stacks grid-cols-1 on mobile, grid-cols-2 / grid-cols-3 on md) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-zinc-800/60 w-full">
               <div className="bg-zinc-950/80 p-3.5 sm:p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Verified Modules</span>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('verifiedModules')}</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{milestones.length}</span>
-                  <span className="text-xs text-zinc-400 font-mono">Modules Passed</span>
+                  <span className="text-xs text-zinc-400 font-mono">{t('modulesPassed')}</span>
                 </div>
               </div>
 
               <div className="bg-zinc-950/80 p-3.5 sm:p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Highest Score</span>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('highestScore')}</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl sm:text-3xl font-black text-cyan-400 font-mono">{highestScore}%</span>
-                  <span className="text-xs text-zinc-400 font-mono">Top Assertion Score</span>
+                  <span className="text-xs text-zinc-400 font-mono">{t('topScore')}</span>
                 </div>
               </div>
 
               <div className="bg-zinc-950/80 p-3.5 sm:p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md sm:col-span-2 md:col-span-1">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Validation Mode</span>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('validationMode')}</span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-base sm:text-lg font-bold text-purple-400 font-mono">100% Automated</span>
+                  <span className="text-base sm:text-lg font-bold text-purple-400 font-mono">100% {t('automated')}</span>
                   <span className="text-xs text-zinc-400 font-mono">Cheerio / Playwright</span>
                 </div>
               </div>
@@ -312,10 +314,10 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
           <div className="border-b border-zinc-800 pb-4">
             <h2 className="text-lg sm:text-xl font-bold text-zinc-100 flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)] shrink-0"></span>
-              Verified Technical Progression Timeline
+              {t('timelineTitle')}
             </h2>
             <p className="text-xs text-zinc-400 font-mono mt-1">
-              Automated execution logs verified by QualiAdept Cloud Evaluation Engine
+              {t('timelineSubtitle')}
             </p>
           </div>
 
@@ -353,15 +355,15 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-zinc-800/80 pb-3 mb-4">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-zinc-950 text-cyan-400 border border-zinc-800 font-semibold shrink-0">
-                              Module 0{item.assignment.module}
+                              {t('moduleBadge', { module: item.assignment.module < 10 ? `0${item.assignment.module}` : item.assignment.module })}
                             </span>
                             <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/60 uppercase tracking-wider shrink-0">
-                              {item.assignment.validationType} Validation
+                              {t('validation', { type: item.assignment.validationType })}
                             </span>
                           </div>
 
                           <span className="text-xs font-mono text-zinc-400 shrink-0">
-                            Passed on {completedDate}
+                            {t('passedOn', { date: completedDate })}
                           </span>
                         </div>
 
@@ -379,10 +381,10 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                               <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                               </svg>
-                              <span>View Verified Source Code</span>
+                              <span>{t('viewCode')}</span>
                             </div>
                             <span className="text-[10px] text-zinc-500 font-mono group-open:text-emerald-400 transition-colors">
-                              Click to toggle
+                              {t('clickToggle')}
                             </span>
                           </summary>
                           <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-950 overflow-x-auto max-w-full w-full">
@@ -399,7 +401,7 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                             <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
-                            <span className="font-semibold">Auto-Validated by Platform</span>
+                            <span className="font-semibold">{t('autoValidated')}</span>
                             <span className="text-zinc-500 font-normal hidden sm:inline">| qualiadept.eu</span>
                           </div>
 
@@ -420,7 +422,7 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
       {/* Footer */}
       <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-6 md:px-8 mt-auto">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 font-mono gap-2 text-center sm:text-left">
-          <div>QualiAdept Public Verification Portal &copy; {new Date().getFullYear()}</div>
+          <div>{t('portalTitle')} &copy; {new Date().getFullYear()}</div>
           <div className="flex items-center gap-4">
             <span className="text-emerald-400">● Verifiable Credentials</span>
             <span>app.qualiadept.eu</span>

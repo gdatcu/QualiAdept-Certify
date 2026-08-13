@@ -14,7 +14,7 @@ export default function ShareProfileButton({ userId }: ShareProfileButtonProps) 
 
   const handleCopy = async () => {
     try {
-      const shareUrl = `${window.location.origin}/portfolio/${userId}`;
+      const shareUrl = `${window.location.origin}/en/portfolio/${userId}`;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareUrl);
       } else {
@@ -62,7 +62,7 @@ export default function ShareProfileButton({ userId }: ShareProfileButtonProps) 
       </button>
 
       <Link
-        href={`/portfolio/${userId}`}
+        href={`/en/portfolio/${userId}`}
         target="_blank"
         className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 transition-colors text-xs font-mono inline-flex items-center justify-center"
         title="View Public Portfolio Page"
