@@ -234,13 +234,17 @@ export async function POST(req: NextRequest) {
     // Fire non-blocking Discord Triumph Webhook notification if score === 100
     if (isPass && score === 100) {
       const studentName = session?.user?.name || existingUser?.name || 'QA Student';
-      sendDiscordTriumphNotification({
-        studentName,
-        userId,
-        moduleNum: targetAssignment?.module || 1,
-        assignmentTitle: targetAssignment?.title,
-        validationType: 'STATIC',
-      }).catch(() => {});
+      try {
+        await sendDiscordTriumphNotification({
+          studentName,
+          userId,
+          moduleNum: targetAssignment?.module || 1,
+          assignmentTitle: targetAssignment?.title,
+          validationType: 'STATIC',
+        });
+      } catch (err) {
+        console.error('Discord webhook notification error:', err);
+      }
     }
 
     // Return standardized JSON response

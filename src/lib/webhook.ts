@@ -49,6 +49,7 @@ export async function sendDiscordTriumphNotification({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'QualiAdeptCertify/1.0 (https://certify.qualiadept.eu)',
       },
       body: JSON.stringify(payload),
     });
