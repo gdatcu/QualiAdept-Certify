@@ -90,6 +90,8 @@ export default async function AssignmentPage({ params }: PageProps) {
     status: s.status,
     score: s.score,
     feedbackJSON: s.feedbackJSON,
+    aiFeedback: s.aiFeedback,
+    codeQuality: s.codeQuality,
     submittedAt: s.submittedAt.toISOString(),
   }));
 

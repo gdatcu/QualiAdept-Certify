@@ -16,6 +16,8 @@ interface ValidationResponse {
   status: 'pass' | 'fail';
   score: number;
   feedback: FeedbackItem[];
+  aiFeedback?: string;
+  codeQuality?: 'Excellent' | 'Good' | 'Needs Improvement' | string;
 }
 
 interface AssignmentData {
@@ -34,6 +36,8 @@ export interface SubmissionRecord {
   status: string;
   score: number;
   feedbackJSON: string;
+  aiFeedback?: string | null;
+  codeQuality?: string | null;
   submittedAt: string;
 }
 
@@ -120,12 +124,16 @@ export default function AssignmentWorkspace({
     }
   }, [htmlCode, autosaveKey]);
 
-  // Initialize validation feedback from most recent submission if present
+  // Initialize validation feedback from most recent submission if present  // 3. Sync initial most recent submission result to Green Wall
   useEffect(() => {
     if (mostRecent?.feedbackJSON) {
       try {
         const parsed: ValidationResponse = JSON.parse(mostRecent.feedbackJSON);
-        setValidationResult(parsed);
+        setValidationResult({
+          ...parsed,
+          aiFeedback: mostRecent.aiFeedback || parsed.aiFeedback,
+          codeQuality: mostRecent.codeQuality || parsed.codeQuality,
+        });
       } catch {
         // Fallback if parsing fails
       }
@@ -184,6 +192,8 @@ export default function AssignmentWorkspace({
         status: result.status.toUpperCase(),
         score: result.score,
         feedbackJSON: JSON.stringify(result),
+        aiFeedback: result.aiFeedback,
+        codeQuality: result.codeQuality,
         submittedAt: new Date().toISOString(),
       };
 
@@ -209,7 +219,11 @@ export default function AssignmentWorkspace({
     setSelectedHistoryId(record.id);
     try {
       const parsed: ValidationResponse = JSON.parse(record.feedbackJSON);
-      setValidationResult(parsed);
+      setValidationResult({
+        ...parsed,
+        aiFeedback: record.aiFeedback || parsed.aiFeedback,
+        codeQuality: record.codeQuality || parsed.codeQuality,
+      });
     } catch {
       // Ignore parse error
     }
@@ -819,6 +833,44 @@ export default function AssignmentWorkspace({
                       ))}
                     </div>
                   </div>
+
+                  {/* Virtual Mentor AI Code Review Card */}
+                  {validationResult?.aiFeedback && (
+                    <div className="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-purple-950/40 rounded-xl border border-purple-800/60 p-4 shadow-xl flex flex-col gap-3 relative overflow-hidden">
+                      <div className="flex items-center justify-between gap-2 border-b border-purple-900/40 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">🤖</span>
+                          <h4 className="text-xs font-bold text-purple-200 font-mono tracking-wide">
+                            Virtual Mentor AI Code Review
+                          </h4>
+                        </div>
+
+                        {validationResult.codeQuality && (
+                          <span
+                            className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                              validationResult.codeQuality === 'Excellent'
+                                ? 'bg-emerald-950 text-emerald-300 border-emerald-700 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                                : validationResult.codeQuality === 'Good'
+                                ? 'bg-cyan-950 text-cyan-300 border-cyan-700 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                : 'bg-amber-950 text-amber-300 border-amber-700 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                            }`}
+                          >
+                            {validationResult.codeQuality} Quality
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-zinc-300 leading-relaxed font-sans font-medium">
+                        {validationResult.aiFeedback}
+                      </p>
+
+                      <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1.5 pt-0.5">
+                        <span className="text-purple-400">⚡ Powered by Gemini 1.5 Flash</span>
+                        <span>•</span>
+                        <span>Clean Code &amp; Selector Analysis</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

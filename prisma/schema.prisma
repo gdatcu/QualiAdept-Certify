@@ -86,6 +86,8 @@ model Submission {
   status       String     // "PENDING" | "PASS" | "FAIL"
   score        Int        // Success percentage
   feedbackJSON String     // Detailed breakdown of passed/failed assertions
+  aiFeedback   String?    // AI-generated Virtual Mentor feedback
+  codeQuality  String?    // AI code quality rating ("Excellent" | "Good" | "Needs Improvement")
   submittedAt  DateTime   @default(now())
 
   user       User       @relation(fields: [userId], references: [id])
