@@ -20,6 +20,20 @@
     "congratsTitle": "Congratulations! You completed the QualiAdept Bootcamp.",
     "congratsDescription": "You have successfully validated all practical modules and E2E tests. Your official PDF certificate is generated and ready for download."
   },
+  "Dashboard": {
+    "pageTitle": "Learning Modules",
+    "subtitle": "Sequential progressive assessment path",
+    "passed": "Passed",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "reviewButton": "Review Workspace",
+    "startModule": "Start Module",
+    "passModuleFirst": "Pass Module {module} First",
+    "comingSoon": "Coming Soon",
+    "unlocksOn": "Unlocks on {date}",
+    "inspection": "Inspection",
+    "moduleBadge": "Module {module}"
+  },
   "Header": {
     "dashboard": "Dashboard",
     "leaderboard": "Leaderboard",

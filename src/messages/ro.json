@@ -20,6 +20,20 @@
     "congratsTitle": "Felicitări! Ai absolvit Bootcamp-ul QualiAdept.",
     "congratsDescription": "Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare."
   },
+  "Dashboard": {
+    "pageTitle": "Module de Învățare",
+    "subtitle": "Traseu de evaluare secvențială",
+    "passed": "Promovat",
+    "unlocked": "Deblocat",
+    "locked": "Blocat",
+    "reviewButton": "Deschide Workspace",
+    "startModule": "Începe Modulul",
+    "passModuleFirst": "Treci de Modulul {module} Mai Întâi",
+    "comingSoon": "În Curând",
+    "unlocksOn": "Se deblochează pe {date}",
+    "inspection": "Inspecție",
+    "moduleBadge": "Modulul {module}"
+  },
   "Header": {
     "dashboard": "Dashboard",
     "leaderboard": "Clasament",

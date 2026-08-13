@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function StudentDashboard() {
   const t = await getTranslations('Index');
+  const tDash = await getTranslations('Dashboard');
   const session = await getAuthSession();
 
   // Fetch all active assignments ordered by module integer ascending
@@ -210,18 +211,18 @@ export default async function StudentDashboard() {
         <section className="flex flex-col gap-5">
           <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-zinc-100">Learning Modules</h2>
-              <p className="text-xs text-zinc-400 font-mono mt-0.5">Sequential progressive assessment path</p>
+              <h2 className="text-xl font-bold text-zinc-100">{tDash('pageTitle')}</h2>
+              <p className="text-xs text-zinc-400 font-mono mt-0.5">{tDash('subtitle')}</p>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-                <span className="h-2 w-2 rounded-full bg-emerald-400"></span> Completed
+                <span className="h-2 w-2 rounded-full bg-emerald-400"></span> {tDash('passed')}
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-                <span className="h-2 w-2 rounded-full bg-cyan-400"></span> Unlocked
+                <span className="h-2 w-2 rounded-full bg-cyan-400"></span> {tDash('unlocked')}
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-                <span className="h-2 w-2 rounded-full bg-zinc-600"></span> Locked
+                <span className="h-2 w-2 rounded-full bg-zinc-600"></span> {tDash('locked')}
               </span>
             </div>
           </div>
@@ -247,7 +248,7 @@ export default async function StudentDashboard() {
                     {/* Top Row: Module Badge & Status Badge */}
                     <div className="flex items-center justify-between gap-2 mb-4">
                       <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-zinc-950 text-zinc-300 border border-zinc-800 font-semibold">
-                        Module 0{assignment.module}
+                        {tDash('moduleBadge', { module: assignment.module < 10 ? `0${assignment.module}` : assignment.module })}
                       </span>
 
                       {/* Visual Status Badge */}
@@ -256,14 +257,14 @@ export default async function StudentDashboard() {
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                           </svg>
-                          Passed
+                          {tDash('passed')}
                         </span>
                       )}
 
                       {isUnlocked && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono font-semibold">
                           <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping"></span>
-                          Unlocked
+                          {tDash('unlocked')}
                         </span>
                       )}
 
@@ -272,7 +273,7 @@ export default async function StudentDashboard() {
                           <svg className="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
-                          Locked
+                          {tDash('locked')}
                         </span>
                       )}
                     </div>
@@ -280,7 +281,7 @@ export default async function StudentDashboard() {
                     {/* Validation Engine Type Tag */}
                     <div className="mb-2">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 uppercase tracking-wider">
-                        {assignment.validationType} Inspection
+                        {assignment.validationType} {tDash('inspection')}
                       </span>
                     </div>
 
@@ -303,7 +304,7 @@ export default async function StudentDashboard() {
                             : 'bg-gradient-to-r from-cyan-500 to-teal-500 group-hover:from-cyan-400 group-hover:to-teal-400 text-zinc-950 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
                         }`}
                       >
-                        <span>{isCompleted ? 'Review Workspace' : 'Start Module'}</span>
+                        <span>{isCompleted ? tDash('reviewButton') : tDash('startModule')}</span>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
@@ -315,18 +316,18 @@ export default async function StudentDashboard() {
                         </svg>
                         <span>
                           {assignment.lockReason === 'NOT_PUBLISHED'
-                            ? '🔒 În curând (Coming Soon)'
+                            ? `🔒 ${tDash('comingSoon')}`
                             : assignment.lockReason === 'FUTURE_UNLOCK'
-                            ? `🔒 Se deblochează pe ${
-                                assignment.unlockDate
+                            ? `🔒 ${tDash('unlocksOn', {
+                                date: assignment.unlockDate
                                   ? new Date(assignment.unlockDate).toLocaleDateString('ro-RO', {
                                       day: 'numeric',
                                       month: 'short',
                                       year: 'numeric',
                                     })
-                                  : ''
-                              }`
-                            : `Pass Module ${assignment.module - 1} First`}
+                                  : '',
+                              })}`
+                            : tDash('passModuleFirst', { module: assignment.module - 1 })}
                         </span>
                       </div>
                     )}
