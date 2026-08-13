@@ -21,9 +21,16 @@ const ReviewSchema = z.object({
   codeQuality: z.enum(['Excellent', 'Good', 'Needs Improvement']),
 });
 
+const CANDIDATE_MODELS = [
+  'gemini-1.5-flash-latest',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-001',
+  'gemini-1.5-flash',
+];
+
 /**
- * Generates an automated AI Code Review using Google gemini-1.5-flash via Vercel AI SDK.
- * Includes defensive fallback handling to ensure primary submission validation never fails.
+ * Generates an automated AI Code Review using Google Gemini models via Vercel AI SDK.
+ * Includes defensive multi-model fallback handling to ensure primary submission validation never fails.
  */
 export async function generateAiCodeReview(codePayload: string): Promise<AiReviewResult> {
   const apiKey =
@@ -35,26 +42,26 @@ export async function generateAiCodeReview(codePayload: string): Promise<AiRevie
     return FALLBACK_REVIEW;
   }
 
-  try {
-    const { object } = await generateObject({
-      model: google('gemini-1.5-flash'),
-      schema: ReviewSchema,
-      system:
-        "You are a Senior QA Automation Engineer reviewing a student's Playwright/JavaScript code. Be concise, direct, and evaluate ONLY the code style, stability of selectors, and basic clean code principles.",
-      prompt: `Student Playwright Submission Code:\n\`\`\`typescript\n${codePayload}\n\`\`\``,
-    });
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const { object } = await generateObject({
+        model: google(modelName),
+        schema: ReviewSchema,
+        system:
+          "You are a Senior QA Automation Engineer reviewing a student's Playwright/JavaScript code. Be concise, direct, and evaluate ONLY the code style, stability of selectors, and basic clean code principles.",
+        prompt: `Student Playwright Submission Code:\n\`\`\`typescript\n${codePayload}\n\`\`\``,
+      });
 
-    if (object && object.feedback) {
-      return {
-        aiFeedback: object.feedback.trim(),
-        codeQuality: object.codeQuality || 'Good',
-      };
+      if (object && object.feedback) {
+        return {
+          aiFeedback: object.feedback.trim(),
+          codeQuality: object.codeQuality || 'Good',
+        };
+      }
+    } catch (error) {
+      console.warn(`Gemini model "${modelName}" call skipped/failed, trying next model option...`);
     }
-
-    return FALLBACK_REVIEW;
-  } catch (error) {
-    // Fail defensively - do not crash the primary submission evaluation flow
-    console.error('Non-blocking AI Code Review error:', error);
-    return FALLBACK_REVIEW;
   }
+
+  return FALLBACK_REVIEW;
 }
