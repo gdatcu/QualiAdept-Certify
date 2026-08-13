@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { sendDiscordTriumphNotification } from '@/lib/webhook';
+import { generateAiCodeReview } from '@/lib/ai-reviewer';
 
 export interface FeedbackItem {
   check: string;
@@ -14,6 +15,8 @@ export interface ValidationResponse {
   status: 'pass' | 'fail';
   score: number;
   feedback: FeedbackItem[];
+  aiFeedback?: string;
+  codeQuality?: 'Excellent' | 'Good' | 'Needs Improvement';
 }
 
 export async function POST(req: NextRequest) {
@@ -198,11 +201,16 @@ export async function POST(req: NextRequest) {
     const status = isPass ? 'pass' : 'fail';
     const dbStatus = isPass ? 'PASS' : 'FAIL';
 
+    // Call Virtual Mentor AI Code Reviewer (non-blocking defensive execution)
+    const aiReview = await generateAiCodeReview(htmlCode || '');
+
     // Build standardized feedback object
     const responsePayload: ValidationResponse = {
       status,
       score,
       feedback: checks,
+      aiFeedback: aiReview.aiFeedback,
+      codeQuality: aiReview.codeQuality,
     };
 
     // Ensure User exists in DB to satisfy foreign key constraints
@@ -228,6 +236,8 @@ export async function POST(req: NextRequest) {
         status: dbStatus,
         score,
         feedbackJSON: JSON.stringify(responsePayload),
+        aiFeedback: aiReview.aiFeedback,
+        codeQuality: aiReview.codeQuality,
       },
     });
 
