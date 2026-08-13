@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 
 interface UserProfileData {
@@ -16,6 +17,7 @@ interface EditProfileModalProps {
 }
 
 export default function EditProfileModal({ initialData }: EditProfileModalProps) {
+  const t = useTranslations('ProgressCard');
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -92,7 +94,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
         <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
-        <span>Edit Public Profile</span>
+        <span>{t('editProfile')}</span>
       </button>
 
       {isOpen && (

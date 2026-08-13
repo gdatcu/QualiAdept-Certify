@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
 interface ShareProfileButtonProps {
@@ -8,6 +9,7 @@ interface ShareProfileButtonProps {
 }
 
 export default function ShareProfileButton({ userId }: ShareProfileButtonProps) {
+  const t = useTranslations('ProgressCard');
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -54,7 +56,7 @@ export default function ShareProfileButton({ userId }: ShareProfileButtonProps) 
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 100-2.684 3 3 0 000 2.684zm0 9a3 3 0 100-2.684 3 3 0 000 2.684z" />
             </svg>
-            <span>Share My Profile</span>
+            <span>{t('shareProfile')}</span>
           </>
         )}
       </button>

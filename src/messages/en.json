@@ -44,7 +44,25 @@
   "Navigation": {
     "language": "Language",
     "english": "English 🇬🇧",
-    "romanian": "Romanian 🇷🇴"
+    "romanian": "Romanian 🇷🇴",
+    "leaderboard": "Leaderboard",
+    "adminPanel": "Admin Panel",
+    "godMode": "God Mode Dashboard",
+    "signOut": "Sign Out",
+    "signIn": "Sign In with GitHub",
+    "trainer": "TRAINER",
+    "student": "STUDENT"
+  },
+  "ProgressCard": {
+    "editProfile": "Edit Public Profile",
+    "shareProfile": "Share My Profile",
+    "completed": "Modules Completed"
+  },
+  "Footer": {
+    "authProtected": "Auth Protected",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "copyright": "QualiAdept © {year}. All rights reserved."
   },
   "Leaderboard": {
     "title": "Hall of Fame",

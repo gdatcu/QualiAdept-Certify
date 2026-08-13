@@ -44,7 +44,25 @@
   "Navigation": {
     "language": "Limbă",
     "english": "Engleză 🇬🇧",
-    "romanian": "Română 🇷🇴"
+    "romanian": "Română 🇷🇴",
+    "leaderboard": "Clasament",
+    "adminPanel": "Panou Admin",
+    "godMode": "Panou God Mode",
+    "signOut": "Deconectare",
+    "signIn": "Autentificare cu GitHub",
+    "trainer": "INSTRUCTOR",
+    "student": "STUDENT"
+  },
+  "ProgressCard": {
+    "editProfile": "Editează Profil Public",
+    "shareProfile": "Distribuie Profilul",
+    "completed": "Module Absolvite"
+  },
+  "Footer": {
+    "authProtected": "Protejat prin Autentificare",
+    "privacy": "Politica de Confidențialitate",
+    "terms": "Termeni și Condiții",
+    "copyright": "QualiAdept © {year}. Toate drepturile rezervate."
   },
   "Leaderboard": {
     "title": "Hall of Fame",
