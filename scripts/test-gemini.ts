@@ -1,13 +1,7 @@
 import 'dotenv/config';
-import { generateObject } from 'ai';
+import { generateText, generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
-
-const TEST_MODELS = [
-  'gemini-flash-latest',
-  'gemini-flash-lite-latest',
-  'gemini-3.1-flash-lite',
-];
 
 const Schema = z.object({
   feedback: z.string(),
@@ -15,25 +9,25 @@ const Schema = z.object({
 });
 
 async function main() {
-  const apiKey =
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY;
-  console.log('Gemini API key present:', !!apiKey, 'Value length:', apiKey?.length);
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  for (const m of TEST_MODELS) {
-    try {
-      console.log(`Testing model: "${m}"...`);
-      const { object } = await generateObject({
-        model: google(m),
-        schema: Schema,
-        prompt: 'Review this code: page.goto("https://example.com"); expect(page).toHaveTitle("Example");',
-      });
-      console.log(`>>> SUCCESS with "${m}":`, object);
-    } catch (e: any) {
-      console.error(`FAILED "${m}":`, e?.message || e);
-    }
-  }
+  console.log('Testing generateText with JSON prompt...');
+  const startText = Date.now();
+  const textRes = await generateText({
+    model: google('gemini-flash-latest'),
+    prompt: `Review this code: page.goto("https://example.com"); expect(page).toHaveTitle("Example");
+Return JSON: {"feedback": "2 sentences", "codeQuality": "Excellent" | "Good" | "Needs Improvement"}`,
+  });
+  console.log(`>>> generateText finished in ${Date.now() - startText}ms:`, textRes.text);
+
+  console.log('Testing generateObject...');
+  const startObj = Date.now();
+  const objRes = await generateObject({
+    model: google('gemini-flash-latest'),
+    schema: Schema,
+    prompt: 'Review this code: page.goto("https://example.com"); expect(page).toHaveTitle("Example");',
+  });
+  console.log(`>>> generateObject finished in ${Date.now() - startObj}ms:`, objRes.object);
 }
 
 main();

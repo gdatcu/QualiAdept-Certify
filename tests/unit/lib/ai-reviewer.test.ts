@@ -3,7 +3,7 @@ import { generateAiCodeReview } from '@/lib/ai-reviewer';
 import * as aiModule from 'ai';
 
 vi.mock('ai', () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
 }));
 
 vi.mock('@ai-sdk/google', () => ({
@@ -44,11 +44,11 @@ describe('generateAiCodeReview Unit Tests', () => {
   it('returns AI feedback object when Gemini API succeeds', async () => {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'AIzaSyTestApiKeyPlaceholderLongEnough12345';
 
-    vi.spyOn(aiModule, 'generateObject').mockResolvedValueOnce({
-      object: {
+    vi.spyOn(aiModule, 'generateText').mockResolvedValueOnce({
+      text: JSON.stringify({
         feedback: 'Great use of semantic main tag and clean element locators.',
         codeQuality: 'Excellent',
-      },
+      }),
     } as any);
 
     const result = await generateAiCodeReview('<main><button id="submit">Click</button></main>');
@@ -59,7 +59,7 @@ describe('generateAiCodeReview Unit Tests', () => {
   it('handles model API failures gracefully and returns fallback', async () => {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'AIzaSyTestApiKeyPlaceholderLongEnough12345';
 
-    vi.spyOn(aiModule, 'generateObject').mockRejectedValue(new Error('Invalid API key provided'));
+    vi.spyOn(aiModule, 'generateText').mockRejectedValue(new Error('Invalid API key provided'));
 
     const result = await generateAiCodeReview('<main><h1>Test</h1></main>');
     expect(result.codeQuality).toBe('Good');
