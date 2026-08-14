@@ -28,17 +28,6 @@ export const authOptions: NextAuthOptions = {
         token.isEnrolled = (user as { isEnrolled?: boolean }).isEnrolled ?? false;
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
       }
-      if (token?.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { role: true, isEnrolled: true, isAdmin: true },
-        });
-        if (dbUser) {
-          token.role = dbUser.role || 'STUDENT';
-          token.isEnrolled = dbUser.isEnrolled ?? false;
-          token.isAdmin = dbUser.isAdmin ?? false;
-        }
-      }
       return token;
     },
     async session({ session, token }) {
@@ -52,7 +41,9 @@ export const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'qualiadept-secret-key-2026',
-  debug: process.env.NODE_ENV === 'development',
+  debug: false,
 };
 
-export const getAuthSession = () => getServerSession(authOptions);
+import { cache } from 'react';
+
+export const getAuthSession = cache(() => getServerSession(authOptions));

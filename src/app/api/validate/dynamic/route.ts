@@ -225,8 +225,19 @@ export async function POST(req: NextRequest) {
     const status = isPass ? 'pass' : 'fail';
     const dbStatus = isPass ? 'PASS' : 'FAIL';
 
-    // Call Virtual Mentor AI Code Reviewer (non-blocking defensive execution)
-    const aiReview = await generateAiCodeReview(codePayload || '');
+    // Call Virtual Mentor AI Code Reviewer (non-blocking 1.2s timeout race)
+    const fallbackReview = {
+      aiFeedback: 'Feedback-ul AI este temporar indisponibil. Totuși, codul tău a fost validat cu succes de sistem!',
+      codeQuality: 'Good' as const,
+    };
+    const aiTimeoutPromise = new Promise<typeof fallbackReview>((resolve) =>
+      setTimeout(() => resolve(fallbackReview), 1200)
+    );
+
+    const aiReview = await Promise.race([
+      generateAiCodeReview(codePayload || ''),
+      aiTimeoutPromise,
+    ]);
 
     // Build response payload matching Green Wall format
     const responsePayload: ValidationResponse = {

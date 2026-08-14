@@ -1,11 +1,12 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 interface CertificateProps {
   studentName: string;
   courseName?: string;
   issueDate: string;
   certificateId: string;
+  logoUrl?: string;
 }
 
 const styles = StyleSheet.create({
@@ -33,18 +34,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 6,
     backgroundColor: '#0f172a', // Deep indigo slate inner fill
+    position: 'relative',
+  },
+  topLeftLogo: {
+    position: 'absolute',
+    top: 22,
+    left: 25,
+    width: 42,
+    height: 42,
+    borderRadius: 8,
   },
   header: {
     alignItems: 'center',
     marginBottom: 10,
+    marginTop: 4,
   },
   brandName: {
     fontSize: 14,
     color: '#38bdf8', // Sky 400
-    letterSpacing: 3,
+    letterSpacing: 2,
     fontWeight: 'bold',
-    marginBottom: 4,
-    textTransform: 'uppercase',
+    marginBottom: 6,
   },
   title: {
     fontSize: 26,
@@ -157,15 +167,18 @@ export default function CertificateTemplate({
   courseName = 'QA Automation Engineering Bootcamp',
   issueDate,
   certificateId,
+  logoUrl,
 }: CertificateProps) {
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.outerBorder}>
           <View style={styles.innerBorder}>
+            {logoUrl ? <Image src={logoUrl} style={styles.topLeftLogo} /> : null}
+
             {/* Top Header */}
             <View style={styles.header}>
-              <Text style={styles.brandName}>QualiAdept Auto-Validation Platform</Text>
+              <Text style={styles.brandName}>QualiAdept Certify Platform</Text>
               <Text style={styles.title}>Certificate of Completion</Text>
               <View style={styles.divider} />
               <Text style={styles.certifyText}>This certifies that</Text>

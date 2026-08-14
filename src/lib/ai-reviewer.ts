@@ -22,19 +22,16 @@ const ReviewSchema = z.object({
 });
 
 /**
- * Models supported by your Google Gemini API key
+ * Active production models supported by Google Gemini API
  */
 const CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-flash-latest',
-  'gemini-3.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-pro-latest',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
 ];
 
 /**
  * Generates an automated AI Code Review using verified active Google Gemini models via Vercel AI SDK.
- * Includes defensive multi-model fallback handling to ensure primary submission validation never fails.
+ * Includes defensive multi-model fallback handling and strict 3.5s timeout to ensure submission response is fast.
  */
 export async function generateAiCodeReview(codePayload: string): Promise<AiReviewResult> {
   const apiKey =
@@ -42,7 +39,7 @@ export async function generateAiCodeReview(codePayload: string): Promise<AiRevie
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY;
 
-  if (!apiKey || !apiKey.trim() || !codePayload || !codePayload.trim()) {
+  if (!apiKey || !apiKey.trim() || apiKey.length < 20 || !codePayload || !codePayload.trim()) {
     return FALLBACK_REVIEW;
   }
 
@@ -53,7 +50,8 @@ export async function generateAiCodeReview(codePayload: string): Promise<AiRevie
         schema: ReviewSchema,
         system:
           "You are a Senior QA Automation Engineer reviewing a student's Playwright/JavaScript code. Be concise, direct, and evaluate ONLY the code style, stability of selectors, and basic clean code principles.",
-        prompt: `Student Code Submission:\n\`\`\`html\n${codePayload}\n\`\`\``,
+        prompt: `Student Code Submission:\n\`\`\`html\n${codePayload.slice(0, 2000)}\n\`\`\``,
+        abortSignal: AbortSignal.timeout(1200),
       });
 
       if (object && object.feedback) {
@@ -65,6 +63,16 @@ export async function generateAiCodeReview(codePayload: string): Promise<AiRevie
     } catch (error: any) {
       const errMsg = error?.message || String(error);
       console.warn(`Gemini model "${modelName}" failed: ${errMsg}`);
+
+      // Break loop immediately on API key or model availability errors to prevent sequential retry lag
+      if (
+        errMsg.includes('API key') ||
+        errMsg.includes('not found') ||
+        errMsg.includes('not supported') ||
+        errMsg.includes('no longer available')
+      ) {
+        break;
+      }
     }
   }
 

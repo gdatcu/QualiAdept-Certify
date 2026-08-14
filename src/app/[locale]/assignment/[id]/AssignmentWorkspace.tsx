@@ -4,7 +4,17 @@ import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import DOMPurify from 'isomorphic-dompurify';
-import Editor from '@monaco-editor/react';
+import dynamic from 'next/dynamic';
+
+const Editor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] w-full flex flex-col items-center justify-center gap-3 bg-zinc-950 text-zinc-400 font-mono text-xs border border-zinc-800 rounded-xl">
+      <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
+      <span>Loading VS Code engine...</span>
+    </div>
+  ),
+});
 
 interface FeedbackItem {
   check: string;

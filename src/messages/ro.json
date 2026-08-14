@@ -18,7 +18,8 @@
     "unlocksOn": "Se deblochează pe {date}",
     "downloadCertificate": "Descarcă Certificatul Tău (PDF)",
     "congratsTitle": "Felicitări! Ai absolvit Bootcamp-ul QualiAdept.",
-    "congratsDescription": "Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare."
+    "congratsDescription": "Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare.",
+    "curriculumMastered": "Curriculum Absolvit • 100% Finalizat"
   },
   "Dashboard": {
     "pageTitle": "Module de Învățare",

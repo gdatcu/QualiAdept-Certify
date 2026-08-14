@@ -20,17 +20,7 @@ export default async function LeaderboardPage() {
     redirect('/');
   }
 
-  // Check enrollment & role in DB
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isEnrolled: true, role: true },
-  });
-
-  if (!currentUser || (!currentUser.isEnrolled && currentUser.role !== 'TRAINER')) {
-    redirect('/enroll');
-  }
-
-  // Fetch all enrolled users or users with submissions
+  // Fetch all enrolled users or trainers with their passed submissions
   const users = await prisma.user.findMany({
     where: {
       OR: [{ isEnrolled: true }, { role: 'TRAINER' }],
@@ -40,6 +30,7 @@ export default async function LeaderboardPage() {
       name: true,
       image: true,
       role: true,
+      isEnrolled: true,
       createdAt: true,
       isProfilePublic: true,
       submissions: {
@@ -55,6 +46,12 @@ export default async function LeaderboardPage() {
       },
     },
   });
+
+  // Verify enrollment & role in memory from fetched user record
+  const currentUser = users.find((u) => u.id === session.user.id);
+  if (!currentUser || (!currentUser.isEnrolled && currentUser.role !== 'TRAINER')) {
+    redirect('/enroll');
+  }
 
   // Process leaderboard ranking entries
   const leaderboardEntries = users.map((u) => {

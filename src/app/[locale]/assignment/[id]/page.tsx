@@ -16,27 +16,54 @@ export default async function AssignmentPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch specific assignment from Prisma
-  const assignment = await prisma.assignment.findUnique({
-    where: { id },
-  });
-
-  if (!assignment) {
-    notFound();
-  }
-
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
     redirect('/');
   }
 
-  // Enrollment Guard: Enforce redirection to /enroll if user is not enrolled and not a trainer
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isEnrolled: true, role: true },
-  });
+  const userId = session.user.id;
 
+  // Batch target assignment and user details with submissions into a single Promise.all batch
+  const [assignment, currentUser] = await Promise.all([
+    prisma.assignment.findUnique({
+      where: { id },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        isEnrolled: true,
+        role: true,
+        submissions: {
+          orderBy: {
+            submittedAt: 'desc',
+          },
+          select: {
+            id: true,
+            assignmentId: true,
+            codePayload: true,
+            status: true,
+            score: true,
+            feedbackJSON: true,
+            aiFeedback: true,
+            codeQuality: true,
+            submittedAt: true,
+            assignment: {
+              select: {
+                module: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  if (!assignment) {
+    notFound();
+  }
+
+  // Enrollment Guard: Enforce redirection to /enroll if user is not enrolled and not a trainer
   if (!currentUser || (!currentUser.isEnrolled && currentUser.role !== 'TRAINER')) {
     redirect('/enroll');
   }
@@ -53,57 +80,28 @@ export default async function AssignmentPage({ params }: PageProps) {
 
   // Server-side guard: If assignment's module > 1, verify user has a "PASS" submission for module - 1
   if (assignment.module > 1) {
-    if (!session?.user?.id) {
-      redirect('/');
-    }
+    const hasPassedPrevModule = currentUser.submissions.some(
+      (s) => s.status === 'PASS' && s.assignment?.module === assignment.module - 1
+    );
 
-    const prevAssignment = await prisma.assignment.findFirst({
-      where: {
-        module: assignment.module - 1,
-        isActive: true,
-      },
-    });
-
-    if (!prevAssignment) {
-      redirect('/');
-    }
-
-    const passSubmission = await prisma.submission.findFirst({
-      where: {
-        userId: session.user.id,
-        assignmentId: prevAssignment.id,
-        status: 'PASS',
-      },
-    });
-
-    if (!passSubmission) {
+    if (!hasPassedPrevModule) {
       redirect('/');
     }
   }
 
-  // Fetch all submissions for current authenticated user and this assignment (newest first)
-  const submissions = session?.user?.id
-    ? await prisma.submission.findMany({
-        where: {
-          userId: session.user.id,
-          assignmentId: assignment.id,
-        },
-        orderBy: {
-          submittedAt: 'desc',
-        },
-      })
-    : [];
-
-  const initialSubmissions = submissions.map((s) => ({
-    id: s.id,
-    codePayload: s.codePayload,
-    status: s.status,
-    score: s.score,
-    feedbackJSON: s.feedbackJSON,
-    aiFeedback: s.aiFeedback,
-    codeQuality: s.codeQuality,
-    submittedAt: s.submittedAt.toISOString(),
-  }));
+  // Extract initial submissions for current assignment in memory from userRecord
+  const initialSubmissions = currentUser.submissions
+    .filter((s) => s.assignmentId === assignment.id)
+    .map((s) => ({
+      id: s.id,
+      codePayload: s.codePayload,
+      status: s.status,
+      score: s.score,
+      feedbackJSON: s.feedbackJSON,
+      aiFeedback: s.aiFeedback,
+      codeQuality: s.codeQuality,
+      submittedAt: s.submittedAt.toISOString(),
+    }));
 
   return (
     <AssignmentWorkspace

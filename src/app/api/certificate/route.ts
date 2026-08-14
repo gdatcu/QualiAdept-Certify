@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import React from 'react';
+import path from 'path';
+import fs from 'fs';
 import { renderToStream } from '@react-pdf/renderer';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
@@ -68,6 +70,14 @@ export async function GET(req: NextRequest) {
     });
     const certificateId = `QA-${dbUser.id.substring(0, 6).toUpperCase()}`;
 
+    // Read logo image into base64 data URI for crisp PDF embedding
+    const logoPath = path.join(process.cwd(), 'public', 'logo.jpg');
+    let logoDataUri = '';
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
+      logoDataUri = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
+    }
+
     // Render PDF stream using @react-pdf/renderer
     const pdfStream = await renderToStream(
       React.createElement(CertificateTemplate, {
@@ -75,6 +85,7 @@ export async function GET(req: NextRequest) {
         courseName: 'QA Automation Engineering Bootcamp',
         issueDate: issueDateFormatted,
         certificateId,
+        logoUrl: logoDataUri,
       }) as any
     );
 

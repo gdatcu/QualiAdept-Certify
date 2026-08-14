@@ -78,6 +78,8 @@ model Assignment {
   isPublished    Boolean      @default(true)
   unlockDate     DateTime?
   submissions    Submission[]
+
+  @@index([isActive, module])
 }
 
 model Submission {
@@ -94,4 +96,9 @@ model Submission {
 
   user       User       @relation(fields: [userId], references: [id])
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([assignmentId])
+  @@index([userId, status])
+  @@index([userId, assignmentId, submittedAt])
 }

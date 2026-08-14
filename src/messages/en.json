@@ -18,7 +18,8 @@
     "unlocksOn": "Unlocks on {date}",
     "downloadCertificate": "Download Your Certificate (PDF)",
     "congratsTitle": "Congratulations! You completed the QualiAdept Bootcamp.",
-    "congratsDescription": "You have successfully validated all practical modules and E2E tests. Your official PDF certificate is generated and ready for download."
+    "congratsDescription": "You have successfully validated all practical modules and E2E tests. Your official PDF certificate is generated and ready for download.",
+    "curriculumMastered": "Curriculum Mastered • 100% Completion"
   },
   "Dashboard": {
     "pageTitle": "Learning Modules",

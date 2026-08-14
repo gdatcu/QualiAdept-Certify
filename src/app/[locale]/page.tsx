@@ -10,11 +10,8 @@ import EditProfileModal from '@/components/EditProfileModal';
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const session = await getAuthSession();
-  const displayName = session?.user?.name || session?.user?.email?.split('@')[0];
-
   return {
-    title: displayName ? `QualiAdept Certify | ${displayName}` : 'QualiAdept Certify',
+    title: 'QualiAdept Certify | QA Automation Learning Platform',
   };
 }
 
@@ -23,29 +20,22 @@ export default async function StudentDashboard() {
   const tDash = await getTranslations('Dashboard');
   const session = await getAuthSession();
 
-  // Fetch all active assignments ordered by module integer ascending
-  let assignments = await prisma.assignment.findMany({
-    where: { isActive: true },
-    orderBy: { module: 'asc' },
-  });
+  const userId = session?.user?.id;
 
-  // Deduplicate assignments by module integer if test entries exist
-  const uniqueAssignmentsMap = new Map<number, typeof assignments[0]>();
-  for (const assignment of assignments) {
-    if (!uniqueAssignmentsMap.has(assignment.module)) {
-      uniqueAssignmentsMap.set(assignment.module, assignment);
-    }
-  }
-  assignments = Array.from(uniqueAssignmentsMap.values()).sort((a, b) => a.module - b.module);
-
-  // Fetch user submissions and profile details if authenticated
-  const [submissions, userRecord] = session?.user?.id
-    ? await Promise.all([
-        prisma.submission.findMany({
-          where: { userId: session.user.id },
-        }),
-        prisma.user.findUnique({
-          where: { id: session.user.id },
+  // Fetch assignments, submissions, and profile concurrently with Promise.all
+  const [rawAssignments, submissions, userRecord] = await Promise.all([
+    prisma.assignment.findMany({
+      where: { isActive: true },
+      orderBy: { module: 'asc' },
+    }),
+    userId
+      ? prisma.submission.findMany({
+          where: { userId },
+        })
+      : Promise.resolve([]),
+    userId
+      ? prisma.user.findUnique({
+          where: { id: userId },
           select: {
             linkedinUrl: true,
             githubUrl: true,
@@ -53,9 +43,18 @@ export default async function StudentDashboard() {
             aboutMe: true,
             isProfilePublic: true,
           },
-        }),
-      ])
-    : [[], null];
+        })
+      : Promise.resolve(null),
+  ]);
+
+  // Deduplicate assignments by module integer if test entries exist
+  const uniqueAssignmentsMap = new Map<number, typeof rawAssignments[0]>();
+  for (const assignment of rawAssignments) {
+    if (!uniqueAssignmentsMap.has(assignment.module)) {
+      uniqueAssignmentsMap.set(assignment.module, assignment);
+    }
+  }
+  const assignments = Array.from(uniqueAssignmentsMap.values()).sort((a, b) => a.module - b.module);
 
   // Determine passed assignments and completed module numbers
   const passedAssignmentIds = new Set(
@@ -120,7 +119,7 @@ export default async function StudentDashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-zinc-100 tracking-wide text-sm sm:text-base">QualiAdept</span>
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">
+                <span className="hidden sm:inline-flex text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">
                   LMS Dashboard
                 </span>
               </div>
@@ -133,7 +132,7 @@ export default async function StudentDashboard() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto w-full flex-1 px-4 py-6 sm:px-8 sm:py-8 flex flex-col gap-8">
+      <main className="max-w-7xl mx-auto w-full flex-1 px-3 sm:px-8 py-5 sm:py-8 flex flex-col gap-6 sm:gap-8">
         {/* Dashboard Hero Banner & Learning Progress */}
         <section className="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 rounded-2xl border border-zinc-800 p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none -mr-20 -mt-20"></div>
@@ -192,13 +191,13 @@ export default async function StudentDashboard() {
               </div>
               <div>
                 <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold uppercase tracking-wider mb-1">
-                  Curriculum Mastered • 100% Completion
+                  {t('curriculumMastered')}
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-zinc-50 tracking-tight">
-                  Felicitări! Ai absolvit Bootcamp-ul QualiAdept.
+                  {t('congratsTitle')}
                 </h2>
                 <p className="text-xs text-zinc-300 font-mono mt-1 max-w-xl leading-relaxed">
-                  Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare.
+                  {t('congratsDescription')}
                 </p>
               </div>
             </div>
@@ -209,7 +208,7 @@ export default async function StudentDashboard() {
               rel="noopener noreferrer"
               className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-sky-400 hover:from-amber-400 hover:to-sky-300 text-zinc-950 font-black text-xs font-mono transition-all shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_25px_rgba(245,158,11,0.6)] flex items-center justify-center gap-2.5 shrink-0 hover:scale-105 cursor-pointer uppercase tracking-wider relative z-10"
             >
-              <span>🏆 Descarcă Certificatul Tău (PDF)</span>
+              <span>🏆 {t('downloadCertificate')}</span>
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                 <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
               </svg>
