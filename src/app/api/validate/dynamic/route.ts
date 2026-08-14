@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
       codeQuality: 'Good' as const,
     };
     const aiTimeoutPromise = new Promise<typeof fallbackReview>((resolve) =>
-      setTimeout(() => resolve(fallbackReview), 1200)
+      setTimeout(() => resolve(fallbackReview), 3500)
     );
 
     const aiReview = await Promise.race([

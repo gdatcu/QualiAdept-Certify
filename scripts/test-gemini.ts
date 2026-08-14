@@ -4,13 +4,9 @@ import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 
 const TEST_MODELS = [
-  'gemini-2.0-flash-exp',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-flash-002',
-  'gemini-1.5-flash-001',
-  'gemini-pro',
+  'gemini-flash-latest',
+  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
 ];
 
 const Schema = z.object({
@@ -34,7 +30,6 @@ async function main() {
         prompt: 'Review this code: page.goto("https://example.com"); expect(page).toHaveTitle("Example");',
       });
       console.log(`>>> SUCCESS with "${m}":`, object);
-      break;
     } catch (e: any) {
       console.error(`FAILED "${m}":`, e?.message || e);
     }

@@ -23,10 +23,14 @@ const ReviewSchema = z.object({
 
 /**
  * Active production models supported by Google Gemini API
+ * Primary: gemini-flash-latest (Ultra-fast, low latency, structured JSON output)
+ * Fallbacks: gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash
  */
 const CANDIDATE_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
+  'gemini-flash-latest',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.7-flash',
 ];
 
 /**
@@ -51,7 +55,7 @@ export async function generateAiCodeReview(codePayload: string): Promise<AiRevie
         system:
           "You are a Senior QA Automation Engineer reviewing a student's Playwright/JavaScript code. Be concise, direct, and evaluate ONLY the code style, stability of selectors, and basic clean code principles.",
         prompt: `Student Code Submission:\n\`\`\`html\n${codePayload.slice(0, 2000)}\n\`\`\``,
-        abortSignal: AbortSignal.timeout(1200),
+        abortSignal: AbortSignal.timeout(3500),
       });
 
       if (object && object.feedback) {
@@ -64,12 +68,10 @@ export async function generateAiCodeReview(codePayload: string): Promise<AiRevie
       const errMsg = error?.message || String(error);
       console.warn(`Gemini model "${modelName}" failed: ${errMsg}`);
 
-      // Break loop immediately on API key or model availability errors to prevent sequential retry lag
+      // Break loop only on invalid API key errors to prevent unnecessary retries
       if (
         errMsg.includes('API key') ||
-        errMsg.includes('not found') ||
-        errMsg.includes('not supported') ||
-        errMsg.includes('no longer available')
+        errMsg.includes('API_KEY_INVALID')
       ) {
         break;
       }
