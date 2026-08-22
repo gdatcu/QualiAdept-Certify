@@ -7,7 +7,7 @@ import HeaderAuth from '@/components/HeaderAuth';
 import ShareProfileButton from '@/components/ShareProfileButton';
 import EditProfileModal from '@/components/EditProfileModal';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'Introdu codul de acces pentru a debloca curriculumul QualiAdept.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function EnrollPage() {
   const session = await getAuthSession();
 

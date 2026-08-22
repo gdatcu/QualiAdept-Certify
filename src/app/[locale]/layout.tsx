@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
@@ -9,6 +10,7 @@ import { routing } from '@/i18n/routing';
 import '../globals.css';
 import { Providers } from '../providers';
 import Footer from '@/components/Footer';
+import NavigationProgressBar from '@/components/NavigationProgressBar';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -63,6 +65,9 @@ export default async function LocaleLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
+        <Suspense fallback={null}>
+          <NavigationProgressBar />
+        </Suspense>
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <div className="flex-1 flex flex-col">{children}</div>

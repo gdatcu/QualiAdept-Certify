@@ -9,7 +9,6 @@ export const metadata: Metadata = {
   description: 'Trainer Control Center for assignment management and submission auditing.',
 };
 
-export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function TrainerDashboardPage() {

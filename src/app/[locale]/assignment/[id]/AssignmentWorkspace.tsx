@@ -224,7 +224,7 @@ export default function AssignmentWorkspace({
       setSubmitError(msg);
     } finally {
       setIsValidating(false);
-      setCooldown(10);
+      setCooldown(2);
     }
   };
 
@@ -434,7 +434,7 @@ export default function AssignmentWorkspace({
                         setHtmlCode(sampleToInsert);
                         setIsUnlockedForEdit(true);
                       }}
-                      className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 px-2.5 py-1 rounded transition-colors cursor-pointer"
+                      className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 active:scale-95 border border-emerald-800/60 px-2.5 py-1 rounded transition-all cursor-pointer"
                     >
                       + Passing Sample
                     </button>
@@ -448,7 +448,7 @@ export default function AssignmentWorkspace({
                         setHtmlCode(sampleToInsert);
                         setIsUnlockedForEdit(true);
                       }}
-                      className="text-[11px] font-mono text-rose-400 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 px-2.5 py-1 rounded transition-colors cursor-pointer"
+                      className="text-[11px] font-mono text-rose-400 bg-rose-950/40 hover:bg-rose-900/60 active:scale-95 border border-rose-800/60 px-2.5 py-1 rounded transition-all cursor-pointer"
                     >
                       + Failing Sample
                     </button>
@@ -479,6 +479,8 @@ export default function AssignmentWorkspace({
                     wordWrap: 'on',
                     automaticLayout: true,
                     tabSize: 2,
+                    formatOnPaste: true,
+                    contextmenu: true,
                   }}
                 />
               </div>
@@ -496,7 +498,7 @@ export default function AssignmentWorkspace({
                       type="button"
                       onClick={handleValidation}
                       disabled={isValidating || cooldown > 0}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-zinc-950 font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-zinc-950 font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {isValidating ? (
                         <>
@@ -522,7 +524,7 @@ export default function AssignmentWorkspace({
                     <button
                       type="button"
                       onClick={() => setIsUnlockedForEdit(true)}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-emerald-300 border border-zinc-700 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-emerald-300 border border-zinc-700 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>🔓 Unlock Editor to Resubmit</span>
                     </button>
@@ -531,7 +533,7 @@ export default function AssignmentWorkspace({
                   <button
                     type="button"
                     onClick={() => signIn('github')}
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-zinc-100 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Sign In with GitHub to Submit</span>
                   </button>

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Top student rankings and verified technical progress wall on QualiAdept.',
 };
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function LeaderboardPage() {
   const t = await getTranslations('Leaderboard');
