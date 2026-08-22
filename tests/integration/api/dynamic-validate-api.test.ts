@@ -26,13 +26,6 @@ vi.mock('@/lib/auth', () => ({
   getAuthSession: vi.fn(),
 }));
 
-vi.mock('@/lib/ai-reviewer', () => ({
-  generateAiCodeReview: vi.fn().mockResolvedValue({
-    aiFeedback: 'Solid E2E automation script.',
-    codeQuality: 'Excellent',
-  }),
-}));
-
 vi.mock('@/lib/webhook', () => ({
   sendDiscordTriumphNotification: vi.fn().mockResolvedValue(undefined),
 }));

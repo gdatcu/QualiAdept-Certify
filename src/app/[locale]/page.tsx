@@ -30,7 +30,8 @@ export default async function StudentDashboard() {
     }),
     userId
       ? prisma.submission.findMany({
-          where: { userId },
+          where: { userId, status: 'PASS' },
+          select: { assignmentId: true },
         })
       : Promise.resolve([]),
     userId
@@ -57,9 +58,7 @@ export default async function StudentDashboard() {
   const assignments = Array.from(uniqueAssignmentsMap.values()).sort((a, b) => a.module - b.module);
 
   // Determine passed assignments and completed module numbers
-  const passedAssignmentIds = new Set(
-    submissions.filter((s) => s.status === 'PASS').map((s) => s.assignmentId)
-  );
+  const passedAssignmentIds = new Set(submissions.map((s) => s.assignmentId));
 
   const completedModules = new Set<number>();
   assignments.forEach((a) => {

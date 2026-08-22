@@ -24,8 +24,8 @@ export default async function AssignmentPage({ params }: PageProps) {
 
   const userId = session.user.id;
 
-  // Batch target assignment and user details with submissions into a single Promise.all batch
-  const [assignment, currentUser] = await Promise.all([
+  // Fetch target assignment, user enrollment status, and current assignment submissions in parallel
+  const [assignment, currentUser, currentSubmissions] = await Promise.all([
     prisma.assignment.findUnique({
       where: { id },
     }),
@@ -34,27 +34,24 @@ export default async function AssignmentPage({ params }: PageProps) {
       select: {
         isEnrolled: true,
         role: true,
-        submissions: {
-          orderBy: {
-            submittedAt: 'desc',
-          },
-          select: {
-            id: true,
-            assignmentId: true,
-            codePayload: true,
-            status: true,
-            score: true,
-            feedbackJSON: true,
-            aiFeedback: true,
-            codeQuality: true,
-            submittedAt: true,
-            assignment: {
-              select: {
-                module: true,
-              },
-            },
-          },
-        },
+      },
+    }),
+    prisma.submission.findMany({
+      where: {
+        userId,
+        assignmentId: id,
+      },
+      orderBy: {
+        submittedAt: 'desc',
+      },
+      take: 10,
+      select: {
+        id: true,
+        codePayload: true,
+        status: true,
+        score: true,
+        feedbackJSON: true,
+        submittedAt: true,
       },
     }),
   ]);
@@ -79,29 +76,31 @@ export default async function AssignmentPage({ params }: PageProps) {
   }
 
   // Server-side guard: If assignment's module > 1, verify user has a "PASS" submission for module - 1
-  if (assignment.module > 1) {
-    const hasPassedPrevModule = currentUser.submissions.some(
-      (s) => s.status === 'PASS' && s.assignment?.module === assignment.module - 1
-    );
+  if (assignment.module > 1 && currentUser.role !== 'TRAINER') {
+    const passedPrev = await prisma.submission.findFirst({
+      where: {
+        userId,
+        status: 'PASS',
+        assignment: {
+          module: assignment.module - 1,
+        },
+      },
+      select: { id: true },
+    });
 
-    if (!hasPassedPrevModule) {
+    if (!passedPrev) {
       redirect('/');
     }
   }
 
-  // Extract initial submissions for current assignment in memory from userRecord
-  const initialSubmissions = currentUser.submissions
-    .filter((s) => s.assignmentId === assignment.id)
-    .map((s) => ({
-      id: s.id,
-      codePayload: s.codePayload,
-      status: s.status,
-      score: s.score,
-      feedbackJSON: s.feedbackJSON,
-      aiFeedback: s.aiFeedback,
-      codeQuality: s.codeQuality,
-      submittedAt: s.submittedAt.toISOString(),
-    }));
+  const initialSubmissions = currentSubmissions.map((s) => ({
+    id: s.id,
+    codePayload: s.codePayload,
+    status: s.status,
+    score: s.score,
+    feedbackJSON: s.feedbackJSON,
+    submittedAt: s.submittedAt.toISOString(),
+  }));
 
   return (
     <AssignmentWorkspace

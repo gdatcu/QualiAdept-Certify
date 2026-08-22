@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { sendDiscordTriumphNotification } from '@/lib/webhook';
-import { generateAiCodeReview } from '@/lib/ai-reviewer';
 
 export interface FeedbackItem {
   check: string;
@@ -14,8 +13,6 @@ export interface ValidationResponse {
   status: 'pass' | 'fail';
   score: number;
   feedback: FeedbackItem[];
-  aiFeedback?: string;
-  codeQuality?: 'Excellent' | 'Good' | 'Needs Improvement';
 }
 
 export async function POST(req: NextRequest) {
@@ -225,27 +222,11 @@ export async function POST(req: NextRequest) {
     const status = isPass ? 'pass' : 'fail';
     const dbStatus = isPass ? 'PASS' : 'FAIL';
 
-    // Call Virtual Mentor AI Code Reviewer (non-blocking 1.2s timeout race)
-    const fallbackReview = {
-      aiFeedback: 'Feedback-ul AI este temporar indisponibil. Totuși, codul tău a fost validat cu succes de sistem!',
-      codeQuality: 'Good' as const,
-    };
-    const aiTimeoutPromise = new Promise<typeof fallbackReview>((resolve) =>
-      setTimeout(() => resolve(fallbackReview), 8000)
-    );
-
-    const aiReview = await Promise.race([
-      generateAiCodeReview(codePayload || ''),
-      aiTimeoutPromise,
-    ]);
-
     // Build response payload matching Green Wall format
     const responsePayload: ValidationResponse = {
       status,
       score,
       feedback: checks,
-      aiFeedback: aiReview.aiFeedback,
-      codeQuality: aiReview.codeQuality,
     };
 
     // Ensure User exists in DB to satisfy foreign key constraints
@@ -271,8 +252,6 @@ export async function POST(req: NextRequest) {
         status: dbStatus,
         score,
         feedbackJSON: JSON.stringify(responsePayload),
-        aiFeedback: aiReview.aiFeedback,
-        codeQuality: aiReview.codeQuality,
       },
     });
 

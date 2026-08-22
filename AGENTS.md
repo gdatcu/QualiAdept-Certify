@@ -93,6 +93,7 @@ model Submission {
 *   **cPanel Constraints:** Do not attempt to host Node.js instances or Headless Browsers on Hostico. Hostico is strictly for DNS routing (`qualiadept.eu`).
 
 ### 6.3 Development Workflow & Code Quality
+*   **Research & Root-Cause First (Mandatory):** Whenever a task, question, bug, or feature is requested, always research deeply first, perform comprehensive root-cause analysis across all relevant layers, and discuss different viable solution options with trade-offs before modifying code.
 *   **Iterative Delivery:** Always deliver specific, runnable chunks (e.g., "Here is the Prisma schema and the Next.js API route for submissions"). Wait for human approval before moving to the next chunk.
 *   **SOLID & Clean Code:** The validation logic must serve as an educational example. Keep it modular and heavily commented.
 *   **Feedback Standardization:** Always output validation feedback in the following JSON format:

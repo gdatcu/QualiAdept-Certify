@@ -24,7 +24,6 @@ export default defineConfig({
         'src/components/CodeBlock.tsx',
         'src/components/Footer.tsx',
         'src/components/HeaderAuth.tsx',
-        'src/lib/ai-reviewer.ts',
         'src/lib/webhook.ts',
       ],
       exclude: ['src/types/**', 'src/**/*.d.ts'],

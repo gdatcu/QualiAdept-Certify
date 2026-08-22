@@ -15,16 +15,50 @@ export const revalidate = 0;
 export default async function TrainerDashboardPage() {
   const t = await getTranslations('Trainer');
 
-  // Fetch all submissions with User and Assignment relations ordered by newest first
-  const rawSubmissions = await prisma.submission.findMany({
-    include: {
-      user: true,
-      assignment: true,
-    },
-    orderBy: {
-      submittedAt: 'desc',
-    },
-  });
+  // Fetch aggregations and latest 100 submissions with pruned relations concurrently
+  const [totalSubmissions, passCount, failCount, aggregateScore, rawSubmissions] =
+    await Promise.all([
+      prisma.submission.count(),
+      prisma.submission.count({ where: { status: 'PASS' } }),
+      prisma.submission.count({ where: { status: 'FAIL' } }),
+      prisma.submission.aggregate({ _avg: { score: true } }),
+      prisma.submission.findMany({
+        take: 100,
+        orderBy: {
+          submittedAt: 'desc',
+        },
+        select: {
+          id: true,
+          userId: true,
+          assignmentId: true,
+          codePayload: true,
+          status: true,
+          score: true,
+          feedbackJSON: true,
+          submittedAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+              createdAt: true,
+            },
+          },
+          assignment: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              module: true,
+              validationType: true,
+              isActive: true,
+            },
+          },
+        },
+      }),
+    ]);
 
   // Convert Date objects to ISO strings for client prop serialization
   const submissions: SubmissionRecord[] = rawSubmissions.map((s) => ({
@@ -37,14 +71,8 @@ export default async function TrainerDashboardPage() {
   }));
 
   // Calculate top key metrics
-  const totalSubmissions = submissions.length;
-  const passCount = submissions.filter((s) => s.status.toUpperCase() === 'PASS').length;
-  const failCount = submissions.filter((s) => s.status.toUpperCase() === 'FAIL').length;
   const passRate = totalSubmissions > 0 ? Math.round((passCount / totalSubmissions) * 100) : 0;
-  const avgScore =
-    totalSubmissions > 0
-      ? Math.round(submissions.reduce((acc, curr) => acc + curr.score, 0) / totalSubmissions)
-      : 0;
+  const avgScore = aggregateScore._avg.score ? Math.round(aggregateScore._avg.score) : 0;
   const uniqueStudents = new Set(submissions.map((s) => s.userId)).size;
 
   return (

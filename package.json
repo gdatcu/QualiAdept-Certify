@@ -15,7 +15,6 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/google": "^4.0.43",
     "@auth/prisma-adapter": "^2.11.3",
     "@monaco-editor/react": "^4.7.0",
     "@prisma/client": "^6.19.3",
@@ -24,7 +23,6 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "ai": "^7.0.64",
     "cheerio": "^1.2.0",
     "isomorphic-dompurify": "^3.19.0",
     "next": "16.3.0",
