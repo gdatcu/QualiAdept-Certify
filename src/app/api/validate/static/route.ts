@@ -139,11 +139,47 @@ export async function POST(req: NextRequest) {
         const rules = JSON.parse(targetAssignment.validationRules);
         if (Array.isArray(rules)) {
           for (const r of rules) {
-            const selector = r.selector || r.tag || r.check;
-            if (selector) {
-              const passed = $(selector).length > 0;
-              const checkName = r.check || `Element "${selector}" exists`;
-              const msg = r.message || (passed ? `Found element matching "${selector}".` : `Missing element matching "${selector}".`);
+            let passed = false;
+            let checkName = r.check || '';
+            let msg = '';
+
+            if (r.type === 'regex') {
+              const regex = new RegExp(r.value, 'i');
+              passed = regex.test(htmlCode);
+              checkName = checkName || `Pattern check (${r.value})`;
+              msg = passed
+                ? (r.message || `Matched required pattern: ${r.value}`)
+                : (r.message || `Code does not match required pattern: ${r.value}`);
+            } else if (r.type === 'tag') {
+              const tagSelector = r.value || r.selector || r.tag;
+              passed = $(tagSelector).length > 0;
+              checkName = checkName || `<${tagSelector}> tag exists`;
+              msg = passed
+                ? `Tag <${tagSelector}> is present.`
+                : (r.message || `Missing required <${tagSelector}> tag.`);
+            } else if (r.type === 'attr') {
+              const rawAttr = r.value || r.selector;
+              const attrSelector =
+                rawAttr.startsWith('[') || rawAttr.startsWith('#') || rawAttr.startsWith('.')
+                  ? rawAttr
+                  : `[${rawAttr}]`;
+              passed = $(attrSelector).length > 0;
+              checkName = checkName || `Selector "${rawAttr}" exists`;
+              msg = passed
+                ? `Found element matching "${rawAttr}".`
+                : (r.message || `Missing required attribute or selector "${rawAttr}".`);
+            } else {
+              const selector = r.selector || r.tag || r.check || r.value;
+              if (selector) {
+                passed = $(selector).length > 0;
+                checkName = checkName || `Element "${selector}" exists`;
+                msg = passed
+                  ? `Found element matching "${selector}".`
+                  : (r.message || `Missing element matching "${selector}".`);
+              }
+            }
+
+            if (checkName) {
               checks.push({
                 check: checkName,
                 passed,

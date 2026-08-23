@@ -82,7 +82,7 @@ export default function EditAssignmentForm({ assignment }: EditAssignmentFormPro
           <input
             type="number"
             name="module"
-            min="1"
+            min="0"
             required
             value={moduleNum}
             onChange={(e) => setModuleNum(e.target.value)}

@@ -67,11 +67,11 @@ export default function CreateAssignmentForm() {
           </label>
           <input
             type="number"
-            min="1"
+            min="0"
             required
             value={moduleNum}
             onChange={(e) => setModuleNum(e.target.value)}
-            placeholder="e.g. 5"
+            placeholder="e.g. 0"
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
           />
         </div>

@@ -72,7 +72,7 @@ export default async function StudentDashboard() {
   // Compute state for each assignment (COMPLETED, UNLOCKED, LOCKED)
   const moduleCards = assignments.map((assignment) => {
     const isPassed = passedAssignmentIds.has(assignment.id);
-    const isPrevPassed = assignment.module === 1 || completedModules.has(assignment.module - 1);
+    const isPrevPassed = assignment.module <= 1 || completedModules.has(assignment.module - 1);
     const isPublished = assignment.isPublished !== false;
     const isTimeUnlocked =
       !assignment.unlockDate || new Date(assignment.unlockDate) <= now;

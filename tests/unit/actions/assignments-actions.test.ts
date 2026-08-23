@@ -67,7 +67,7 @@ describe('Assignment Server Actions Unit Tests', () => {
       formData.append('module', 'invalid');
       formData.append('validationType', 'STATIC');
 
-      await expect(createAssignment(formData)).rejects.toThrow('Module number must be a positive integer.');
+      await expect(createAssignment(formData)).rejects.toThrow('Module number must be a non-negative integer');
     });
 
     it('throws error if validation rules JSON is malformed', async () => {

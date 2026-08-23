@@ -23,8 +23,8 @@ export async function createAssignment(formData: FormData) {
   }
 
   const moduleNum = parseInt(moduleRaw, 10);
-  if (isNaN(moduleNum) || moduleNum <= 0) {
-    throw new Error('Module number must be a positive integer.');
+  if (isNaN(moduleNum) || moduleNum < 0) {
+    throw new Error('Module number must be a non-negative integer (0 or greater).');
   }
 
   if (validationType !== 'STATIC' && validationType !== 'DYNAMIC') {
@@ -152,8 +152,8 @@ export async function updateAssignment(id: string, formData: FormData) {
   }
 
   const moduleNum = parseInt(moduleRaw, 10);
-  if (isNaN(moduleNum) || moduleNum <= 0) {
-    throw new Error('Module number must be a positive integer.');
+  if (isNaN(moduleNum) || moduleNum < 0) {
+    throw new Error('Module number must be a non-negative integer (0 or greater).');
   }
 
   if (validationType !== 'STATIC' && validationType !== 'DYNAMIC') {

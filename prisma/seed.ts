@@ -14,6 +14,20 @@ interface CurriculumItem {
 
 const curriculum: CurriculumItem[] = [
   {
+    moduleNumber: 0,
+    title: 'Sesiunea 0: Pregătire & Practică Platformă (Sandbox)',
+    validationType: 'STATIC',
+    isPublished: true,
+    unlockDate: new Date('2026-08-01T00:00:00Z'),
+    description:
+      'Modul de acomodare cu platforma QualiAdept. Testează editorul Monaco, verifică aserțiunile automate în timp real și trimite primul tău layout HTML pentru a te familiariza cu fluxul de validare înainte de începerea cursului.',
+    validationRules: JSON.stringify([
+      { type: 'tag', value: 'main', message: 'Tag-ul semantic <main> este prezent.' },
+      { type: 'attr', value: 'id="practice-section"', message: 'Elementul cu id="practice-section" este prezent.' },
+      { type: 'attr', value: 'data-testid="submit-btn"', message: 'Butonul cu data-testid="submit-btn" este prezent.' },
+    ]),
+  },
+  {
     moduleNumber: 1,
     title: 'Sesiunea 1: HTML & Structura DOM',
     validationType: 'STATIC',
@@ -269,7 +283,7 @@ async function main() {
     );
   }
 
-  console.log('✨ Curriculum seeded successfully: 20 Modules inserted.');
+  console.log('✨ Curriculum seeded successfully: 21 Modules inserted.');
 }
 
 main()
