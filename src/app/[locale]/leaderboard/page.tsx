@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
@@ -12,6 +13,38 @@ export const metadata: Metadata = {
 
 export const revalidate = 0;
 
+const getCachedLeaderboardUsers = unstable_cache(
+  async () => {
+    return prisma.user.findMany({
+      where: {
+        OR: [{ isEnrolled: true }, { role: 'TRAINER' }],
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        role: true,
+        isEnrolled: true,
+        createdAt: true,
+        isProfilePublic: true,
+        submissions: {
+          where: { status: 'PASS' },
+          select: {
+            assignmentId: true,
+            score: true,
+            submittedAt: true,
+            assignment: {
+              select: { module: true },
+            },
+          },
+        },
+      },
+    });
+  },
+  ['leaderboard-users-list'],
+  { revalidate: 30, tags: ['submissions', 'users'] }
+);
+
 export default async function LeaderboardPage() {
   const t = await getTranslations('Leaderboard');
   const session = await getAuthSession();
@@ -20,32 +53,8 @@ export default async function LeaderboardPage() {
     redirect('/');
   }
 
-  // Fetch all enrolled users or trainers with their passed submissions
-  const users = await prisma.user.findMany({
-    where: {
-      OR: [{ isEnrolled: true }, { role: 'TRAINER' }],
-    },
-    select: {
-      id: true,
-      name: true,
-      image: true,
-      role: true,
-      isEnrolled: true,
-      createdAt: true,
-      isProfilePublic: true,
-      submissions: {
-        where: { status: 'PASS' },
-        select: {
-          assignmentId: true,
-          score: true,
-          submittedAt: true,
-          assignment: {
-            select: { module: true },
-          },
-        },
-      },
-    },
-  });
+  // Fetch all enrolled users or trainers with their passed submissions (cached 30s)
+  const users = await getCachedLeaderboardUsers();
 
   // Verify enrollment & role in memory from fetched user record
   const currentUser = users.find((u) => u.id === session.user.id);

@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import AssignmentWorkspace from './AssignmentWorkspace';
@@ -8,6 +9,17 @@ interface PageProps {
     id: string;
   }>;
 }
+
+const getCachedAssignment = (id: string) =>
+  unstable_cache(
+    async () => {
+      return prisma.assignment.findUnique({
+        where: { id },
+      });
+    },
+    [`assignment-detail-${id}`],
+    { revalidate: 60, tags: ['assignments'] }
+  )();
 
 export default async function AssignmentPage({ params }: PageProps) {
   const { id } = await params;
@@ -24,11 +36,9 @@ export default async function AssignmentPage({ params }: PageProps) {
 
   const userId = session.user.id;
 
-  // Fetch target assignment, user enrollment status, and current assignment submissions in parallel
-  const [assignment, currentUser, currentSubmissions] = await Promise.all([
-    prisma.assignment.findUnique({
-      where: { id },
-    }),
+  // Execute cached assignment retrieval and all user queries strictly in parallel (Zero Waterfall)
+  const [assignment, currentUser, currentSubmissions, userPassedSubmissions] = await Promise.all([
+    getCachedAssignment(id),
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -54,6 +64,17 @@ export default async function AssignmentPage({ params }: PageProps) {
         submittedAt: true,
       },
     }),
+    prisma.submission.findMany({
+      where: {
+        userId,
+        status: 'PASS',
+      },
+      select: {
+        assignment: {
+          select: { module: true },
+        },
+      },
+    }),
   ]);
 
   if (!assignment) {
@@ -75,20 +96,10 @@ export default async function AssignmentPage({ params }: PageProps) {
     }
   }
 
-  // Server-side guard: If assignment's module > 1, verify user has a "PASS" submission for module - 1
+  // Server-side prerequisite guard evaluated in-memory
   if (assignment.module > 1 && currentUser.role !== 'TRAINER') {
-    const passedPrev = await prisma.submission.findFirst({
-      where: {
-        userId,
-        status: 'PASS',
-        assignment: {
-          module: assignment.module - 1,
-        },
-      },
-      select: { id: true },
-    });
-
-    if (!passedPrev) {
+    const passedModules = new Set(userPassedSubmissions.map((s) => s.assignment.module));
+    if (!passedModules.has(assignment.module - 1)) {
       redirect('/');
     }
   }
