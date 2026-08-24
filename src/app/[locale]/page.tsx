@@ -7,6 +7,7 @@ import { getAuthSession } from '@/lib/auth';
 import HeaderAuth from '@/components/HeaderAuth';
 import ShareProfileButton from '@/components/ShareProfileButton';
 import EditProfileModal from '@/components/EditProfileModal';
+import ModuleCardItem from '@/components/ModuleCardItem';
 
 export const revalidate = 0;
 
@@ -391,18 +392,16 @@ export default async function StudentDashboard({ searchParams }: PageProps) {
                   : 'bg-zinc-950/40 border-zinc-800/80 opacity-70 cursor-not-allowed'
               }`;
 
-              if (isCompleted || isUnlocked) {
-                return (
-                  <Link key={assignment.id} href={`/assignment/${assignment.id}`} className={cardClassName}>
-                    {CardContent}
-                  </Link>
-                );
-              }
-
               return (
-                <div key={assignment.id} className={cardClassName}>
+                <ModuleCardItem
+                  key={assignment.id}
+                  assignmentId={assignment.id}
+                  isUnlockedOrCompleted={isCompleted || isUnlocked}
+                  isAuthenticated={!!userId}
+                  className={cardClassName}
+                >
                   {CardContent}
-                </div>
+                </ModuleCardItem>
               );
             })}
           </div>
