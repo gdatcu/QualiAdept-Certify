@@ -56,7 +56,7 @@ export async function proxy(req: NextRequest) {
       }
     }
 
-    // Protect /assignment and /leaderboard routes
+    // Protect /assignment and /leaderboard routes (Authenticated session required)
     if (
       pathnameWithoutLocale.startsWith('/assignment') ||
       pathnameWithoutLocale.startsWith('/leaderboard')
@@ -65,11 +65,6 @@ export async function proxy(req: NextRequest) {
         const loginUrl = new URL('/en', req.url);
         loginUrl.searchParams.set('error', 'Unauthenticated');
         return NextResponse.redirect(loginUrl);
-      }
-
-      if (token.role !== 'TRAINER' && !token.isEnrolled) {
-        const enrollUrl = new URL('/en/enroll', req.url);
-        return NextResponse.redirect(enrollUrl);
       }
     }
 

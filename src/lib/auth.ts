@@ -21,12 +21,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = user.role || 'STUDENT';
         token.isEnrolled = (user as { isEnrolled?: boolean }).isEnrolled ?? false;
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
+      } else if (trigger === 'update' && session) {
+        if (session.isEnrolled !== undefined) token.isEnrolled = session.isEnrolled;
+        if (session.role !== undefined) token.role = session.role;
+        if (session.isAdmin !== undefined) token.isAdmin = session.isAdmin;
       }
       return token;
     },

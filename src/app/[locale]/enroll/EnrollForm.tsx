@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { verifyToken } from '@/app/actions/enroll';
 
 export default function EnrollForm() {
@@ -9,6 +10,7 @@ export default function EnrollForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { update } = useSession();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,6 +28,7 @@ export default function EnrollForm() {
     try {
       const res = await verifyToken(formData);
       if (res.success) {
+        await update({ isEnrolled: true });
         router.push('/');
         router.refresh();
       } else {
