@@ -11,7 +11,7 @@ export default function Footer() {
           {t('copyright', { year: new Date().getFullYear() })}
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end">
           <Link
             href="/privacy"
             className="hover:text-emerald-400 transition-colors underline-offset-4 hover:underline"
@@ -26,7 +26,7 @@ export default function Footer() {
             {t('terms')}
           </Link>
           <span className="text-zinc-700 font-sans">•</span>
-          <span className="text-zinc-400">qualiadept.eu</span>
+          <span className="text-emerald-400 font-semibold">● certify.qualiadept.eu</span>
         </div>
       </div>
     </footer>

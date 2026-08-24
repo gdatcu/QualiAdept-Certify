@@ -230,17 +230,6 @@ export default async function TrainerDashboardPage() {
           <SubmissionsTable initialSubmissions={submissions} />
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-8 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 font-mono gap-2">
-          <div>QualiAdept Auto-Validation Platform &copy; {new Date().getFullYear()}</div>
-          <div className="flex items-center gap-4">
-            <span className="text-purple-400">● Admin Mode</span>
-            <span>Domain: qualiadept.eu</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

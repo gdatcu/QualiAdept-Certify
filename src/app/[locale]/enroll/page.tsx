@@ -67,11 +67,6 @@ export default async function EnrollPage() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-8 text-center text-xs text-zinc-500 font-mono">
-        QualiAdept Security &bull; Access Protection Portal
-      </footer>
     </div>
   );
 }

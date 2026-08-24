@@ -115,16 +115,6 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
             </p>
           </div>
         </main>
-
-        <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-6 md:px-8">
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 font-mono gap-2 text-center sm:text-left">
-            <div>{t('portalTitle')} &copy; {new Date().getFullYear()}</div>
-            <div className="flex items-center gap-4">
-              <span className="text-zinc-500">● Private Access</span>
-              <span>app.qualiadept.eu</span>
-            </div>
-          </div>
-        </footer>
       </div>
     );
   }
@@ -418,17 +408,6 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
           )}
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-6 md:px-8 mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 font-mono gap-2 text-center sm:text-left">
-          <div>{t('portalTitle')} &copy; {new Date().getFullYear()}</div>
-          <div className="flex items-center gap-4">
-            <span className="text-emerald-400">● Verifiable Credentials</span>
-            <span>certify.qualiadept.eu</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

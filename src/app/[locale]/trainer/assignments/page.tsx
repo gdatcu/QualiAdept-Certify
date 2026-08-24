@@ -196,17 +196,6 @@ export default async function TrainerAssignmentsPage() {
           )}
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/60 bg-zinc-950 py-4 px-4 sm:px-8 mt-12">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 font-mono gap-2">
-          <div>QualiAdept Curriculum Management Panel &copy; {new Date().getFullYear()}</div>
-          <div className="flex items-center gap-4">
-            <span className="text-emerald-400">● Realtime Sync</span>
-            <span>certify.qualiadept.eu</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
