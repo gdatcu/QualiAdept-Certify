@@ -125,14 +125,14 @@ export default async function AdminDashboardPage() {
               <span>← Dashboard</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800 hidden sm:block"></div>
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold text-sm shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+            <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
+              <div className="h-7 w-7 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold text-sm shadow-[0_0_15px_rgba(244,63,94,0.3)] group-hover:border-rose-400/60 transition-colors">
                 🛡️
               </div>
-              <span className="font-semibold text-zinc-100 text-xs sm:text-sm font-mono tracking-wide">
+              <span className="font-semibold text-zinc-100 text-xs sm:text-sm font-mono tracking-wide group-hover:text-white transition-colors">
                 {t('title')}
               </span>
-            </div>
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono">

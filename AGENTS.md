@@ -15,7 +15,7 @@ To achieve zero monthly costs while bypassing the severe limitations of cPanel s
 
 *   **Frontend & Core API:** **Next.js** deployed on **Vercel** (Hobby Plan - Free). Vercel provides instant global edge delivery, serverless API routes, and seamless GitHub CI/CD integration.
 *   **Database:** **PostgreSQL** (Serverless) managed via **Neon.tech** or **Supabase** (Free Tier). Integrated directly via **Prisma ORM**.
-*   **Domain Management:** Hosted on **Hostico (Shared cPanel)**. A subdomain (e.g., `app.qualiadept.eu`) will be mapped to Vercel via a simple `CNAME` DNS record. Vercel handles the free SSL certificates.
+*   **Domain Management:** Hosted on **Hostico (Shared cPanel)**. A subdomain (e.g., `certify.qualiadept.eu`) will be mapped to Vercel via a simple `CNAME` DNS record. Vercel handles the free SSL certificates.
 *   **Phase 2 Worker (Playwright Execution):** **Google Cloud (e2-micro instance - Always Free)** or **Oracle Cloud (ARM instance - Always Free)**. A lightweight, dedicated VPS running a Node.js worker specifically for executing heavy, dynamic Playwright tests that exceed Vercel's serverless execution limits (10s timeout / 50MB size).
 
 ## 4. Architectural Overview: The Validation Engine

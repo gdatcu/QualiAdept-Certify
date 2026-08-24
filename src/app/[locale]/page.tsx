@@ -129,20 +129,20 @@ export default async function StudentDashboard({ searchParams }: PageProps) {
       {/* Top Header / Brand & Auth Bar */}
       <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3 sm:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-[1.01]">
+            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] group-hover:border-emerald-400/60 transition-colors">
               Q
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-zinc-100 tracking-wide text-sm sm:text-base">QualiAdept</span>
+                <span className="font-semibold text-zinc-100 tracking-wide text-sm sm:text-base group-hover:text-white transition-colors">QualiAdept</span>
                 <span className="hidden sm:inline-flex text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">
                   LMS Dashboard
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 font-mono">qualiadept.eu</p>
+              <p className="text-xs text-zinc-400 font-mono group-hover:text-zinc-300">certify.qualiadept.eu</p>
             </div>
-          </div>
+          </Link>
 
           <HeaderAuth />
         </div>
@@ -414,7 +414,7 @@ export default async function StudentDashboard({ searchParams }: PageProps) {
           <div>QualiAdept Auto-Validation Platform &copy; {new Date().getFullYear()}</div>
           <div className="flex items-center gap-4">
             <span className="text-emerald-400">● Auth Protected</span>
-            <span>Domain: app.qualiadept.eu</span>
+            <span>Domain: certify.qualiadept.eu</span>
           </div>
         </div>
       </footer>

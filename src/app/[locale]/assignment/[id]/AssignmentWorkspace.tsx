@@ -251,12 +251,12 @@ export default function AssignmentWorkspace({
               <span>← Dashboard</span>
             </Link>
             <div className="h-6 w-px bg-zinc-800 hidden sm:block"></div>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-base shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
+              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-base shadow-[0_0_15px_rgba(16,185,129,0.2)] group-hover:border-emerald-400/60 transition-colors">
                 Q
               </div>
-              <span className="font-semibold text-zinc-100 tracking-wide text-sm hidden sm:inline">QualiAdept</span>
-            </div>
+              <span className="font-semibold text-zinc-100 tracking-wide text-sm hidden sm:inline group-hover:text-white transition-colors">QualiAdept</span>
+            </Link>
           </div>
 
           {/* User Profile / Auth Status */}
@@ -860,7 +860,7 @@ export default function AssignmentWorkspace({
           <div>QualiAdept Auto-Validation Platform &copy; {new Date().getFullYear()}</div>
           <div className="flex items-center gap-4">
             <span className="text-emerald-400">● Auth Protected</span>
-            <span>Domain: app.qualiadept.eu</span>
+            <span>Domain: certify.qualiadept.eu</span>
           </div>
         </div>
       </footer>

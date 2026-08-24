@@ -203,7 +203,7 @@ export default async function TrainerAssignmentsPage() {
           <div>QualiAdept Curriculum Management Panel &copy; {new Date().getFullYear()}</div>
           <div className="flex items-center gap-4">
             <span className="text-emerald-400">● Realtime Sync</span>
-            <span>app.qualiadept.eu</span>
+            <span>certify.qualiadept.eu</span>
           </div>
         </div>
       </footer>

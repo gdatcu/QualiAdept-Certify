@@ -79,22 +79,22 @@ export default async function TrainerDashboardPage() {
       {/* Top Header / Brand Bar */}
       <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3 sm:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 border border-purple-400/30 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(147,51,234,0.3)]">
+          <Link href="/" className="flex items-center gap-3 group hover:opacity-90 transition-opacity">
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 border border-purple-400/30 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(147,51,234,0.3)] group-hover:border-purple-400/60 transition-colors">
               ⚙
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-zinc-100 tracking-wide text-sm sm:text-base">
+                <span className="font-bold text-zinc-100 tracking-wide text-sm sm:text-base group-hover:text-white transition-colors">
                   {t('title')}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono font-bold">
                   God Mode
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 font-mono">qualiadept.eu / trainer</p>
+              <p className="text-xs text-zinc-400 font-mono group-hover:text-zinc-300">certify.qualiadept.eu / trainer</p>
             </div>
-          </div>
+          </Link>
 
           {/* Quick Navigation link back to Student Portal and Curriculum Manager */}
           <div className="flex items-center gap-3">

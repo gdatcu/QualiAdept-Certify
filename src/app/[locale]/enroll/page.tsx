@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Link } from '@/i18n/routing';
 import { getAuthSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import EnrollForm from './EnrollForm';
@@ -33,14 +34,14 @@ export default async function EnrollPage() {
       {/* Header */}
       <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md px-4 py-4 sm:px-8">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <Link href="/" className="flex items-center gap-3 group hover:opacity-90 transition-opacity">
+            <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] group-hover:border-emerald-400/60 transition-colors">
               Q
             </div>
-            <span className="font-semibold text-zinc-100 tracking-wide text-sm">
+            <span className="font-semibold text-zinc-100 tracking-wide text-sm group-hover:text-white transition-colors">
               QualiAdept Enrollment Portal
             </span>
-          </div>
+          </Link>
         </div>
       </header>
 

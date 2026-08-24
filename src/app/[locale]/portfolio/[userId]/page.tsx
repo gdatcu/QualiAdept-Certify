@@ -92,14 +92,14 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                 <span>← QualiAdept Home</span>
               </Link>
               <div className="h-6 w-px bg-zinc-800 hidden sm:block"></div>
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-base">
+              <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
+                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-base group-hover:border-emerald-400/60 transition-colors">
                   Q
                 </div>
-                <span className="font-semibold text-zinc-100 tracking-wide text-sm hidden sm:inline">
+                <span className="font-semibold text-zinc-100 tracking-wide text-sm hidden sm:inline group-hover:text-white transition-colors">
                   {t('portalTitle')}
                 </span>
-              </div>
+              </Link>
             </div>
           </div>
         </header>
@@ -166,14 +166,14 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
               <span>← QualiAdept</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800 hidden sm:block"></div>
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm sm:text-base shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0">
+            <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
+              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm sm:text-base shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0 group-hover:border-emerald-400/60 transition-colors">
                 Q
               </div>
-              <span className="font-semibold text-zinc-100 tracking-wide text-xs sm:text-sm hidden md:inline">
+              <span className="font-semibold text-zinc-100 tracking-wide text-xs sm:text-sm hidden md:inline group-hover:text-white transition-colors">
                 {t('portalTitle')}
               </span>
-            </div>
+            </Link>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-emerald-800/60 shadow-[0_0_15px_rgba(16,185,129,0.15)] shrink-0">
@@ -425,7 +425,7 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
           <div>{t('portalTitle')} &copy; {new Date().getFullYear()}</div>
           <div className="flex items-center gap-4">
             <span className="text-emerald-400">● Verifiable Credentials</span>
-            <span>app.qualiadept.eu</span>
+            <span>certify.qualiadept.eu</span>
           </div>
         </div>
       </footer>
