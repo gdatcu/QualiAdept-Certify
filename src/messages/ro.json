@@ -19,7 +19,10 @@
     "downloadCertificate": "Descarcă Certificatul Tău (PDF)",
     "congratsTitle": "Felicitări! Ai absolvit Bootcamp-ul QualiAdept.",
     "congratsDescription": "Ai validat cu succes toate modulele practice și testele E2E. Certificatul tău oficial PDF este generat și gata pentru descărcare.",
-    "curriculumMastered": "Curriculum Absolvit • 100% Finalizat"
+    "curriculumMastered": "Curriculum Absolvit • 100% Finalizat",
+    "unauthAlertTitle": "Autentificare Necesară",
+    "unauthAlertDesc": "Trebuie să te autentifici cu GitHub pentru a accesa workspace-ul de lucru și a rezolva cerințele practice.",
+    "signInWithGithub": "Autentificare cu GitHub"
   },
   "Dashboard": {
     "pageTitle": "Module de Învățare",

@@ -19,7 +19,10 @@
     "downloadCertificate": "Download Your Certificate (PDF)",
     "congratsTitle": "Congratulations! You completed the QualiAdept Bootcamp.",
     "congratsDescription": "You have successfully validated all practical modules and E2E tests. Your official PDF certificate is generated and ready for download.",
-    "curriculumMastered": "Curriculum Mastered • 100% Completion"
+    "curriculumMastered": "Curriculum Mastered • 100% Completion",
+    "unauthAlertTitle": "Authentication Required",
+    "unauthAlertDesc": "You need to sign in with GitHub to access the workspace and solve practical assignments.",
+    "signInWithGithub": "Sign In with GitHub"
   },
   "Dashboard": {
     "pageTitle": "Learning Modules",

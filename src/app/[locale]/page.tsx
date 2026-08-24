@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
 import { Link } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
@@ -9,25 +10,41 @@ import EditProfileModal from '@/components/EditProfileModal';
 
 export const revalidate = 0;
 
+const getCachedAssignments = unstable_cache(
+  async () => {
+    return prisma.assignment.findMany({
+      where: { isActive: true },
+      orderBy: { module: 'asc' },
+    });
+  },
+  ['active-assignments-list'],
+  { revalidate: 60, tags: ['assignments'] }
+);
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'QualiAdept Certify | QA Automation Learning Platform',
   };
 }
 
-export default async function StudentDashboard() {
+interface PageProps {
+  searchParams: Promise<{ error?: string }>;
+}
+
+export default async function StudentDashboard({ searchParams }: PageProps) {
   const t = await getTranslations('Index');
   const tDash = await getTranslations('Dashboard');
-  const session = await getAuthSession();
+  const [{ error }, session] = await Promise.all([
+    searchParams.then((sp) => sp || {}).catch(() => ({}) as { error?: string }),
+    getAuthSession(),
+  ]);
 
+  const isUnauthenticatedError = error === 'Unauthenticated';
   const userId = session?.user?.id;
 
-  // Fetch assignments, submissions, and profile concurrently with Promise.all
+  // Fetch cached assignments, submissions, and profile concurrently
   const [rawAssignments, submissions, userRecord] = await Promise.all([
-    prisma.assignment.findMany({
-      where: { isActive: true },
-      orderBy: { module: 'asc' },
-    }),
+    getCachedAssignments(),
     userId
       ? prisma.submission.findMany({
           where: { userId, status: 'PASS' },
@@ -49,7 +66,7 @@ export default async function StudentDashboard() {
   ]);
 
   // Deduplicate assignments by module integer if test entries exist
-  const uniqueAssignmentsMap = new Map<number, typeof rawAssignments[0]>();
+  const uniqueAssignmentsMap = new Map<number, (typeof rawAssignments)[0]>();
   for (const assignment of rawAssignments) {
     if (!uniqueAssignmentsMap.has(assignment.module)) {
       uniqueAssignmentsMap.set(assignment.module, assignment);
@@ -132,6 +149,29 @@ export default async function StudentDashboard() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto w-full flex-1 px-3 sm:px-8 py-5 sm:py-8 flex flex-col gap-6 sm:gap-8">
+        {/* Unauthenticated / Sign-In Required Notification Alert */}
+        {isUnauthenticatedError && (
+          <div className="bg-gradient-to-r from-amber-950/90 via-zinc-900 to-amber-950/70 border-2 border-amber-500/60 rounded-2xl p-5 sm:p-6 shadow-[0_0_30px_rgba(245,158,11,0.25)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-3 duration-300">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="h-11 w-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold text-xl shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                🔒
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-amber-200">
+                  {t('unauthAlertTitle')}
+                </h3>
+                <p className="text-xs text-zinc-300 mt-0.5 max-w-xl leading-relaxed">
+                  {t('unauthAlertDesc')}
+                </p>
+              </div>
+            </div>
+
+            <div className="shrink-0 self-stretch sm:self-auto flex items-center justify-end">
+              <HeaderAuth />
+            </div>
+          </div>
+        )}
+
         {/* Dashboard Hero Banner & Learning Progress */}
         <section className="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 rounded-2xl border border-zinc-800 p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none -mr-20 -mt-20"></div>

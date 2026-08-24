@@ -61,7 +61,7 @@ export default function EnrollForm() {
           type="text"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          placeholder="e.g. QASEPT26"
+          placeholder="Lipește codul primit de la mentor..."
           disabled={loading}
           autoComplete="off"
           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 font-mono focus:outline-none focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-zinc-600 disabled:opacity-50"
