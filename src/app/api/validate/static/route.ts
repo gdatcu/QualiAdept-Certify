@@ -140,16 +140,86 @@ export async function POST(req: NextRequest) {
         if (Array.isArray(rules)) {
           for (const r of rules) {
             let passed = false;
-            let checkName = r.check || '';
+            const checkType = r.check || r.type || 'exists';
+            const selector = r.selector || r.tag || r.value;
+            let checkName = r.name || r.title || '';
             let msg = '';
 
-            if (r.type === 'regex') {
-              const regex = new RegExp(r.value, 'i');
+            if (checkType === 'regex' || r.type === 'regex') {
+              const pattern = r.pattern || r.value || '';
+              const regex = new RegExp(pattern, 'i');
               passed = regex.test(htmlCode);
-              checkName = checkName || `Pattern check (${r.value})`;
+              checkName = checkName || r.check || `Pattern check (${pattern})`;
               msg = passed
-                ? (r.message || `Matched required pattern: ${r.value}`)
-                : (r.message || `Code does not match required pattern: ${r.value}`);
+                ? `Matched required pattern: ${pattern}`
+                : (r.message || `Code does not match required pattern: ${pattern}`);
+            } else if (checkType === 'hasClass') {
+              const expectedClass = r.expected || r.value;
+              const matches = $(selector);
+              passed =
+                matches.length > 0 &&
+                matches.toArray().some((el) => {
+                  const classAttr = (el as any).attribs?.class || '';
+                  return classAttr.split(/\s+/).includes(expectedClass);
+                });
+              checkName = checkName || `Element "${selector}" has class "${expectedClass}"`;
+              msg = passed
+                ? `Element "${selector}" contains class "${expectedClass}".`
+                : (r.message || `Element "${selector}" is missing required class "${expectedClass}".`);
+            } else if (checkType === 'hasAttribute') {
+              const attrName = (r.attrName || r.attr || r.value || '').toLowerCase();
+              const matches = $(selector);
+              passed =
+                matches.length > 0 &&
+                matches.toArray().some((el) => {
+                  const attribs = (el as any).attribs || {};
+                  return Object.keys(attribs).some((k) => k.toLowerCase() === attrName);
+                });
+              checkName = checkName || `Element "${selector}" has attribute "${attrName}"`;
+              msg = passed
+                ? `Element "${selector}" has attribute "${attrName}".`
+                : (r.message || `Element "${selector}" is missing attribute "${attrName}".`);
+            } else if (checkType === 'attribute') {
+              const attrName = (r.attrName || r.attr || '').toLowerCase();
+              const expected = (r.expected || r.value || '').trim();
+              const matches = $(selector);
+              passed =
+                matches.length > 0 &&
+                matches.toArray().some((el) => {
+                  const attribs = (el as any).attribs || {};
+                  const matchedKey = Object.keys(attribs).find((k) => k.toLowerCase() === attrName);
+                  const val = matchedKey ? attribs[matchedKey] : undefined;
+                  return val !== undefined && val.trim() === expected;
+                });
+              checkName = checkName || `Element "${selector}" [${attrName}="${expected}"]`;
+              msg = passed
+                ? `Element "${selector}" has attribute ${attrName}="${expected}".`
+                : (r.message || `Element "${selector}" attribute "${attrName}" expected "${expected}".`);
+            } else if (checkType === 'attributeRegex') {
+              const attrName = (r.attrName || r.attr || '').toLowerCase();
+              const pattern = r.pattern || r.expected || r.value;
+              const regex = new RegExp(pattern, 'i');
+              const matches = $(selector);
+              passed =
+                matches.length > 0 &&
+                matches.toArray().some((el) => {
+                  const attribs = (el as any).attribs || {};
+                  const matchedKey = Object.keys(attribs).find((k) => k.toLowerCase() === attrName);
+                  const val = matchedKey ? attribs[matchedKey] : undefined;
+                  return val !== undefined && regex.test(val.trim());
+                });
+              checkName = checkName || `Element "${selector}" [${attrName} matches /${pattern}/]`;
+              msg = passed
+                ? `Element "${selector}" attribute "${attrName}" matches expected pattern.`
+                : (r.message || `Element "${selector}" attribute "${attrName}" did not match pattern /${pattern}/.`);
+            } else if (checkType === 'textContains') {
+              const expectedText = (r.expected || r.value || '').trim().toLowerCase();
+              const matches = $(selector);
+              passed = matches.length > 0 && matches.text().toLowerCase().includes(expectedText);
+              checkName = checkName || `Element "${selector}" contains text "${expectedText}"`;
+              msg = passed
+                ? `Element "${selector}" contains expected text.`
+                : (r.message || `Element "${selector}" does not contain "${expectedText}".`);
             } else if (r.type === 'tag') {
               const tagSelector = r.value || r.selector || r.tag;
               passed = $(tagSelector).length > 0;
@@ -169,13 +239,14 @@ export async function POST(req: NextRequest) {
                 ? `Found element matching "${rawAttr}".`
                 : (r.message || `Missing required attribute or selector "${rawAttr}".`);
             } else {
-              const selector = r.selector || r.tag || r.check || r.value;
-              if (selector) {
-                passed = $(selector).length > 0;
-                checkName = checkName || `Element "${selector}" exists`;
+              // checkType === 'exists' or default selector check
+              const targetSelector = selector || r.check;
+              if (targetSelector) {
+                passed = $(targetSelector).length > 0;
+                checkName = checkName || (r.check && r.check !== 'exists' ? r.check : `Element "${targetSelector}" exists`);
                 msg = passed
-                  ? `Found element matching "${selector}".`
-                  : (r.message || `Missing element matching "${selector}".`);
+                  ? `Found element matching "${targetSelector}".`
+                  : (r.message || `Missing element matching "${targetSelector}".`);
               }
             }
 

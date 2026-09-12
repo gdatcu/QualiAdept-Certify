@@ -47,9 +47,43 @@ const curriculum: CurriculumItem[] = [
     isPublished: true,
     unlockDate: new Date('2026-09-24T00:00:00Z'),
     description:
-      'Aplică CSS modern (Flexbox) și stăpânește selectoarele CSS esențiale pentru Playwright.',
+      'Transformă scheletul Task Tracker-ului într-o aplicație structurată cu fișier CSS extern, navbar flexibil, rânduri tabel structurate și butoane dinamice cu stare disabled.',
     validationRules: JSON.stringify([
-      { type: 'regex', value: '\\.class|#id', message: 'Valid CSS selectors required' },
+      {
+        selector: "head link[rel='stylesheet'], link[rel='stylesheet']",
+        check: 'attributeRegex',
+        attrName: 'href',
+        pattern: '^(?:\\.\\/)?style\\.css$',
+        message: 'Cerința 1 eșuată: Nu am găsit fișierul CSS extern conectat corect în <head> (ex: <link rel="stylesheet" href="style.css">).',
+      },
+      {
+        selector: 'header nav',
+        check: 'hasClass',
+        expected: 'navbar',
+        message: "Cerința 2 eșuată: Tag-ul <nav> din <header> nu are clasa 'navbar'.",
+      },
+      {
+        selector: 'header nav #logo, nav #logo',
+        check: 'exists',
+        message: "Cerința 2 eșuată: Nu am găsit un element cu id-ul 'logo' în interiorul barei de navigație.",
+      },
+      {
+        selector: "header nav [data-testid='btn-login'], nav [data-testid='btn-login']",
+        check: 'exists',
+        message: "Cerința 2 eșuată: Lipsește butonul de login cu data-testid='btn-login' din bara de navigație.",
+      },
+      {
+        selector: 'table tbody tr:nth-child(3) button',
+        check: 'hasClass',
+        expected: 'delete-row',
+        message: "Cerința 3 eșuată: Al treilea rând din corpul tabelului nu conține un buton cu clasa 'delete-row'.",
+      },
+      {
+        selector: "button[data-testid='submit-task-btn'], [data-testid='submit-task-btn']",
+        check: 'hasAttribute',
+        attrName: 'disabled',
+        message: "Cerința 4 eșuată: Butonul de submit (data-testid='submit-task-btn') nu are atributul 'disabled' aplicat nativ.",
+      },
     ]),
   },
   {

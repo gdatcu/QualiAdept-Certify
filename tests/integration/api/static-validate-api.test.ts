@@ -33,7 +33,7 @@ vi.mock('@/lib/webhook', () => ({
 
 describe('/api/validate/static Integration Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('returns 400 if request body is not valid JSON', async () => {
@@ -89,11 +89,6 @@ describe('/api/validate/static Integration Tests', () => {
       id: 'u-1',
       isEnrolled: true,
       role: 'STUDENT',
-    } as any);
-
-    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
-      id: 'a-1',
-      title: 'Module 1 HTML',
     } as any);
 
     vi.mocked(prisma.submission.findFirst).mockResolvedValueOnce({
@@ -156,4 +151,184 @@ describe('/api/validate/static Integration Tests', () => {
     expect(data.feedback.length).toBe(3);
     expect(prisma.submission.create).toHaveBeenCalled();
   });
+
+  it('evaluates Session 2 complex rules and returns 100 PASS for compliant homework', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u-s2', name: 'George Student', email: 'student@qualiadept.eu', role: 'STUDENT' },
+    } as any);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'u-s2',
+      isEnrolled: true,
+      role: 'STUDENT',
+      name: 'George Student',
+    } as any);
+
+    const session2Rules = JSON.stringify([
+      {
+        selector: "head link[rel='stylesheet'], link[rel='stylesheet']",
+        check: 'attributeRegex',
+        attrName: 'href',
+        pattern: '^(?:\\.\\/)?style\\.css$',
+        message: 'Cerința 1 eșuată',
+      },
+      {
+        selector: 'header nav',
+        check: 'hasClass',
+        expected: 'navbar',
+        message: 'Cerința 2 eșuată',
+      },
+      {
+        selector: 'header nav #logo, nav #logo',
+        check: 'exists',
+        message: 'Cerința 2 eșuată (logo)',
+      },
+      {
+        selector: "header nav [data-testid='btn-login'], nav [data-testid='btn-login']",
+        check: 'exists',
+        message: 'Cerința 2 eșuată (login)',
+      },
+      {
+        selector: 'table tbody tr:nth-child(3) button',
+        check: 'hasClass',
+        expected: 'delete-row',
+        message: 'Cerința 3 eșuată',
+      },
+      {
+        selector: "button[data-testid='submit-task-btn'], [data-testid='submit-task-btn']",
+        check: 'hasAttribute',
+        attrName: 'disabled',
+        message: 'Cerința 4 eșuată',
+      },
+    ]);
+
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-session2',
+      module: 2,
+      title: 'Sesiunea 2: CSS & DOM Selectors',
+      validationRules: session2Rules,
+    } as any);
+
+    vi.mocked(prisma.submission.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.submission.count).mockResolvedValueOnce(0);
+
+    const compliantSession2Html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Task Tracker</title>
+        <link rel="stylesheet" href="./style.css">
+      </head>
+      <body>
+        <header>
+          <nav class="navbar main-nav">
+            <h1 id="logo">QualiAdept</h1>
+            <button data-testid="btn-login" class="btn">Login</button>
+          </nav>
+        </header>
+        <main>
+          <form>
+            <button type="submit" data-testid="submit-task-btn" disabled>Submit</button>
+          </form>
+          <table>
+            <thead>
+              <tr><th>#</th><th>Task</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>A</td><td><button class="delete-row">Del</button></td></tr>
+              <tr><td>2</td><td>B</td><td><button class="delete-row">Del</button></td></tr>
+              <tr><td>3</td><td>C</td><td><button class="btn delete-row">Del</button></td></tr>
+            </tbody>
+          </table>
+        </main>
+      </body>
+      </html>
+    `;
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({ assignmentId: 'a-session2', htmlCode: compliantSession2Html }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    expect(data.feedback.every((f: any) => f.passed)).toBe(true);
+    expect(data.feedback.length).toBe(6);
+  });
+
+  it('evaluates Session 2 rules and returns FAIL if requirements are missing', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u-s2', name: 'Student', email: 'student@qualiadept.eu', role: 'STUDENT' },
+    } as any);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'u-s2',
+      isEnrolled: true,
+      role: 'STUDENT',
+      name: 'Student',
+    } as any);
+
+    const session2Rules = JSON.stringify([
+      {
+        selector: "head link[rel='stylesheet'], link[rel='stylesheet']",
+        check: 'attributeRegex',
+        attrName: 'href',
+        pattern: '^(?:\\.\\/)?style\\.css$',
+        message: 'Cerința 1 eșuată',
+      },
+      {
+        selector: 'header nav',
+        check: 'hasClass',
+        expected: 'navbar',
+        message: 'Cerința 2 eșuată (navbar class)',
+      },
+      {
+        selector: "button[data-testid='submit-task-btn'], [data-testid='submit-task-btn']",
+        check: 'hasAttribute',
+        attrName: 'disabled',
+        message: 'Cerința 4 eșuată (disabled)',
+      },
+    ]);
+
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-session2',
+      module: 2,
+      title: 'Sesiunea 2',
+      validationRules: session2Rules,
+    } as any);
+
+    vi.mocked(prisma.submission.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.submission.count).mockResolvedValueOnce(0);
+
+    // HTML missing disabled attribute and navbar class
+    const failingHtml = `
+      <html>
+      <head><link rel="stylesheet" href="style.css"></head>
+      <body>
+        <header><nav class="menu"></nav></header>
+        <button data-testid="submit-task-btn">Submit</button>
+      </body>
+      </html>
+    `;
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({ assignmentId: 'a-session2', htmlCode: failingHtml }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.status).toBe('fail');
+    expect(data.score).toBe(33); // 1 passed out of 3
+    expect(data.feedback.find((f: any) => f.check.includes('link') || f.passed)?.passed).toBe(true);
+    expect(data.feedback.find((f: any) => f.message.includes('navbar class'))?.passed).toBe(false);
+    expect(data.feedback.find((f: any) => f.message.includes('disabled'))?.passed).toBe(false);
+  });
 });
+
