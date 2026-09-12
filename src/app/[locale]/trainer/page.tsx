@@ -4,6 +4,7 @@ import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import SubmissionsTable, { SubmissionRecord } from './SubmissionsTable';
 import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
+import TrainerSignatureButton from '@/components/TrainerSignatureButton';
 
 export const metadata: Metadata = {
   title: 'QualiAdept Certify | Trainer God Mode',
@@ -105,8 +106,9 @@ export default async function TrainerDashboardPage({ params }: TrainerPageProps)
             </div>
           </Link>
 
-          {/* Quick Navigation link back to Student Portal and Curriculum Manager */}
-          <div className="flex items-center gap-3">
+          {/* Quick Navigation link back to Student Portal, Signature and Curriculum Manager */}
+          <div className="flex items-center gap-2.5">
+            <TrainerSignatureButton label={t('signatureButton')} />
             <Link
               href="/trainer/assignments"
               className="text-xs text-purple-200 hover:text-white bg-purple-950/80 hover:bg-purple-900 border border-purple-800 px-3.5 py-1.5 rounded-full font-mono flex items-center gap-1.5 transition-colors shadow-sm font-semibold"

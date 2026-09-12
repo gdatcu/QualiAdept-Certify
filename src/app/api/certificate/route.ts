@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     // Deduplicate unique active assignment modules
     const uniqueModules = new Set(activeAssignments.map((a) => a.module));
-    const totalRequiredModules = uniqueModules.size || activeAssignments.length;
+    const totalRequiredModules = uniqueModules.size || activeAssignments.length || 20;
 
     // Fetch user passed submissions
     const passedSubmissions = await prisma.submission.findMany({
@@ -101,19 +101,28 @@ export async function GET(req: NextRequest) {
       logoDataUri = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
     }
 
+    // Read trainer signature image if available
+    const signaturePath = path.join(process.cwd(), 'public', 'signatures', 'trainer-signature.png');
+    let signatureDataUri = '';
+    if (fs.existsSync(signaturePath)) {
+      const sigBuffer = fs.readFileSync(signaturePath);
+      signatureDataUri = `data:image/png;base64,${sigBuffer.toString('base64')}`;
+    }
+
     // Render PDF stream using @react-pdf/renderer
     const pdfStream = await renderToStream(
       React.createElement(CertificateTemplate, {
         studentName,
-        courseName: 'TypeScript & Playwright',
+        courseName: 'QA Automation Engineer — TypeScript & Playwright',
         issueDate: issueDateFormatted,
         certificateId,
-        logoUrl: logoDataUri,
-        qrCodeUrl: qrCodeDataUri,
+        logoUrl: logoDataUri || undefined,
+        qrCodeUrl: qrCodeDataUri || undefined,
+        signatureUrl: signatureDataUri || undefined,
         mentorName: 'DATCU GEORGE-CRISTIAN',
         companyName: 'QUALIADEPT',
-        hoursSpent: 50,
-        sessionCount: 20,
+        passedModulesCount: Math.max(passedModules.size, totalRequiredModules),
+        totalModulesCount: totalRequiredModules,
       }) as any
     );
 
