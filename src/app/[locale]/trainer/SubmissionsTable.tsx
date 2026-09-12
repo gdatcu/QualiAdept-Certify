@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 
 export interface UserRelation {
   id: string;
@@ -52,6 +53,8 @@ interface ParsedFeedback {
 
 export default function SubmissionsTable({ initialSubmissions }: SubmissionsTableProps) {
   const router = useRouter();
+  const t = useTranslations('Trainer');
+  const locale = useLocale();
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>(initialSubmissions);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Record<string, 'code' | 'feedback'>>({});
@@ -142,6 +145,13 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
     }
   };
 
+  const getFilterLabel = (st: 'ALL' | 'PASS' | 'FAIL' | 'PENDING') => {
+    if (st === 'ALL') return t('filterAll');
+    if (st === 'PASS') return t('filterPass');
+    if (st === 'FAIL') return t('filterFail');
+    return t('filterPending');
+  };
+
   return (
     <div className="flex flex-col gap-5">
       {/* Controls Bar: Search & Filter */}
@@ -157,13 +167,13 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search student, email, assignment..."
+            placeholder={t('searchPlaceholder')}
             className="w-full pl-9 pr-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-purple-500 font-mono transition-colors"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300 text-xs"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer"
             >
               ✕
             </button>
@@ -188,7 +198,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
               }`}
             >
-              {st}
+              {getFilterLabel(st)}
             </button>
           ))}
         </div>
@@ -201,12 +211,12 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
             <thead>
               <tr className="bg-zinc-950/90 text-zinc-400 font-mono border-b border-zinc-800/80 text-[11px] uppercase tracking-wider">
                 <th className="py-3.5 px-4 w-10 text-center"></th>
-                <th className="py-3.5 px-4">Student</th>
-                <th className="py-3.5 px-4">Assignment</th>
-                <th className="py-3.5 px-4">Submitted At</th>
-                <th className="py-3.5 px-4 text-center">Score</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4">{t('thStudent')}</th>
+                <th className="py-3.5 px-4">{t('thAssignment')}</th>
+                <th className="py-3.5 px-4">{t('thSubmittedAt')}</th>
+                <th className="py-3.5 px-4 text-center">{t('thScore')}</th>
+                <th className="py-3.5 px-4 text-center">{t('thStatus')}</th>
+                <th className="py-3.5 px-4 text-right">{t('thActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
@@ -219,11 +229,11 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                         </svg>
                       </div>
-                      <span className="font-semibold text-zinc-300">No Submissions Found</span>
+                      <span className="font-semibold text-zinc-300">{t('noSubmissionsFound')}</span>
                       <p className="text-xs text-zinc-400 max-w-sm">
                         {submissions.length === 0
-                          ? 'No student code submissions have been recorded yet.'
-                          : 'No submissions match your active filter criteria.'}
+                          ? t('noSubmissionsRecorded')
+                          : t('noSubmissionsMatch')}
                       </p>
                     </div>
                   </td>
@@ -235,8 +245,8 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                   const isPass = sub.status.toUpperCase() === 'PASS';
                   const isFail = sub.status.toUpperCase() === 'FAIL';
                   const currentTab = activeTab[sub.id] || 'feedback';
-                  const displayName = sub.user.name || 'Anonymous Student';
-                  const displayEmail = sub.user.email || 'No email registered';
+                  const displayName = sub.user.name || t('anonymousStudent');
+                  const displayEmail = sub.user.email || t('noEmail');
 
                   return (
                     <tr
@@ -253,7 +263,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                             <button
                               onClick={() => toggleExpand(sub.id)}
                               className="h-7 w-7 rounded-md hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-                              title={isExpanded ? 'Collapse' : 'Expand Details'}
+                              title={isExpanded ? t('hide') : t('inspect')}
                             >
                               <svg
                                 className={`w-4 h-4 transition-transform duration-200 ${
@@ -283,7 +293,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                           <div className="col-span-3 min-w-0">
                             <div className="flex items-center gap-1.5 mb-0.5">
                               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-cyan-400">
-                                Mod {sub.assignment.module}
+                                {t('moduleShort', { module: sub.assignment.module })}
                               </span>
                               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-950/60 text-purple-300 border border-purple-800/40">
                                 {sub.assignment.validationType}
@@ -296,12 +306,15 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
 
                           {/* Submitted Timestamp */}
                           <div className="col-span-2 text-xs font-mono text-zinc-400">
-                            {new Date(sub.submittedAt).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {new Date(sub.submittedAt).toLocaleString(
+                              locale === 'ro' ? 'ro-RO' : 'en-US',
+                              {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }
+                            )}
                           </div>
 
                           {/* Score Gauge */}
@@ -345,7 +358,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                               onClick={() => toggleExpand(sub.id)}
                               className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono transition-colors cursor-pointer"
                             >
-                              {isExpanded ? 'Hide' : 'Inspect'}
+                              {isExpanded ? t('hide') : t('inspect')}
                             </button>
                           </div>
                         </div>
@@ -356,13 +369,13 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                             {/* Expanded Header & Tab Bar */}
                             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-mono text-zinc-400">Submission ID:</span>
+                                <span className="text-xs font-mono text-zinc-400">{t('submissionId')}</span>
                                 <code className="text-xs font-mono text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-800">
                                   {sub.id}
                                 </code>
                                 {feedbackData.manualOverride && (
                                   <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                    ⚡ Manually Overridden
+                                    {t('manuallyOverridden')}
                                   </span>
                                 )}
                               </div>
@@ -377,7 +390,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                                       : 'text-zinc-400 hover:text-zinc-200'
                                   }`}
                                 >
-                                  Assertions Breakdown
+                                  {t('tabAssertions')}
                                 </button>
                                 <button
                                   onClick={() => setTab(sub.id, 'code')}
@@ -387,7 +400,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                                       : 'text-zinc-400 hover:text-zinc-200'
                                   }`}
                                 >
-                                  Raw Student Code ({sub.codePayload.length} bytes)
+                                  {t('tabRawCode', { bytes: sub.codePayload.length })}
                                 </button>
                               </div>
                             </div>
@@ -397,10 +410,10 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                               <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                   <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold">
-                                    Automated Test Suite Assertions
+                                    {t('automatedTestSuite')}
                                   </h4>
                                   <span className="text-xs font-mono text-zinc-400">
-                                    Score: <strong className="text-zinc-200">{sub.score}%</strong>
+                                    {t('scoreLabel')} <strong className="text-zinc-200">{sub.score}%</strong>
                                   </span>
                                 </div>
 
@@ -429,7 +442,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                                   </div>
                                 ) : (
                                   <div className="text-xs text-zinc-400 bg-zinc-900 p-3 rounded-lg border border-zinc-800 font-mono">
-                                    No detailed feedback items recorded for this submission.
+                                    {t('noFeedbackRecorded')}
                                   </div>
                                 )}
                               </div>
@@ -440,20 +453,20 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-mono text-zinc-400">
-                                    Student Submitted Code Payload
+                                    {t('rawPayloadTitle')}
                                   </span>
                                   <button
                                     onClick={() => handleCopyCode(sub.id, sub.codePayload)}
                                     className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                                   >
                                     {copiedId === sub.id ? (
-                                      <span className="text-emerald-400 font-semibold">✓ Copied!</span>
+                                      <span className="text-emerald-400 font-semibold">{t('copied')}</span>
                                     ) : (
                                       <>
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                         </svg>
-                                        Copy Code
+                                        {t('copyCode')}
                                       </>
                                     )}
                                   </button>
@@ -469,11 +482,11 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                               <div className="text-xs text-zinc-400 font-mono">
                                 {isPass ? (
                                   <span className="text-emerald-400 flex items-center gap-1">
-                                    ✓ Submission meets all pass requirements.
+                                    {t('meetsRequirements')}
                                   </span>
                                 ) : (
                                   <span className="text-rose-400">
-                                    ⚠ Submission currently marked as FAILED.
+                                    {t('failedRequirements')}
                                   </span>
                                 )}
                               </div>
@@ -496,11 +509,11 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                        <span>Overriding...</span>
+                                        <span>{t('overriding')}</span>
                                       </>
                                     ) : (
                                       <>
-                                        <span>⚡ Force Pass (Override to 100%)</span>
+                                        <span>{t('forcePass')}</span>
                                       </>
                                     )}
                                   </button>

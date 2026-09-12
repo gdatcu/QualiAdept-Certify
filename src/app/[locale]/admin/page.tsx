@@ -12,7 +12,13 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminDashboardPage() {
+interface AdminPageProps {
+  params?: Promise<{ locale: string }>;
+}
+
+export default async function AdminDashboardPage({ params }: AdminPageProps) {
+  const resolvedParams = params ? await params : { locale: 'en' };
+  const locale = resolvedParams?.locale || 'en';
   const t = await getTranslations('Admin');
   const session = await getAuthSession();
 
@@ -87,26 +93,34 @@ export default async function AdminDashboardPage() {
     const failedSubmissionsCount = u.submissions.filter((s) => s.status === 'FAIL').length;
 
     // Status classification logic: Completed, Locked Out, Stuck, Active
-    let userStatus: 'Completed' | 'Locked Out' | 'Stuck' | 'Active' = 'Active';
+    let userStatusKey: 'statusCompleted' | 'statusLockedOut' | 'statusStuck' | 'statusActive' = 'statusActive';
+    let rawStatus = 'Active';
     if (unlockedModulesCount >= (totalActiveAssignments || 8)) {
-      userStatus = 'Completed';
+      userStatusKey = 'statusCompleted';
+      rawStatus = 'Completed';
     } else if (isLockedOut) {
-      userStatus = 'Locked Out';
+      userStatusKey = 'statusLockedOut';
+      rawStatus = 'Locked Out';
     } else if (u.failedAttempts >= 3 || failedSubmissionsCount >= 5) {
-      userStatus = 'Stuck';
+      userStatusKey = 'statusStuck';
+      rawStatus = 'Stuck';
     }
 
-    const createdFormatted = new Date(u.createdAt).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const createdFormatted = new Date(u.createdAt).toLocaleDateString(
+      locale === 'ro' ? 'ro-RO' : 'en-US',
+      {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }
+    );
 
     return {
       ...u,
       unlockedModulesCount,
       failedSubmissionsCount,
-      userStatus,
+      userStatusKey,
+      rawStatus,
       createdFormatted,
       isLockedOut,
     };
@@ -122,7 +136,7 @@ export default async function AdminDashboardPage() {
               href="/"
               className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-rose-400 transition-colors shrink-0"
             >
-              <span>← Dashboard</span>
+              <span>{t('backToDashboard')}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800 hidden sm:block"></div>
             <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
@@ -137,7 +151,7 @@ export default async function AdminDashboardPage() {
 
           <div className="flex items-center gap-2 text-xs font-mono">
             <span className="bg-rose-950/80 text-rose-300 px-3 py-1 rounded-full border border-rose-800/80 font-bold shadow-[0_0_10px_rgba(244,63,94,0.2)]">
-              ADMIN CONTROL CENTER
+              {t('adminControlCenter')}
             </span>
           </div>
         </div>
@@ -152,7 +166,7 @@ export default async function AdminDashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono font-semibold mb-2">
-                🛡️ System Governance &amp; Security Overview
+                {t('securityOverviewBadge')}
               </span>
               <h1 className="text-2xl sm:text-3xl font-black text-zinc-50 tracking-tight">
                 {t('title')}
@@ -181,18 +195,18 @@ export default async function AdminDashboardPage() {
           </div>
 
           <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Total Evaluări</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('totalEvaluations')}</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-3xl font-black text-cyan-400 font-mono">{totalSubmissionsCount}</span>
-              <span className="text-xs text-zinc-400 font-mono">Submisii Cod</span>
+              <span className="text-xs text-zinc-400 font-mono">{t('codeSubmissions')}</span>
             </div>
           </div>
 
           <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800 flex flex-col gap-1 shadow-md">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Alerte Securitate</span>
+            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">{t('securityAlerts')}</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl sm:text-3xl font-black text-rose-400 font-mono">{totalLockoutsCount}</span>
-              <span className="text-xs text-zinc-400 font-mono">Conturi Blocate</span>
+              <span className="text-xs text-zinc-400 font-mono">{t('lockedAccounts')}</span>
             </div>
           </div>
         </section>
@@ -202,15 +216,15 @@ export default async function AdminDashboardPage() {
           <div className="p-4 sm:p-5 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-zinc-100 font-mono flex items-center gap-2">
-                <span>👥 Monitorizare Cursanți &amp; Încercări Token</span>
+                <span>{t('tableSectionTitle')}</span>
               </h2>
               <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                Detalii despre conturi, role, tentative eșuate de token și progresul modulelor
+                {t('tableSectionSubtitle')}
               </p>
             </div>
 
             <span className="text-xs font-mono text-zinc-400 bg-zinc-950 px-3 py-1 rounded-lg border border-zinc-800 self-start sm:self-auto">
-              Total {userMetrics.length} înregistrări
+              {t('totalRecords', { count: userMetrics.length })}
             </span>
           </div>
 
@@ -218,13 +232,13 @@ export default async function AdminDashboardPage() {
             <table className="w-full text-left border-collapse font-sans text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/80 text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
-                  <th className="py-3 px-4">Utilizator / Email</th>
-                  <th className="py-3 px-4 text-center">Rolă &amp; Admin</th>
-                  <th className="py-3 px-4 text-center">Înrolat</th>
-                  <th className="py-3 px-4 text-center">Module Deblocat</th>
-                  <th className="py-3 px-4 text-center">Tentative Eșuate Token</th>
-                  <th className="py-3 px-4 text-center">Status Account</th>
-                  <th className="py-3 px-4 text-right">Data Înregistrării</th>
+                  <th className="py-3 px-4">{t('thUserEmail')}</th>
+                  <th className="py-3 px-4 text-center">{t('thRoleAdmin')}</th>
+                  <th className="py-3 px-4 text-center">{t('thEnrolled')}</th>
+                  <th className="py-3 px-4 text-center">{t('thUnlockedModules')}</th>
+                  <th className="py-3 px-4 text-center">{t('thFailedTokenAttempts')}</th>
+                  <th className="py-3 px-4 text-center">{t('thAccountStatus')}</th>
+                  <th className="py-3 px-4 text-right">{t('thRegistrationDate')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-mono">
@@ -243,7 +257,7 @@ export default async function AdminDashboardPage() {
                             )}
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-zinc-100 truncate">{u.name || 'QA Student'}</span>
+                            <span className="font-bold text-zinc-100 truncate">{u.name || t('defaultStudentName')}</span>
                             <span className="text-[11px] text-zinc-400 truncate">{u.email || u.id}</span>
                           </div>
                         </div>
@@ -263,7 +277,7 @@ export default async function AdminDashboardPage() {
                           </span>
                           {u.isAdmin && (
                             <span className="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-bold">
-                              ADMIN
+                              {t('adminBadge')}
                             </span>
                           )}
                         </div>
@@ -273,11 +287,11 @@ export default async function AdminDashboardPage() {
                       <td className="py-3.5 px-4 text-center">
                         {u.isEnrolled ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px] font-bold">
-                            ✓ Înrolat
+                            {t('enrolledBadge')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-950 text-zinc-500 border border-zinc-800 text-[11px]">
-                            Neînrolat
+                            {t('notEnrolledBadge')}
                           </span>
                         )}
                       </td>
@@ -306,16 +320,16 @@ export default async function AdminDashboardPage() {
                       <td className="py-3.5 px-4 text-center">
                         <span
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            u.userStatus === 'Completed'
+                            u.rawStatus === 'Completed'
                               ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                              : u.userStatus === 'Locked Out'
+                              : u.rawStatus === 'Locked Out'
                               ? 'bg-rose-950 text-rose-300 border border-rose-800 animate-pulse'
-                              : u.userStatus === 'Stuck'
+                              : u.rawStatus === 'Stuck'
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
                               : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
                           }`}
                         >
-                          {u.userStatus}
+                          {t(u.userStatusKey)}
                         </span>
                       </td>
 

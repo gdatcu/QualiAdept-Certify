@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link } from '@/i18n/routing';
 
 interface ShareProfileButtonProps {
   userId: string;
@@ -10,11 +10,12 @@ interface ShareProfileButtonProps {
 
 export default function ShareProfileButton({ userId }: ShareProfileButtonProps) {
   const t = useTranslations('ProgressCard');
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      const shareUrl = `${window.location.origin}/en/portfolio/${userId}`;
+      const shareUrl = `${window.location.origin}/${locale}/portfolio/${userId}`;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareUrl);
       } else {
@@ -49,7 +50,7 @@ export default function ShareProfileButton({ userId }: ShareProfileButtonProps) 
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
-            <span>Link Copied!</span>
+            <span>{t('linkCopied')}</span>
           </>
         ) : (
           <>
@@ -62,10 +63,10 @@ export default function ShareProfileButton({ userId }: ShareProfileButtonProps) 
       </button>
 
       <Link
-        href={`/en/portfolio/${userId}`}
+        href={`/portfolio/${userId}`}
         target="_blank"
         className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 transition-colors text-xs font-mono inline-flex items-center justify-center"
-        title="View Public Portfolio Page"
+        title={t('viewPortfolio')}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

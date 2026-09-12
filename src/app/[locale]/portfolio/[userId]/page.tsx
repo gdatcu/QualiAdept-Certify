@@ -4,12 +4,14 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import CodeBlock from '@/components/CodeBlock';
+import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
 
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{
     userId: string;
+    locale?: string;
   }>;
 }
 
@@ -53,8 +55,11 @@ export async function generateMetadata(
 }
 
 export default async function PublicPortfolioPage({ params }: PageProps) {
-  const { userId } = await params;
-  const t = await getTranslations('Portfolio');
+  const { userId, locale } = await params;
+  const [t, tAssignments] = await Promise.all([
+    getTranslations('Portfolio'),
+    getTranslations('Assignments'),
+  ]);
 
   if (!userId) {
     notFound();
@@ -327,7 +332,8 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
             <div className="overflow-x-auto w-full max-w-full pb-2">
               <div className="relative pl-5 sm:pl-8 border-l-2 border-emerald-500/30 space-y-6 sm:space-y-8 my-2 w-full max-w-full min-w-0">
                 {milestones.map((item) => {
-                  const completedDate = new Date(item.submittedAt).toLocaleDateString(undefined, {
+                  const localizedAssignment = getLocalizedAssignment(item.assignment, (key) => tAssignments(key as any));
+                  const completedDate = new Date(item.submittedAt).toLocaleDateString(locale === 'ro' ? 'ro-RO' : 'en-GB', {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
@@ -345,10 +351,10 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-zinc-800/80 pb-3 mb-4">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-zinc-950 text-cyan-400 border border-zinc-800 font-semibold shrink-0">
-                              {t('moduleBadge', { module: item.assignment.module < 10 ? `0${item.assignment.module}` : item.assignment.module })}
+                              {t('moduleBadge', { module: localizedAssignment.module < 10 ? `0${localizedAssignment.module}` : localizedAssignment.module })}
                             </span>
                             <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/60 uppercase tracking-wider shrink-0">
-                              {t('validation', { type: item.assignment.validationType })}
+                              {t('validation', { type: localizedAssignment.validationType })}
                             </span>
                           </div>
 
@@ -358,10 +364,10 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                         </div>
 
                         <h3 className="text-base sm:text-lg font-bold text-zinc-50 tracking-tight">
-                          {item.assignment.title}
+                          {localizedAssignment.title}
                         </h3>
                         <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                          {item.assignment.description}
+                          {localizedAssignment.description}
                         </p>
 
                         {/* Collapsible View Source Code Section */}

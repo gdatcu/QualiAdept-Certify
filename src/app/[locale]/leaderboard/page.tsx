@@ -45,6 +45,16 @@ const getCachedLeaderboardUsers = unstable_cache(
   { revalidate: 30, tags: ['submissions', 'users'] }
 );
 
+const getCachedActiveAssignmentsCount = unstable_cache(
+  async () => {
+    return prisma.assignment.count({
+      where: { isActive: true },
+    });
+  },
+  ['active-assignments-count'],
+  { revalidate: 60, tags: ['assignments'] }
+);
+
 export default async function LeaderboardPage() {
   const t = await getTranslations('Leaderboard');
   const session = await getAuthSession();
@@ -53,8 +63,13 @@ export default async function LeaderboardPage() {
     redirect('/');
   }
 
-  // Fetch all enrolled users or trainers with their passed submissions (cached 30s)
-  const users = await getCachedLeaderboardUsers();
+  // Fetch all enrolled users or trainers with their passed submissions & active modules count (cached)
+  const [users, totalAssignmentsCount] = await Promise.all([
+    getCachedLeaderboardUsers(),
+    getCachedActiveAssignmentsCount(),
+  ]);
+
+  const totalModules = totalAssignmentsCount || 21;
 
   // Verify enrollment & role in memory from fetched user record
   const currentUser = users.find((u) => u.id === session.user.id);
@@ -124,7 +139,7 @@ export default async function LeaderboardPage() {
               href="/"
               className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-emerald-400 transition-colors shrink-0"
             >
-              <span>← Dashboard</span>
+              <span>{t('backToDashboard')}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800 hidden sm:block"></div>
             <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
@@ -139,7 +154,7 @@ export default async function LeaderboardPage() {
 
           <div className="flex items-center gap-2 text-xs font-mono">
             <span className="bg-emerald-950/60 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60">
-              Rank: #{currentUserRank > 0 ? currentUserRank : '-'}
+              {t('userRank', { rank: currentUserRank > 0 ? currentUserRank : '-' })}
             </span>
           </div>
         </div>
@@ -154,7 +169,7 @@ export default async function LeaderboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-semibold mb-3 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                <span>🥇 Gamified Evaluation Engine</span>
+                <span>{t('engineBadge')}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-zinc-50 tracking-tight">
                 {t('title')}
@@ -194,9 +209,13 @@ export default async function LeaderboardPage() {
                   {leaderboardEntries[1].name}
                 </h3>
                 <div className="mt-3 bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-mono flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold">{leaderboardEntries[1].passedCount} Module</span>
+                  <span className="text-emerald-400 font-bold">
+                    {t('modulesCount', { count: leaderboardEntries[1].passedCount })}
+                  </span>
                   <span className="text-zinc-600">•</span>
-                  <span className="text-cyan-400">{leaderboardEntries[1].avgScore}% Scos</span>
+                  <span className="text-cyan-400">
+                    {t('scoreAvg', { score: leaderboardEntries[1].avgScore })}
+                  </span>
                 </div>
               </div>
             )}
@@ -218,9 +237,13 @@ export default async function LeaderboardPage() {
                   {leaderboardEntries[0].name}
                 </h3>
                 <div className="mt-3 bg-amber-950/60 px-4 py-1.5 rounded-xl border border-amber-800/60 text-xs font-mono flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold">{leaderboardEntries[0].passedCount} Module Trecute</span>
+                  <span className="text-emerald-400 font-bold">
+                    {t('modulesPassed', { count: leaderboardEntries[0].passedCount })}
+                  </span>
                   <span className="text-amber-500">•</span>
-                  <span className="text-amber-300 font-bold">{leaderboardEntries[0].avgScore}% Medie</span>
+                  <span className="text-amber-300 font-bold">
+                    {t('scoreAvg', { score: leaderboardEntries[0].avgScore })}
+                  </span>
                 </div>
               </div>
             )}
@@ -242,9 +265,13 @@ export default async function LeaderboardPage() {
                   {leaderboardEntries[2].name}
                 </h3>
                 <div className="mt-3 bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-mono flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold">{leaderboardEntries[2].passedCount} Module</span>
+                  <span className="text-emerald-400 font-bold">
+                    {t('modulesCount', { count: leaderboardEntries[2].passedCount })}
+                  </span>
                   <span className="text-zinc-600">•</span>
-                  <span className="text-cyan-400">{leaderboardEntries[2].avgScore}% Scos</span>
+                  <span className="text-cyan-400">
+                    {t('scoreAvg', { score: leaderboardEntries[2].avgScore })}
+                  </span>
                 </div>
               </div>
             )}
@@ -255,21 +282,23 @@ export default async function LeaderboardPage() {
         <section className="bg-zinc-900/90 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl">
           <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between">
             <h2 className="text-base font-bold text-zinc-100 font-mono flex items-center gap-2">
-              <span>📊 Structură Clasament Complet</span>
+              <span>{t('tableTitle')}</span>
             </h2>
-            <span className="text-xs font-mono text-zinc-400">Total: {leaderboardEntries.length} Cursanți</span>
+            <span className="text-xs font-mono text-zinc-400">
+              {t('totalStudents', { count: leaderboardEntries.length })}
+            </span>
           </div>
 
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse font-sans text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/80 text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
-                  <th className="py-3 px-4 text-center w-16">Rank</th>
-                  <th className="py-3 px-4">Cursant QA</th>
-                  <th className="py-3 px-4">Nivel Progres</th>
-                  <th className="py-3 px-4 text-center">Module Trecute</th>
-                  <th className="py-3 px-4 text-center">Scor Mediu</th>
-                  <th className="py-3 px-4 text-right">Portofoliu</th>
+                  <th className="py-3 px-4 text-center w-16">{t('thRank')}</th>
+                  <th className="py-3 px-4">{t('thStudent')}</th>
+                  <th className="py-3 px-4">{t('thProgress')}</th>
+                  <th className="py-3 px-4 text-center">{t('thPassed')}</th>
+                  <th className="py-3 px-4 text-center">{t('thAvgScore')}</th>
+                  <th className="py-3 px-4 text-right">{t('thPortfolio')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-mono">
@@ -317,12 +346,12 @@ export default async function LeaderboardPage() {
                               <span className="font-bold text-zinc-100 truncate">{entry.name}</span>
                               {entry.isCurrentUser && (
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                                  TU
+                                  {t('youBadge')}
                                 </span>
                               )}
                               {entry.role === 'TRAINER' && (
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
-                                  TRAINER
+                                  {t('trainer')}
                                 </span>
                               )}
                             </div>
@@ -337,13 +366,13 @@ export default async function LeaderboardPage() {
                       <td className="py-3.5 px-4">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-950 border border-zinc-800 text-xs text-zinc-300">
                           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                          Modulul {entry.highestModule} Deblocat
+                          {t('moduleUnlocked', { module: entry.highestModule })}
                         </span>
                       </td>
 
                       {/* Modules Passed */}
                       <td className="py-3.5 px-4 text-center font-bold text-emerald-400">
-                        {entry.passedCount} / 8
+                        {entry.passedCount} / {totalModules}
                       </td>
 
                       {/* Avg Score */}
@@ -358,11 +387,11 @@ export default async function LeaderboardPage() {
                             href={`/portfolio/${entry.id}`}
                             className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 hover:underline transition-colors"
                           >
-                            <span>Portofoliu</span>
+                            <span>{t('portfolioLink')}</span>
                             <span>→</span>
                           </Link>
                         ) : (
-                          <span className="text-xs text-zinc-600">Privat</span>
+                          <span className="text-xs text-zinc-600">{t('privateBadge')}</span>
                         )}
                       </td>
                     </tr>

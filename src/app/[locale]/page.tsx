@@ -8,6 +8,7 @@ import HeaderAuth from '@/components/HeaderAuth';
 import ShareProfileButton from '@/components/ShareProfileButton';
 import EditProfileModal from '@/components/EditProfileModal';
 import ModuleCardItem from '@/components/ModuleCardItem';
+import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
 
 export const revalidate = 0;
 
@@ -29,19 +30,23 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 interface PageProps {
+  params?: Promise<{ locale: string }>;
   searchParams: Promise<{ error?: string }>;
 }
 
-export default async function StudentDashboard({ searchParams }: PageProps) {
-  const t = await getTranslations('Index');
-  const tDash = await getTranslations('Dashboard');
-  const [{ error }, session] = await Promise.all([
+export default async function StudentDashboard({ params, searchParams }: PageProps) {
+  const [t, tDash, tAssignments, { locale }, { error }, session] = await Promise.all([
+    getTranslations('Index'),
+    getTranslations('Dashboard'),
+    getTranslations('Assignments'),
+    params ? params.then((p) => p || { locale: 'en' }).catch(() => ({ locale: 'en' })) : Promise.resolve({ locale: 'en' }),
     searchParams.then((sp) => sp || {}).catch(() => ({}) as { error?: string }),
     getAuthSession(),
   ]);
 
   const isUnauthenticatedError = error === 'Unauthenticated';
   const userId = session?.user?.id;
+  const dateLocale = locale === 'ro' ? 'ro-RO' : 'en-GB';
 
   // Fetch cached assignments, submissions, and profile concurrently
   const [rawAssignments, submissions, userRecord] = await Promise.all([
@@ -73,7 +78,9 @@ export default async function StudentDashboard({ searchParams }: PageProps) {
       uniqueAssignmentsMap.set(assignment.module, assignment);
     }
   }
-  const assignments = Array.from(uniqueAssignmentsMap.values()).sort((a, b) => a.module - b.module);
+  const assignments = Array.from(uniqueAssignmentsMap.values())
+    .sort((a, b) => a.module - b.module)
+    .map((assignment) => getLocalizedAssignment(assignment, (key) => tAssignments(key as any)));
 
   // Determine passed assignments and completed module numbers
   const passedAssignmentIds = new Set(submissions.map((s) => s.assignmentId));
@@ -369,7 +376,7 @@ export default async function StudentDashboard({ searchParams }: PageProps) {
                             : assignment.lockReason === 'FUTURE_UNLOCK'
                             ? `🔒 ${tDash('unlocksOn', {
                                 date: assignment.unlockDate
-                                  ? new Date(assignment.unlockDate).toLocaleDateString('ro-RO', {
+                                  ? new Date(assignment.unlockDate).toLocaleDateString(dateLocale, {
                                       day: 'numeric',
                                       month: 'short',
                                       year: 'numeric',

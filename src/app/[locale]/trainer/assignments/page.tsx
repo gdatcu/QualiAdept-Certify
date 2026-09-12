@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import CreateAssignmentForm from '@/components/CreateAssignmentForm';
 import ToggleAssignmentButton from '@/components/ToggleAssignmentButton';
 import DeleteAssignmentButton from '@/components/DeleteAssignmentButton';
+import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +18,16 @@ export default async function TrainerAssignmentsPage() {
     redirect('/');
   }
 
+  const tAssignments = await getTranslations('Assignments');
+
   // Fetch all assignments ordered by module integer ascending
-  const assignments = await prisma.assignment.findMany({
+  const rawAssignments = await prisma.assignment.findMany({
     orderBy: {
       module: 'asc',
     },
   });
+
+  const assignments = rawAssignments.map((a) => getLocalizedAssignment(a, tAssignments));
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-500 selection:text-zinc-950 flex flex-col justify-between">

@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
 import SubmissionsTable, { SubmissionRecord } from './SubmissionsTable';
+import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
 
 export const metadata: Metadata = {
   title: 'QualiAdept Certify | Trainer God Mode',
@@ -11,8 +12,15 @@ export const metadata: Metadata = {
 
 export const revalidate = 0;
 
-export default async function TrainerDashboardPage() {
+interface TrainerPageProps {
+  params?: Promise<{ locale: string }>;
+}
+
+export default async function TrainerDashboardPage({ params }: TrainerPageProps) {
+  const resolvedParams = params ? await params : { locale: 'en' };
+  const locale = resolvedParams?.locale || 'en';
   const t = await getTranslations('Trainer');
+  const tAssignments = await getTranslations('Assignments');
 
   // Fetch aggregations and latest 100 submissions with pruned relations concurrently
   const [totalSubmissions, passCount, failCount, aggregateScore, rawSubmissions] =
@@ -59,7 +67,7 @@ export default async function TrainerDashboardPage() {
       }),
     ]);
 
-  // Convert Date objects to ISO strings for client prop serialization
+  // Convert Date objects to ISO strings and localize assignment titles for client prop serialization
   const submissions: SubmissionRecord[] = rawSubmissions.map((s) => ({
     ...s,
     submittedAt: s.submittedAt.toISOString(),
@@ -67,6 +75,7 @@ export default async function TrainerDashboardPage() {
       ...s.user,
       createdAt: s.user.createdAt.toISOString(),
     },
+    assignment: getLocalizedAssignment(s.assignment, tAssignments),
   }));
 
   // Calculate top key metrics
@@ -89,7 +98,7 @@ export default async function TrainerDashboardPage() {
                   {t('title')}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono font-bold">
-                  God Mode
+                  {t('godMode')}
                 </span>
               </div>
               <p className="text-xs text-zinc-400 font-mono group-hover:text-zinc-300">certify.qualiadept.eu / trainer</p>
@@ -111,7 +120,7 @@ export default async function TrainerDashboardPage() {
               <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Student Portal
+              {t('studentPortal')}
             </Link>
           </div>
         </div>
@@ -128,7 +137,7 @@ export default async function TrainerDashboardPage() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span className="text-xs font-mono text-emerald-400 uppercase tracking-wider font-semibold">
-                  Live Monitoring Stream
+                  {t('liveStream')}
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50 tracking-tight">
@@ -140,7 +149,7 @@ export default async function TrainerDashboardPage() {
             </div>
 
             <div className="flex items-center gap-3 bg-zinc-950 px-4 py-2.5 rounded-xl border border-zinc-800 font-mono text-xs text-zinc-400 self-start md:self-auto">
-              <span>Database Status: <strong className="text-emerald-400">Connected</strong></span>
+              <span>{t('dbStatus')} <strong className="text-emerald-400">{t('dbConnected')}</strong></span>
             </div>
           </div>
         </section>
@@ -159,7 +168,7 @@ export default async function TrainerDashboardPage() {
             </div>
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-black font-mono text-zinc-50">{totalSubmissions}</span>
-              <span className="text-xs text-zinc-400 font-mono">records</span>
+              <span className="text-xs text-zinc-400 font-mono">{t('records')}</span>
             </div>
           </div>
 
@@ -176,7 +185,7 @@ export default async function TrainerDashboardPage() {
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-black font-mono text-emerald-400">{passRate}%</span>
               <span className="text-xs text-zinc-400 font-mono">
-                ({passCount} pass / {failCount} fail)
+                {t('passFailSummary', { pass: passCount, fail: failCount })}
               </span>
             </div>
           </div>
@@ -184,7 +193,7 @@ export default async function TrainerDashboardPage() {
           {/* Card 3: Average Score */}
           <div className="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-5 shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400">
-              <span className="text-xs font-mono uppercase tracking-wider">Average Score</span>
+              <span className="text-xs font-mono uppercase tracking-wider">{t('averageScore')}</span>
               <div className="h-8 w-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -193,7 +202,7 @@ export default async function TrainerDashboardPage() {
             </div>
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-black font-mono text-cyan-300">{avgScore}%</span>
-              <span className="text-xs text-zinc-400 font-mono">platform average</span>
+              <span className="text-xs text-zinc-400 font-mono">{t('platformAverage')}</span>
             </div>
           </div>
 
@@ -209,7 +218,7 @@ export default async function TrainerDashboardPage() {
             </div>
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-black font-mono text-indigo-300">{uniqueStudents}</span>
-              <span className="text-xs text-zinc-400 font-mono">enrolled candidates</span>
+              <span className="text-xs text-zinc-400 font-mono">{t('enrolledCandidates')}</span>
             </div>
           </div>
         </section>
@@ -219,10 +228,10 @@ export default async function TrainerDashboardPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-purple-400"></span>
-              All Student Submissions
+              {t('allSubmissions')}
             </h2>
             <span className="text-xs font-mono text-zinc-400">
-              Showing {submissions.length} records
+              {t('showingRecords', { count: submissions.length })}
             </span>
           </div>
 

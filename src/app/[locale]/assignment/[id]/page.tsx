@@ -1,12 +1,15 @@
 import { notFound, redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
 import AssignmentWorkspace from './AssignmentWorkspace';
 
 interface PageProps {
   params: Promise<{
     id: string;
+    locale?: string;
   }>;
 }
 
@@ -104,6 +107,9 @@ export default async function AssignmentPage({ params }: PageProps) {
     }
   }
 
+  const tAssignments = await getTranslations('Assignments');
+  const localizedAssignment = getLocalizedAssignment(assignment, (key) => tAssignments(key as any));
+
   const initialSubmissions = currentSubmissions.map((s) => ({
     id: s.id,
     codePayload: s.codePayload,
@@ -116,11 +122,11 @@ export default async function AssignmentPage({ params }: PageProps) {
   return (
     <AssignmentWorkspace
       assignment={{
-        id: assignment.id,
-        title: assignment.title,
-        description: assignment.description,
-        module: assignment.module,
-        validationType: assignment.validationType,
+        id: localizedAssignment.id,
+        title: localizedAssignment.title,
+        description: localizedAssignment.description,
+        module: localizedAssignment.module,
+        validationType: localizedAssignment.validationType,
       }}
       initialSubmissions={initialSubmissions}
     />

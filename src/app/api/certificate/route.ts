@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import React from 'react';
 import path from 'path';
 import fs from 'fs';
+import QRCode from 'qrcode';
 import { renderToStream } from '@react-pdf/renderer';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
@@ -63,12 +64,34 @@ export async function GET(req: NextRequest) {
     }
 
     const studentName = dbUser.name || session.user.name || 'QA Automation Student';
-    const issueDateFormatted = new Date().toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const certificateId = `QA-${dbUser.id.substring(0, 6).toUpperCase()}`;
+    
+    // Format issue date in DD.MM.YYYY matching the certificate standard
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const issueDateFormatted = `${day}.${month}.${year}`;
+
+    // Standardized Certificate ID
+    const shortHash = dbUser.id.replace(/-/g, '').substring(0, 6).toUpperCase();
+    const certificateId = `CERT-${year}-${shortHash}`;
+
+    // Generate Verification URL and QR Code
+    const origin = req.nextUrl?.origin || 'https://certify.qualiadept.eu';
+    const verificationUrl = `${origin}/portfolio/${dbUser.id}`;
+    let qrCodeDataUri = '';
+    try {
+      qrCodeDataUri = await QRCode.toDataURL(verificationUrl, {
+        margin: 1,
+        width: 140,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff',
+        },
+      });
+    } catch (qrErr) {
+      console.error('Error generating certificate QR code:', qrErr);
+    }
 
     // Read logo image into base64 data URI for crisp PDF embedding
     const logoPath = path.join(process.cwd(), 'public', 'logo.jpg');
@@ -82,10 +105,15 @@ export async function GET(req: NextRequest) {
     const pdfStream = await renderToStream(
       React.createElement(CertificateTemplate, {
         studentName,
-        courseName: 'QA Automation Engineering Bootcamp',
+        courseName: 'TypeScript & Playwright',
         issueDate: issueDateFormatted,
         certificateId,
         logoUrl: logoDataUri,
+        qrCodeUrl: qrCodeDataUri,
+        mentorName: 'DATCU GEORGE-CRISTIAN',
+        companyName: 'QUALIADEPT',
+        hoursSpent: 50,
+        sessionCount: 20,
       }) as any
     );
 

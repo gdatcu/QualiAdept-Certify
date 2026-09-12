@@ -18,6 +18,7 @@ interface EditProfileModalProps {
 
 export default function EditProfileModal({ initialData }: EditProfileModalProps) {
   const t = useTranslations('ProgressCard');
+  const tProfile = useTranslations('ProfileModal');
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -67,7 +68,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to update profile settings.');
+        throw new Error(errJson.error || tProfile('saveError'));
       }
 
       setSuccessMsg(true);
@@ -77,7 +78,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
         router.refresh();
       }, 1000);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'An error occurred while saving profile.';
+      const msg = err instanceof Error ? err.message : tProfile('saveError');
       setErrorMessage(msg);
     } finally {
       setIsSaving(false);
@@ -112,8 +113,8 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                   ⚙
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-zinc-100">Public Profile Settings</h3>
-                  <p className="text-xs text-zinc-400 font-mono">Visible on your public portfolio page</p>
+                  <h3 className="text-base font-bold text-zinc-100">{tProfile('title')}</h3>
+                  <p className="text-xs text-zinc-400 font-mono">{tProfile('subtitle')}</p>
                 </div>
               </div>
 
@@ -135,7 +136,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-bold text-zinc-200">
-                        Make Profile Public
+                        {tProfile('makePublic')}
                       </span>
                       <span
                         className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
@@ -144,13 +145,13 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                             : 'bg-amber-950 text-amber-400 border border-amber-800'
                         }`}
                       >
-                        {isProfilePublic ? 'PUBLIC' : 'PRIVATE'}
+                        {isProfilePublic ? tProfile('publicBadge') : tProfile('privateBadge')}
                       </span>
                     </div>
                     <span className="text-[11px] font-mono text-zinc-400 block mt-1">
                       {isProfilePublic
-                        ? 'Anyone with your link can view your portfolio'
-                        : 'Portfolio access is locked with 🔒 Private Guard'}
+                        ? tProfile('publicHelp')
+                        : tProfile('privateHelp')}
                     </span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -167,25 +168,25 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                 {/* About Me */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-mono font-semibold text-zinc-300">
-                    About Me / Bio
+                    {tProfile('aboutMe')}
                   </label>
                   <textarea
                     value={aboutMe}
                     onChange={(e) => setAboutMe(e.target.value)}
-                    placeholder="Tell recruiters about your QA Automation background, tools you use, and career goals..."
+                    placeholder={tProfile('aboutMePlaceholder')}
                     rows={3}
                     maxLength={300}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
                   />
                   <span className="text-[10px] font-mono text-zinc-500 text-right">
-                    {aboutMe.length}/300 chars
+                    {aboutMe.length}/300 {tProfile('chars')}
                   </span>
                 </div>
 
                 {/* LinkedIn URL */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-mono font-semibold text-zinc-300 flex items-center gap-1.5">
-                    <span className="text-blue-400">LinkedIn Profile URL</span>
+                    <span className="text-blue-400">{tProfile('linkedin')}</span>
                   </label>
                   <input
                     type="url"
@@ -199,7 +200,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                 {/* GitHub Profile URL */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-mono font-semibold text-zinc-300 flex items-center gap-1.5">
-                    <span>GitHub Profile URL</span>
+                    <span>{tProfile('github')}</span>
                   </label>
                   <input
                     type="url"
@@ -213,7 +214,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                 {/* Public Contact Email */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-mono font-semibold text-zinc-300 flex items-center gap-1.5">
-                    <span>Public Contact Email</span>
+                    <span>{tProfile('email')}</span>
                   </label>
                   <input
                     type="email"
@@ -233,7 +234,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
 
                 {successMsg && (
                   <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-mono">
-                    ✓ Profile settings saved successfully!
+                    {tProfile('saveSuccess')}
                   </div>
                 )}
               </div>
@@ -245,7 +246,7 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
                 >
-                  Cancel
+                  {tProfile('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -253,9 +254,9 @@ export default function EditProfileModal({ initialData }: EditProfileModalProps)
                   className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs font-mono transition-all shadow-md disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                 >
                   {isSaving ? (
-                    <span>Saving...</span>
+                    <span>{tProfile('saving')}</span>
                   ) : (
-                    <span>Save Profile</span>
+                    <span>{tProfile('save')}</span>
                   )}
                 </button>
               </div>
