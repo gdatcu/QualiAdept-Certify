@@ -108,16 +108,36 @@ export async function syncModuleCodeToGitHub({
       });
 
       if (!createRepoRes.ok) {
-        const createError = await createRepoRes.json().catch(() => ({}));
+        const createError = (await createRepoRes.json().catch(() => ({}))) as {
+          message?: string;
+        };
+
+        // GitHub returns 404 with {"message": "Not Found"} when the OAuth token lacks public_repo/repo scope
+        const isScopeIssue =
+          createRepoRes.status === 404 ||
+          createRepoRes.status === 401 ||
+          createRepoRes.status === 403 ||
+          createError.message === 'Not Found';
+
         return {
           success: false,
-          error: 'REPO_CREATION_FAILED',
-          message:
-            (createError as { message?: string })?.message ||
-            'Nu s-a putut crea repository-ul pe GitHub. Asigură-te că ai acordat permisiunea public_repo la logare.',
+          error: isScopeIssue ? 'SCOPE_INSUFFICIENT' : 'REPO_CREATION_FAILED',
+          message: isScopeIssue
+            ? 'Permisiuni GitHub insuficiente pentru crearea repository-ului. Te rugăm să te reconectezi cu GitHub.'
+            : createError.message || 'Nu s-a putut crea repository-ul pe GitHub.',
         };
       }
+
+      // Wait 1.5 seconds for GitHub to finalize Git ref initialization for the new repo
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     } else if (!repoCheckRes.ok) {
+      if (repoCheckRes.status === 401 || repoCheckRes.status === 403) {
+        return {
+          success: false,
+          error: 'TOKEN_UNAUTHORIZED',
+          message: 'Permisiuni GitHub expirate sau insuficiente. Te rugăm să te reautentifici cu GitHub.',
+        };
+      }
       throw new Error(`GitHub repo check failed with HTTP ${repoCheckRes.status}`);
     }
 
@@ -163,13 +183,22 @@ export async function syncModuleCodeToGitHub({
     );
 
     if (!commitRes.ok) {
-      const commitErr = await commitRes.json().catch(() => ({}));
+      const commitErr = (await commitRes.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
+      const isScopeIssue =
+        commitRes.status === 404 ||
+        commitRes.status === 401 ||
+        commitRes.status === 403 ||
+        commitErr.message === 'Not Found';
+
       return {
         success: false,
-        error: 'COMMIT_FAILED',
-        message:
-          (commitErr as { message?: string })?.message ||
-          'Nu s-a putut salva commit-ul pe GitHub.',
+        error: isScopeIssue ? 'SCOPE_INSUFFICIENT' : 'COMMIT_FAILED',
+        message: isScopeIssue
+          ? 'Permisiuni GitHub insuficiente pentru salvarea fișierului. Te rugăm să te reconectezi cu GitHub.'
+          : commitErr.message || 'Nu s-a putut salva commit-ul pe GitHub.',
       };
     }
 
