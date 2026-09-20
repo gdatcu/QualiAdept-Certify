@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "admin:grant": "npx tsx scripts/grant-admin.ts",
+    "admin:delete-user": "npx tsx scripts/delete-user.ts",
     "db:seed": "prisma db seed",
     "test": "vitest run",
     "test:watch": "vitest",

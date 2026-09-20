@@ -26,14 +26,14 @@ export async function sendDiscordTriumphNotification({
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL ||
       process.env.NEXTAUTH_URL ||
-      'https://qualiadept.eu';
+      'https://certify.qualiadept.eu';
 
     const portfolioUrl = userId ? `${baseUrl}/portfolio/${userId}` : baseUrl;
 
     const payload = {
       embeds: [
         {
-          title: `🎉 Modulul ${moduleNum} Deblocat!`,
+          title: `🎉 Modulul ${moduleNum} Validat cu Succes!`,
           description: `**${studentName}** a trecut cu succes testele ${validationLabel} și și-a validat codul${
             assignmentTitle ? ` pentru "${assignmentTitle}"` : ''
           }.`,
