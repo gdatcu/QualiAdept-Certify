@@ -30,10 +30,16 @@ export async function sendDiscordTriumphNotification({
 
     const portfolioUrl = userId ? `${baseUrl}/portfolio/${userId}` : baseUrl;
 
+    const nextModuleNum = moduleNum + 1;
+    const embedTitle =
+      nextModuleNum > 21
+        ? '🎓 Curs Finalizat & Certificat Deblocat!'
+        : `🎉 Modulul ${nextModuleNum} Deblocat!`;
+
     const payload = {
       embeds: [
         {
-          title: `🎉 Modulul ${moduleNum} Validat cu Succes!`,
+          title: embedTitle,
           description: `**${studentName}** a trecut cu succes testele ${validationLabel} și și-a validat codul${
             assignmentTitle ? ` pentru "${assignmentTitle}"` : ''
           }.`,
