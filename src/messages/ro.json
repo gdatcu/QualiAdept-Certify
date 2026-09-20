@@ -275,5 +275,16 @@
     "m19_description": "Rulează containere Ubuntu headless și validează integrarea continuă.",
     "m20_title": "Sesiunea 20: Final Demo Day & Review",
     "m20_description": "Rularea suitei finale și obținerea scorului maxim pentru certificare."
+  },
+  "GitHubSync": {
+    "syncButton": "Sincronizează pe GitHub",
+    "syncing": "Se sincronizează...",
+    "synced": "Sincronizat pe GitHub",
+    "viewRepo": "Vezi Repo GitHub",
+    "viewCommit": "Vezi Commit",
+    "success": "✓ Soluția a fost sincronizată cu succes în repository-ul tău GitHub!",
+    "reauthRequired": "Permisiuni insuficiente. Te rugăm să te reconectezi cu GitHub pentru a permite salvarea commit-urilor.",
+    "reauthButton": "Reconectează-te cu GitHub",
+    "autoSyncBadge": "Auto-Sync GitHub Activ"
   }
 }

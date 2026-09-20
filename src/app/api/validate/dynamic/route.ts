@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { sendDiscordTriumphNotification } from '@/lib/webhook';
+import { syncModuleCodeToGitHub } from '@/lib/github-sync';
 
 export interface FeedbackItem {
   check: string;
@@ -255,19 +256,28 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Fire non-blocking Discord Triumph Webhook notification if score === 100
+    // Fire non-blocking Discord Triumph Webhook notification & GitHub Auto-Sync if score === 100
     if (isPass && score === 100) {
       const studentName = session?.user?.name || existingUser?.name || 'QA Student';
       try {
-        await sendDiscordTriumphNotification({
-          studentName,
-          userId,
-          moduleNum: assignment.module,
-          assignmentTitle: assignment.title,
-          validationType: 'DYNAMIC',
-        });
+        await Promise.allSettled([
+          sendDiscordTriumphNotification({
+            studentName,
+            userId,
+            moduleNum: assignment.module,
+            assignmentTitle: assignment.title,
+            validationType: 'DYNAMIC',
+          }),
+          syncModuleCodeToGitHub({
+            userId,
+            moduleNum: assignment.module,
+            assignmentTitle: assignment.title,
+            codePayload: codePayload || '',
+            validationType: 'DYNAMIC',
+          }),
+        ]);
       } catch (err) {
-        console.error('Discord webhook notification error:', err);
+        console.error('Post-validation async dispatch error in dynamic route:', err);
       }
     }
 

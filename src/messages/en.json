@@ -275,5 +275,16 @@
     "m19_description": "Run automated headless test suites in Ubuntu containers and validate continuous integration.",
     "m20_title": "Session 20: Final Demo Day & Certification Review",
     "m20_description": "Execute the final comprehensive test suite and attain 100% score for official certification."
+  },
+  "GitHubSync": {
+    "syncButton": "Sync to GitHub",
+    "syncing": "Syncing to GitHub...",
+    "synced": "Synced to GitHub",
+    "viewRepo": "View GitHub Repo",
+    "viewCommit": "View Commit",
+    "success": "✓ Code solution successfully committed and synced to your GitHub repository!",
+    "reauthRequired": "Insufficient GitHub permissions. Please re-authenticate to allow committing code to your public portfolio repository.",
+    "reauthButton": "Re-authenticate with GitHub",
+    "autoSyncBadge": "GitHub Auto-Sync Active"
   }
 }

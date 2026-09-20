@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { sendDiscordTriumphNotification } from '@/lib/webhook';
+import { syncModuleCodeToGitHub } from '@/lib/github-sync';
 
 export interface FeedbackItem {
   check: string;
@@ -338,19 +339,28 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Fire non-blocking Discord Triumph Webhook notification if score === 100
+    // Fire non-blocking Discord Triumph Webhook notification & GitHub Auto-Sync if score === 100
     if (isPass && score === 100) {
       const studentName = session?.user?.name || existingUser?.name || 'QA Student';
       try {
-        await sendDiscordTriumphNotification({
-          studentName,
-          userId,
-          moduleNum: targetAssignment?.module || 1,
-          assignmentTitle: targetAssignment?.title,
-          validationType: 'STATIC',
-        });
+        await Promise.allSettled([
+          sendDiscordTriumphNotification({
+            studentName,
+            userId,
+            moduleNum: targetAssignment?.module || 1,
+            assignmentTitle: targetAssignment?.title,
+            validationType: 'STATIC',
+          }),
+          syncModuleCodeToGitHub({
+            userId,
+            moduleNum: targetAssignment?.module || 1,
+            assignmentTitle: targetAssignment?.title,
+            codePayload: htmlCode,
+            validationType: 'STATIC',
+          }),
+        ]);
       } catch (err) {
-        console.error('Discord webhook notification error:', err);
+        console.error('Post-validation async dispatch error:', err);
       }
     }
 

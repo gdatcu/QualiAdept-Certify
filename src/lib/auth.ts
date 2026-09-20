@@ -17,6 +17,11 @@ export const authOptions: NextAuthOptions = {
         process.env.GITHUB_SECRET ||
         process.env.AUTH_GITHUB_SECRET ||
         '',
+      authorization: {
+        params: {
+          scope: 'read:user user:email public_repo',
+        },
+      },
       allowDangerousEmailAccountLinking: true,
     }),
   ],
