@@ -21,6 +21,7 @@ interface FeedbackItem {
   check: string;
   passed: boolean;
   message: string;
+  file?: string;
 }
 
 interface ValidationResponse {
@@ -48,44 +49,203 @@ export interface SubmissionRecord {
   submittedAt: string;
 }
 
-interface AssignmentWorkspaceProps {
+export interface AssignmentWorkspaceProps {
   assignment: AssignmentData;
   initialSubmissions?: SubmissionRecord[];
 }
 
-const PASSING_SAMPLE = `<main>
-  <h1>Task Tracker</h1>
-  <div id="add-task-section">
-    <h2>Add New Task</h2>
-    <input type="text" id="task-title" placeholder="Enter task name..." />
-    <button type="button" data-testid="submit-btn">Submit Task</button>
-  </div>
-</main>`;
+export interface ProjectFile {
+  name: string;
+  language: string;
+  icon: string;
+  badge?: string;
+}
 
-const FAILING_SAMPLE = `<div class="container">
-  <h1>Task Tracker</h1>
-  <div class="form-wrapper">
-    <input type="text" placeholder="Task title..." />
-    <button type="button">Submit Task</button>
-  </div>
-</div>`;
+export function getModuleFiles(moduleNum: number, validationType: string): ProjectFile[] {
+  if (validationType === 'DYNAMIC') {
+    return [{ name: 'e2e.spec.ts', language: 'typescript', icon: '⚡' }];
+  }
+  if (moduleNum <= 1) {
+    return [{ name: 'index.html', language: 'html', icon: '🌐' }];
+  }
+  if (moduleNum === 2) {
+    return [
+      { name: 'index.html', language: 'html', icon: '🌐' },
+      { name: 'style.css', language: 'css', icon: '🎨' },
+    ];
+  }
+  return [
+    { name: 'index.html', language: 'html', icon: '🌐' },
+    { name: 'style.css', language: 'css', icon: '🎨' },
+    { name: 'app.js', language: 'javascript', icon: '📜' },
+  ];
+}
 
-const DYNAMIC_PLAYWRIGHT_SAMPLE = `import { test, expect } from '@playwright/test';
+// ==========================================
+// 1. STARTER TEMPLATES (Challenge Scaffolds)
+// ==========================================
 
-test('QualiAdept Task Tracker E2E Automation', async ({ page }) => {
-  // 1. Navigate to target application URL
+const STARTER_HTML_S1 = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Tracker</title>
+</head>
+<body>
+  <header>
+    <!-- Cerința: Creează bara de navigație cu tag-uri semantice și test-id -->
+    <nav>
+      <h1>Task Tracker</h1>
+      <button data-testid="btn-login">Log In</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="add-task-section">
+      <!-- Cerința: Adaugă formularul de adăugare task -->
+      <form>
+        <input type="text" id="task-input" placeholder="Nume Task">
+        <button type="submit" data-testid="submit-btn">Adaugă Task</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>`;
+
+const STARTER_HTML_S2 = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Tracker</title>
+  <!-- Cerința 1: Conectează fișierul extern style.css aici -->
+</head>
+<body>
+  <header>
+    <!-- Cerința 2: Navbar flexibil cu clasa navbar, id logo și data-testid btn-login -->
+    <nav>
+      <div>Task Tracker</div>
+      <button data-testid="btn-login">Log In</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="login-container">
+      <form>
+        <input type="email" id="login-email" data-testid="input-email" placeholder="Email">
+        <input type="password" id="login-password" data-testid="input-password" placeholder="Parolă">
+        <button data-testid="btn-submit-login">Log In</button>
+      </form>
+    </div>
+
+    <section class="task-input-section">
+      <form id="add-task-form">
+        <input type="text" id="task-name" placeholder="Nume Task">
+        <!-- Cerința 4: Adaugă atributul disabled pentru butonul de salvare -->
+        <button type="submit" data-testid="submit-task-btn">Salvează Task</button>
+      </form>
+    </section>
+
+    <section class="task-history-section">
+      <table id="history-table">
+        <tbody>
+          <tr>
+            <td>#1001</td>
+            <td>Task 1</td>
+          </tr>
+          <tr>
+            <td>#1002</td>
+            <td>Task 2</td>
+          </tr>
+          <!-- Cerința 3: Adaugă al 3-lea rând cu clasa delete-row pe butonul de ștergere -->
+          <tr>
+            <td>#1003</td>
+            <td>
+              <button>Șterge</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`;
+
+const STARTER_CSS_S2 = `/* ============================================================
+ * Sesiunea 2: CSS & DOM Selectors
+ * ============================================================
+ * Completează fișierul cu regulile CSS conform cerințelor:
+ * 1. Meniu Flexibil: Stilizare pentru clasa .navbar (Flexbox) și #logo
+ * 2. Stări Dinamice: Selectori pentru :hover (butoane active) și :disabled (butoane inactive)
+ * 3. Selectori Structurali: Stilizare pentru al 3-lea rând (tr:nth-child(3)) și .delete-row
+ * ============================================================ */
+
+/* Scrie regulile CSS aici: */
+`;
+
+const STARTER_JS_S3 = `// ============================================================
+// Sesiunea 3: JavaScript & DOM Manipulation
+// ============================================================
+// Cerința: Adaugă ascultători de evenimente și manipularea DOM.
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Scrie logica JavaScript aici:
+
+});
+`;
+
+const STARTER_PLAYWRIGHT = `import { test, expect } from '@playwright/test';
+
+test('QualiAdept Task Tracker E2E Test', async ({ page }) => {
+  // 1. Deschide aplicația
   await page.goto('https://qualiadept.eu');
 
-  // 2. Interact with element locator
-  const taskInput = page.locator('#task-input');
-  await taskInput.fill('Write E2E automation test suite');
+  // 2. Localizează elementele și interacționează cu interfața
 
-  // 3. Click submission button
-  await page.locator('[data-testid="submit-btn"]').click();
+  // 3. Verifică starea cu aserțiuni web-first (expect)
 
-  // 4. Assert page state and assertion outcome
-  await expect(page).toHaveTitle(/QualiAdept/);
 });`;
+
+function parseInitialFiles(
+  codePayload: string | null | undefined,
+  moduleNum: number,
+  validationType: string,
+  sampleToForce?: string | null
+): Record<string, string> {
+  const defaultFiles = getModuleFiles(moduleNum, validationType);
+  const initial: Record<string, string> = {};
+
+  // 1. Populate starter scaffolds based on module number
+  for (const f of defaultFiles) {
+    if (f.name === 'index.html') {
+      initial['index.html'] = moduleNum <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
+    } else if (f.name === 'style.css') {
+      initial['style.css'] = STARTER_CSS_S2;
+    } else if (f.name === 'app.js') {
+      initial['app.js'] = STARTER_JS_S3;
+    } else if (f.name === 'e2e.spec.ts') {
+      initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
+    }
+  }
+
+  // 2. If a saved submission or sample override is provided, parse and apply it
+  const rawSource = codePayload || sampleToForce;
+  if (rawSource && rawSource.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(rawSource);
+      if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
+        return { ...initial, ...parsed.files };
+      }
+    } catch {
+      // Raw string source (legacy single file)
+    }
+    const primaryName = defaultFiles[0].name;
+    initial[primaryName] = rawSource;
+  }
+
+  return initial;
+}
 
 export default function AssignmentWorkspace({
   assignment,
@@ -97,12 +257,21 @@ export default function AssignmentWorkspace({
   const mostRecent = submissions.length > 0 ? submissions[0] : null;
   const isMostRecentPassed = mostRecent?.status === 'PASS';
 
-  // Code persistence: Pre-populate editor with most recent submission or sample code
-  const [htmlCode, setHtmlCode] = useState<string>(
-    mostRecent?.codePayload ||
-      assignment.passingSample ||
-      (assignment.validationType === 'DYNAMIC' ? DYNAMIC_PLAYWRIGHT_SAMPLE : PASSING_SAMPLE)
+  const availableFiles = getModuleFiles(assignment.module, assignment.validationType);
+  const [activeFile, setActiveFile] = useState<string>(availableFiles[0].name);
+
+  // Multi-file state dictionary
+  const [files, setFiles] = useState<Record<string, string>>(() =>
+    parseInitialFiles(
+      mostRecent?.codePayload,
+      assignment.module,
+      assignment.validationType,
+      assignment.passingSample
+    )
   );
+
+  const [showLivePreview, setShowLivePreview] = useState<boolean>(false);
+  const [previewKey, setPreviewKey] = useState<number>(0);
 
   // Editor lock state for passed modules
   const [isUnlockedForEdit, setIsUnlockedForEdit] = useState<boolean>(!isMostRecentPassed);
@@ -124,27 +293,35 @@ export default function AssignmentWorkspace({
     error?: string;
   } | null>(null);
 
-  const autosaveKey = `qualiadept_draft_${assignment.id}`;
+  const autosaveKey = `qualiadept_draft_mf_${assignment.id}`;
 
   // 1. Initial mount: restore saved draft from localStorage if present
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedDraft = localStorage.getItem(autosaveKey);
       if (savedDraft && savedDraft.trim().length > 0) {
-        setHtmlCode(savedDraft);
+        try {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed && typeof parsed === 'object') {
+            setFiles((prev) => ({ ...prev, ...parsed }));
+            return;
+          }
+        } catch {
+          setFiles((prev) => ({ ...prev, [availableFiles[0].name]: savedDraft }));
+        }
       }
     }
   }, [autosaveKey]);
 
   // 2. Debounced Autosave editor code state changes to localStorage (500ms debounce)
   useEffect(() => {
-    if (typeof window !== 'undefined' && htmlCode) {
+    if (typeof window !== 'undefined' && Object.keys(files).length > 0) {
       const handler = setTimeout(() => {
-        localStorage.setItem(autosaveKey, htmlCode);
+        localStorage.setItem(autosaveKey, JSON.stringify(files));
       }, 500);
       return () => clearTimeout(handler);
     }
-  }, [htmlCode, autosaveKey]);
+  }, [files, autosaveKey]);
 
   // 3. Cooldown timer for anti-spam (10s countdown)
   useEffect(() => {
@@ -167,6 +344,13 @@ export default function AssignmentWorkspace({
     }
   }, [mostRecent]);
 
+  const handleActiveFileChange = (newVal: string) => {
+    setFiles((prev) => ({
+      ...prev,
+      [activeFile]: newVal,
+    }));
+  };
+
   const handleValidation = async () => {
     if (!session?.user) {
       setSubmitError('Authentication Required: Please sign in with GitHub before submitting code.');
@@ -175,6 +359,9 @@ export default function AssignmentWorkspace({
 
     setIsValidating(true);
     setSubmitError(null);
+
+    const payloadString = JSON.stringify({ files });
+    const htmlCode = files['index.html'] || files['sandbox.html'] || files[activeFile] || '';
 
     try {
       const endpoint =
@@ -189,14 +376,15 @@ export default function AssignmentWorkspace({
         },
         body: JSON.stringify({
           assignmentId: assignment.id,
+          codePayload: payloadString,
+          files,
           htmlCode,
-          codePayload: htmlCode,
         }),
       });
 
       if (res.status === 401) {
-        if (typeof window !== 'undefined' && htmlCode) {
-          localStorage.setItem(autosaveKey, htmlCode);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(autosaveKey, payloadString);
         }
         setSubmitError(
           'Sesiunea ta a expirat. Codul a fost salvat local. Te rugăm să dai refresh și să te reautentifici.'
@@ -215,7 +403,7 @@ export default function AssignmentWorkspace({
       // Prepend newly created submission record to history state
       const newRecord: SubmissionRecord = {
         id: `submission-${Date.now()}`,
-        codePayload: htmlCode,
+        codePayload: payloadString,
         status: result.status.toUpperCase(),
         score: result.score,
         feedbackJSON: JSON.stringify(result),
@@ -232,7 +420,7 @@ export default function AssignmentWorkspace({
         }
         // Auto-sync to GitHub on 100% PASS
         if (result.score === 100) {
-          triggerGitHubSync(htmlCode);
+          triggerGitHubSync(payloadString);
         }
       }
     } catch (err: unknown) {
@@ -248,13 +436,15 @@ export default function AssignmentWorkspace({
     if (isSyncingGitHub) return;
     setIsSyncingGitHub(true);
 
+    const payload = codeToSync || JSON.stringify({ files });
+
     try {
       const res = await fetch('/api/github/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assignmentId: assignment.id,
-          codePayload: codeToSync || htmlCode,
+          codePayload: payload,
         }),
       });
 
@@ -286,8 +476,13 @@ export default function AssignmentWorkspace({
   };
 
   const loadHistorySubmission = (record: SubmissionRecord) => {
-    setHtmlCode(record.codePayload);
     setSelectedHistoryId(record.id);
+    const restored = parseInitialFiles(
+      record.codePayload,
+      assignment.module,
+      assignment.validationType
+    );
+    setFiles(restored);
     try {
       const parsed: ValidationResponse = JSON.parse(record.feedbackJSON);
       setValidationResult(parsed);
@@ -295,6 +490,36 @@ export default function AssignmentWorkspace({
       // Ignore parse error
     }
   };
+
+  const currentFileObj = availableFiles.find((f) => f.name === activeFile) || availableFiles[0];
+  const activeCode = files[activeFile] || '';
+
+  // Generate complete HTML document for Live Preview sandbox
+  const livePreviewHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    ${files['style.css'] || ''}
+  </style>
+</head>
+<body>
+  ${(files['index.html'] || files['sandbox.html'] || '')
+    .replace(/<!DOCTYPE.*?>/i, '')
+    .replace(/<html.*?>/i, '')
+    .replace(/<\/html>/i, '')
+    .replace(/<head[\s\S]*?<\/head>/i, '')
+    .replace(/<body.*?>/i, '')
+    .replace(/<\/body>/i, '')}
+  <script>
+    try {
+      ${files['app.js'] || ''}
+    } catch (err) {
+      console.error('QualiAdept sandbox runtime error:', err);
+    }
+  </script>
+</body>
+</html>`;
 
   const isTrainer = session?.user?.role === 'TRAINER';
 
@@ -462,67 +687,99 @@ export default function AssignmentWorkspace({
             {/* Code Editor Window */}
             <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl flex flex-col">
               {/* Window Bar / Tab Controls */}
-              <div className="bg-zinc-950 px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 mr-2">
+              <div className="bg-zinc-950 px-3 py-2.5 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 overflow-x-auto py-0.5">
+                  <div className="flex items-center gap-1.5 mr-2 shrink-0">
                     <span className="h-3 w-3 rounded-full bg-rose-500/80 inline-block"></span>
                     <span className="h-3 w-3 rounded-full bg-amber-500/80 inline-block"></span>
                     <span className="h-3 w-3 rounded-full bg-emerald-500/80 inline-block"></span>
                   </div>
-                  <div className="flex items-center gap-2 bg-zinc-900 px-3 py-1 rounded-md border border-zinc-800 text-xs font-mono text-zinc-300">
-                    <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
-                    {assignment.validationType === 'DYNAMIC' ? 'e2e.spec.ts' : 'index.html'}
+
+                  {/* Multi-File Tab List */}
+                  <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-850">
+                    {availableFiles.map((f) => {
+                      const isActive = activeFile === f.name;
+                      return (
+                        <button
+                          key={f.name}
+                          type="button"
+                          onClick={() => setActiveFile(f.name)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm font-semibold'
+                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                          }`}
+                        >
+                          <span>{f.icon}</span>
+                          <span>{f.name}</span>
+                          {files[f.name] && files[f.name].trim().length > 0 && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 inline-block ml-0.5"></span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Preset Loaders */}
-                <div className="flex items-center gap-2">
-                  {(assignment.passingSample || PASSING_SAMPLE || DYNAMIC_PLAYWRIGHT_SAMPLE) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const sampleToInsert =
-                          assignment.passingSample ||
-                          (assignment.validationType === 'DYNAMIC'
-                            ? DYNAMIC_PLAYWRIGHT_SAMPLE
-                            : PASSING_SAMPLE);
-                        setHtmlCode(sampleToInsert);
-                        setIsUnlockedForEdit(true);
-                      }}
-                      className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60 active:scale-95 border border-emerald-800/60 px-2.5 py-1 rounded transition-all cursor-pointer"
-                    >
-                      + Passing Sample
-                    </button>
-                  )}
+                {/* Right Controls: Live Preview Toggle & Reset Code */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fresh = parseInitialFiles(null, assignment.module, assignment.validationType);
+                      setFiles(fresh);
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem(autosaveKey);
+                      }
+                      setIsUnlockedForEdit(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
+                    title="Resetează fișierele la codul inițial de pornire"
+                  >
+                    <span>🔄 Reset Code</span>
+                  </button>
 
-                  {(assignment.failingSample || (assignment.validationType !== 'DYNAMIC' && FAILING_SAMPLE)) && (
+                  {assignment.validationType !== 'DYNAMIC' && (
                     <button
                       type="button"
-                      onClick={() => {
-                        const sampleToInsert = assignment.failingSample || FAILING_SAMPLE;
-                        setHtmlCode(sampleToInsert);
-                        setIsUnlockedForEdit(true);
-                      }}
-                      className="text-[11px] font-mono text-rose-400 bg-rose-950/40 hover:bg-rose-900/60 active:scale-95 border border-rose-800/60 px-2.5 py-1 rounded transition-all cursor-pointer"
+                      onClick={() => setShowLivePreview((prev) => !prev)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer border ${
+                        showLivePreview
+                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                          : 'bg-zinc-900 text-zinc-300 hover:text-zinc-100 border-zinc-800 hover:bg-zinc-800'
+                      }`}
                     >
-                      + Failing Sample
+                      <span className={`h-2 w-2 rounded-full ${showLivePreview ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
+                      <span>{showLivePreview ? 'Hide Preview' : '👁️ Live Preview'}</span>
                     </button>
                   )}
+                </div>
+              </div>
+
+              {/* Active Tab Subheader Banner */}
+              <div className="bg-zinc-950/60 px-4 py-1.5 border-b border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-500">Editing:</span>
+                  <span className="text-emerald-400 font-bold">{activeFile}</span>
+                  <span className="text-zinc-600">({currentFileObj.language})</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span>{availableFiles.length} project files</span>
+                  <span className="text-zinc-600">•</span>
+                  <span>{activeCode.split('\n').length} lines</span>
                 </div>
               </div>
 
               {/* VS Code Monaco Editor Window */}
               <div className="relative bg-zinc-950 p-2 sm:p-3 font-mono text-sm w-full max-w-full overflow-hidden border-b border-zinc-800">
                 <Editor
-                  height="500px"
-                  language={assignment.validationType === 'DYNAMIC' ? 'typescript' : 'html'}
+                  height="460px"
+                  language={currentFileObj.language}
                   theme="vs-dark"
-                  value={htmlCode}
-                  onChange={(value) => setHtmlCode(value || '')}
+                  value={activeCode}
+                  onChange={(value) => handleActiveFileChange(value || '')}
                   loading={
-                    <div className="h-[500px] w-full flex flex-col items-center justify-center gap-3 bg-zinc-950 text-zinc-400 font-mono text-xs border border-zinc-800 rounded-xl">
+                    <div className="h-[460px] w-full flex flex-col items-center justify-center gap-3 bg-zinc-950 text-zinc-400 font-mono text-xs border border-zinc-800 rounded-xl">
                       <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
                       <span>Loading VS Code engine...</span>
                     </div>
@@ -542,11 +799,47 @@ export default function AssignmentWorkspace({
                 />
               </div>
 
+              {/* Sandboxed Live Preview Drawer */}
+              {showLivePreview && assignment.validationType !== 'DYNAMIC' && (
+                <div className="bg-zinc-950 border-b border-zinc-800 flex flex-col transition-all">
+                  <div className="bg-zinc-900/90 px-4 py-2 border-b border-zinc-800 flex items-center justify-between text-xs font-mono">
+                    <div className="flex items-center gap-2 text-zinc-300">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+                      <span className="font-semibold text-zinc-200">Live Application Sandbox Preview</span>
+                      <span className="text-[10px] text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
+                        Sandboxed Iframe (HTML + CSS + JS)
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewKey((k) => k + 1)}
+                      className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer px-2 py-0.5 rounded bg-zinc-950 border border-zinc-800"
+                      title="Reload sandbox preview"
+                    >
+                      <span>🔄 Reload Preview</span>
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-zinc-950">
+                    <div className="w-full h-[320px] rounded-xl overflow-hidden border border-zinc-800 bg-white shadow-inner">
+                      <iframe
+                        key={previewKey}
+                        title="QualiAdept App Preview Sandbox"
+                        srcDoc={livePreviewHtml}
+                        sandbox="allow-scripts"
+                        className="w-full h-full border-0 bg-slate-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Editor Footer / Submit CTA Bar */}
               <div className="bg-zinc-950/90 px-4 py-3 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
-                  <span>Lines: {htmlCode.split('\n').length}</span>
-                  <span>Chars: {htmlCode.length}</span>
+                  <span>Active: <strong className="text-zinc-200">{activeFile}</strong></span>
+                  <span>Total Files: <strong className="text-emerald-400">{Object.keys(files).length}</strong></span>
                 </div>
 
                 {session?.user ? (
@@ -563,7 +856,7 @@ export default function AssignmentWorkspace({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span>⚙️ Validating...</span>
+                          <span>⚙️ Validating Project...</span>
                         </>
                       ) : cooldown > 0 ? (
                         <span>⏳ Please wait {cooldown}s</span>
@@ -573,7 +866,7 @@ export default function AssignmentWorkspace({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>Submit Code for Validation</span>
+                          <span>Submit Project for Validation</span>
                         </>
                       )}
                     </button>
@@ -947,52 +1240,141 @@ export default function AssignmentWorkspace({
                     </div>
                   )}
 
-                  {/* Assertion Breakdown Checklist */}
+                  {/* Assertion Breakdown Checklist (Grouped by File) */}
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold px-1">
-                      Assertion Results ({validationResult.feedback.filter((f) => f.passed).length}/
-                      {validationResult.feedback.length})
-                    </h4>
-
-                    <div className="space-y-2.5">
-                      {validationResult.feedback.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-3.5 rounded-xl border flex items-start gap-3 transition-all ${
-                            item.passed
-                              ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-100'
-                              : 'bg-rose-950/20 border-rose-800/40 text-rose-100'
-                          }`}
-                        >
-                          {/* Assertion Status Icon */}
-                          <div
-                            className={`h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold ${
-                              item.passed
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                            }`}
-                          >
-                            {item.passed ? '✅' : '❌'}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <h5 className="text-sm font-semibold text-zinc-100 truncate">{item.check}</h5>
-                              <span
-                                className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded ${
-                                  item.passed
-                                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                    : 'bg-rose-950 text-rose-300 border border-rose-800'
-                                }`}
-                              >
-                                {item.passed ? 'PASS' : 'FAIL'}
-                              </span>
-                            </div>
-                            <p className="text-xs mt-1 leading-relaxed text-zinc-300">{item.message}</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-between px-1">
+                      <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold">
+                        Assertion Results ({validationResult.feedback.filter((f) => f.passed).length}/
+                        {validationResult.feedback.length})
+                      </h4>
+                      <span className="text-[11px] font-mono text-zinc-500">
+                        Evaluated across {Object.keys(
+                          validationResult.feedback.reduce((acc, item) => {
+                            const k = item.file || (item.check.includes('style.css') ? 'style.css' : 'index.html');
+                            acc[k] = true;
+                            return acc;
+                          }, {} as Record<string, boolean>)
+                        ).length} {Object.keys(
+                          validationResult.feedback.reduce((acc, item) => {
+                            const k = item.file || (item.check.includes('style.css') ? 'style.css' : 'index.html');
+                            acc[k] = true;
+                            return acc;
+                          }, {} as Record<string, boolean>)
+                        ).length === 1 ? 'file' : 'files'}
+                      </span>
                     </div>
+
+                    {(() => {
+                      const groupedFeedback = validationResult.feedback.reduce((acc, item) => {
+                        let fileKey = item.file;
+                        if (!fileKey) {
+                          if (item.check.includes('[style.css]') || item.check.toLowerCase().includes('style.css') || item.check.toLowerCase().includes('stilizare')) {
+                            fileKey = 'style.css';
+                          } else if (item.check.includes('[app.js]') || item.check.toLowerCase().includes('app.js') || item.check.toLowerCase().includes('javascript')) {
+                            fileKey = 'app.js';
+                          } else {
+                            fileKey = 'index.html';
+                          }
+                        }
+                        if (!acc[fileKey]) {
+                          acc[fileKey] = [];
+                        }
+                        acc[fileKey].push(item);
+                        return acc;
+                      }, {} as Record<string, FeedbackItem[]>);
+
+                      return (
+                        <div className="flex flex-col gap-4">
+                          {Object.entries(groupedFeedback).map(([fileName, items]) => {
+                            const passedCount = items.filter((f) => f.passed).length;
+                            const isAllPass = passedCount === items.length;
+                            const fileIcon = fileName.endsWith('.css')
+                              ? '🎨'
+                              : fileName.endsWith('.js') || fileName.endsWith('.ts')
+                              ? '📜'
+                              : '🌐';
+
+                            return (
+                              <div
+                                key={fileName}
+                                className="bg-zinc-950/70 border border-zinc-800/90 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-md"
+                              >
+                                <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base">{fileIcon}</span>
+                                    <span className="font-mono text-xs font-bold text-zinc-200">{fileName}</span>
+                                    <span
+                                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                                        isAllPass
+                                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                          : 'bg-amber-950 text-amber-300 border border-amber-800'
+                                      }`}
+                                    >
+                                      {passedCount}/{items.length} Passed
+                                    </span>
+                                  </div>
+
+                                  {availableFiles.some((f) => f.name === fileName) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveFile(fileName)}
+                                      className={`text-[11px] font-mono px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer ${
+                                        activeFile === fileName
+                                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                                          : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+                                      }`}
+                                    >
+                                      <span>{activeFile === fileName ? '✓ Active Editor' : `Open ${fileName} →`}</span>
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className="space-y-2">
+                                  {items.map((item, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`p-3 rounded-lg border flex items-start gap-2.5 transition-all ${
+                                        item.passed
+                                          ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-100'
+                                          : 'bg-rose-950/20 border-rose-800/40 text-rose-100'
+                                      }`}
+                                    >
+                                      <div
+                                        className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold ${
+                                          item.passed
+                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                            : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                                        }`}
+                                      >
+                                        {item.passed ? '✓' : '✕'}
+                                      </div>
+
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <h5 className="text-xs font-semibold text-zinc-100 truncate">
+                                            {item.check.replace(/^\[.*?\]\s*/, '')}
+                                          </h5>
+                                          <span
+                                            className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded ${
+                                              item.passed
+                                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                                : 'bg-rose-950 text-rose-300 border border-rose-800'
+                                            }`}
+                                          >
+                                            {item.passed ? 'PASS' : 'FAIL'}
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] mt-1 leading-relaxed text-zinc-300">{item.message}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

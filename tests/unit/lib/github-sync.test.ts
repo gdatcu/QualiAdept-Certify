@@ -137,5 +137,55 @@ describe('github-sync Unit Tests', () => {
       expect(res.success).toBe(false);
       expect(res.error).toBe('TOKEN_UNAUTHORIZED');
     });
+
+    it('syncs multiple files (index.html + style.css) in a single submission', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_mf_token',
+      } as any);
+
+      const committedFiles: string[] = [];
+      const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === 'https://api.github.com/user') {
+          return new Response(JSON.stringify({ login: 'student_gh' }), { status: 200 });
+        }
+        if (url === `https://api.github.com/repos/student_gh/${REPO_NAME}` && (!opts || !opts.method || opts.method === 'GET')) {
+          return new Response(JSON.stringify({ name: REPO_NAME }), { status: 200 });
+        }
+        if (url.includes(`/contents/`) && opts?.method === 'GET') {
+          return new Response(JSON.stringify({ sha: 'existing-sha' }), { status: 200 });
+        }
+        if (url.includes(`/contents/`) && opts?.method === 'PUT') {
+          const matched = url.match(/\/contents\/(.*)$/);
+          if (matched) committedFiles.push(matched[1]);
+          return new Response(
+            JSON.stringify({
+              commit: { html_url: `https://github.com/student_gh/${REPO_NAME}/commit/mf123` },
+              content: { html_url: `https://github.com/student_gh/${REPO_NAME}/blob/main/${matched ? matched[1] : ''}` },
+            }),
+            { status: 200 }
+          );
+        }
+        return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 500 });
+      });
+
+      globalThis.fetch = fetchMock;
+
+      const multiFilePayload = JSON.stringify({
+        files: {
+          'index.html': '<h1>Title</h1>',
+          'style.css': 'body { margin: 0; }',
+        },
+      });
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 2,
+        assignmentTitle: 'Sesiunea 2: CSS',
+        codePayload: multiFilePayload,
+      });
+
+      expect(res.success).toBe(true);
+      expect(committedFiles).toEqual(['index.html', 'style.css']);
+    });
   });
 });

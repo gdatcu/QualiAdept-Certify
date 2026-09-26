@@ -50,6 +50,8 @@ const curriculum: CurriculumItem[] = [
       'Transformă scheletul Task Tracker-ului într-o aplicație structurată cu fișier CSS extern, navbar flexibil, rânduri tabel structurate și butoane dinamice cu stare disabled.',
     validationRules: JSON.stringify([
       {
+        file: 'index.html',
+        name: '[index.html] Conectare style.css în <head>',
         selector: "head link[rel='stylesheet'], link[rel='stylesheet']",
         check: 'attributeRegex',
         attrName: 'href',
@@ -57,32 +59,70 @@ const curriculum: CurriculumItem[] = [
         message: 'Cerința 1 eșuată: Nu am găsit fișierul CSS extern conectat corect în <head> (ex: <link rel="stylesheet" href="style.css">).',
       },
       {
+        file: 'index.html',
+        name: '[index.html] Clasa navbar pe elementul <nav>',
         selector: 'header nav',
         check: 'hasClass',
         expected: 'navbar',
         message: "Cerința 2 eșuată: Tag-ul <nav> din <header> nu are clasa 'navbar'.",
       },
       {
+        file: 'index.html',
+        name: '[index.html] Element logo (#logo) în navbar',
         selector: 'header nav #logo, nav #logo',
         check: 'exists',
         message: "Cerința 2 eșuată: Nu am găsit un element cu id-ul 'logo' în interiorul barei de navigație.",
       },
       {
+        file: 'index.html',
+        name: '[index.html] Buton login cu data-testid="btn-login"',
         selector: "header nav [data-testid='btn-login'], nav [data-testid='btn-login']",
         check: 'exists',
         message: "Cerința 2 eșuată: Lipsește butonul de login cu data-testid='btn-login' din bara de navigație.",
       },
       {
+        file: 'index.html',
+        name: '[index.html] Buton cu clasa delete-row în rândul 3',
         selector: 'table tbody tr:nth-child(3) button',
         check: 'hasClass',
         expected: 'delete-row',
         message: "Cerința 3 eșuată: Al treilea rând din corpul tabelului nu conține un buton cu clasa 'delete-row'.",
       },
       {
+        file: 'index.html',
+        name: '[index.html] Buton submit cu atributul disabled',
         selector: "button[data-testid='submit-task-btn'], [data-testid='submit-task-btn']",
         check: 'hasAttribute',
         attrName: 'disabled',
         message: "Cerința 4 eșuată: Butonul de submit (data-testid='submit-task-btn') nu are atributul 'disabled' aplicat nativ.",
+      },
+      {
+        file: 'style.css',
+        name: '[style.css] Stilizare Flexbox pentru .navbar',
+        check: 'regex',
+        pattern: '\\.navbar\\s*\\{[^}]*display\\s*:\\s*flex',
+        message: "Cerința 2 CSS eșuată: Clasa '.navbar' din style.css trebuie să folosească 'display: flex'.",
+      },
+      {
+        file: 'style.css',
+        name: '[style.css] Selector structural tr:nth-child(3)',
+        check: 'regex',
+        pattern: 'tr:nth-child\\(3\\)\\s*\\{[^}]*[a-zA-Z\\-]+\\s*:',
+        message: "Cerința 3 CSS eșuată: În style.css trebuie definit selectorul structural 'tr:nth-child(3)' cu reguli de stilizare.",
+      },
+      {
+        file: 'style.css',
+        name: '[style.css] Stare hover pentru butoane (:hover)',
+        check: 'regex',
+        pattern: '(?:button:not\\(:disabled\\):hover|button:hover)\\s*\\{[^}]*[a-zA-Z\\-]+\\s*:',
+        message: "Cerința 4 CSS eșuată: În style.css trebuie definită starea de hover pentru butoane (ex: button:not(:disabled):hover) cu proprietăți de stil.",
+      },
+      {
+        file: 'style.css',
+        name: '[style.css] Stare disabled pentru butoane (:disabled)',
+        check: 'regex',
+        pattern: '(?:button:disabled|:disabled)\\s*\\{[^}]*[a-zA-Z\\-]+\\s*:',
+        message: "Cerința 4 CSS eșuată: În style.css trebuie definită starea pentru butoane dezactivate (ex: button:disabled) cu proprietăți de stil.",
       },
     ]),
   },
@@ -286,21 +326,26 @@ const curriculum: CurriculumItem[] = [
 ];
 
 async function main() {
-  console.log('🌱 Starting database seed...');
-  console.log('🧹 Flushing old submissions and assignments...');
+  console.log('🌱 Starting database seed (Deterministic Stable IDs)...');
 
-  // Delete submissions first to ensure foreign key constraint integrity
-  const deletedSubmissions = await prisma.submission.deleteMany({});
-  console.log(`   Deleted ${deletedSubmissions.count} existing submissions.`);
-
-  const deletedAssignments = await prisma.assignment.deleteMany({});
-  console.log(`   Deleted ${deletedAssignments.count} existing assignments.`);
-
-  console.log('📚 Seeding 20-week curriculum modules into database...');
+  console.log('📚 Upserting 20-week curriculum modules into database...');
 
   for (const item of curriculum) {
-    const createdAssignment = await prisma.assignment.create({
-      data: {
+    const assignmentId = `00000000-0000-0000-0000-${item.moduleNumber.toString().padStart(12, '0')}`;
+    const upsertedAssignment = await prisma.assignment.upsert({
+      where: { id: assignmentId },
+      update: {
+        module: item.moduleNumber,
+        title: item.title,
+        description: item.description,
+        validationType: item.validationType,
+        isPublished: item.isPublished,
+        isActive: true,
+        unlockDate: item.unlockDate,
+        validationRules: item.validationRules,
+      },
+      create: {
+        id: assignmentId,
         module: item.moduleNumber,
         title: item.title,
         description: item.description,
@@ -313,11 +358,11 @@ async function main() {
     });
 
     console.log(
-      `   [✓] Module ${createdAssignment.module.toString().padStart(2, ' ')}: "${createdAssignment.title}" (${createdAssignment.validationType}) - Unlocks: ${createdAssignment.unlockDate?.toISOString().split('T')[0]}`
+      `   [✓] Module ${upsertedAssignment.module.toString().padStart(2, ' ')}: "${upsertedAssignment.title}" (${upsertedAssignment.validationType}) - ID: ${upsertedAssignment.id}`
     );
   }
 
-  console.log('✨ Curriculum seeded successfully: 21 Modules inserted.');
+  console.log('✨ Curriculum upserted successfully: 21 Modules synchronized.');
 }
 
 main()

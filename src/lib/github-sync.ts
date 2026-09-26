@@ -141,83 +141,108 @@ export async function syncModuleCodeToGitHub({
       throw new Error(`GitHub repo check failed with HTTP ${repoCheckRes.status}`);
     }
 
-    const filePath = getModuleFilePath(moduleNum, validationType);
-
-    // 4. Check if file already exists in repository to get its SHA for update
-    let existingSha: string | undefined;
-    const fileCheckRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`,
-      { headers }
-    );
-
-    if (fileCheckRes.ok) {
-      const fileData = (await fileCheckRes.json()) as { sha?: string };
-      existingSha = fileData.sha;
-    }
-
-    // 5. Commit file directly via GitHub Contents API
-    const base64Content = Buffer.from(codePayload, 'utf-8').toString('base64');
-    const commitTitle = assignmentTitle || `Sesiunea ${moduleNum}`;
-    const commitMessage = `feat(session-${moduleNum}): implement ${commitTitle} (Verified 100% by QualiAdept)`;
-
-    const putBody: {
-      message: string;
-      content: string;
-      sha?: string;
-    } = {
-      message: commitMessage,
-      content: base64Content,
-    };
-
-    if (existingSha) {
-      putBody.sha = existingSha;
-    }
-
-    const commitRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`,
-      {
-        method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(putBody),
+    // 4. Resolve files to commit (multi-file JSON or single file fallback)
+    let filesToCommit: Record<string, string> = {};
+    try {
+      const parsed = JSON.parse(codePayload);
+      if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
+        filesToCommit = { ...parsed.files };
       }
-    );
-
-    if (!commitRes.ok) {
-      const commitErr = (await commitRes.json().catch(() => ({}))) as {
-        message?: string;
-      };
-
-      const isScopeIssue =
-        commitRes.status === 404 ||
-        commitRes.status === 401 ||
-        commitRes.status === 403 ||
-        commitErr.message === 'Not Found';
-
-      return {
-        success: false,
-        error: isScopeIssue ? 'SCOPE_INSUFFICIENT' : 'COMMIT_FAILED',
-        message: isScopeIssue
-          ? 'Permisiuni GitHub insuficiente pentru salvarea fișierului. Te rugăm să te reconectezi cu GitHub.'
-          : commitErr.message || 'Nu s-a putut salva commit-ul pe GitHub.',
-      };
+    } catch {
+      // Plain text payload
     }
 
-    const commitData = (await commitRes.json()) as {
-      commit?: { html_url?: string };
-      content?: { html_url?: string };
-    };
+    if (Object.keys(filesToCommit).length === 0) {
+      const defaultPath = getModuleFilePath(moduleNum, validationType);
+      filesToCommit[defaultPath] = codePayload;
+    }
+
+    let primaryCommitUrl: string | undefined;
+    let primaryFilePath: string | undefined;
+
+    for (const [filePath, content] of Object.entries(filesToCommit)) {
+      if (!content || typeof content !== 'string') continue;
+
+      // Check if file already exists in repository to get its SHA for update
+      let existingSha: string | undefined;
+      const fileCheckRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`,
+        { headers }
+      );
+
+      if (fileCheckRes.ok) {
+        const fileData = (await fileCheckRes.json()) as { sha?: string };
+        existingSha = fileData.sha;
+      }
+
+      // 5. Commit file directly via GitHub Contents API
+      const base64Content = Buffer.from(content, 'utf-8').toString('base64');
+      const commitTitle = assignmentTitle || `Sesiunea ${moduleNum}`;
+      const commitMessage = `feat(session-${moduleNum}): update ${filePath} for ${commitTitle} (Verified 100% by QualiAdept)`;
+
+      const putBody: {
+        message: string;
+        content: string;
+        sha?: string;
+      } = {
+        message: commitMessage,
+        content: base64Content,
+      };
+
+      if (existingSha) {
+        putBody.sha = existingSha;
+      }
+
+      const commitRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`,
+        {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify(putBody),
+        }
+      );
+
+      if (!commitRes.ok) {
+        const commitErr = (await commitRes.json().catch(() => ({}))) as {
+          message?: string;
+        };
+
+        const isScopeIssue =
+          commitRes.status === 404 ||
+          commitRes.status === 401 ||
+          commitRes.status === 403 ||
+          commitErr.message === 'Not Found';
+
+        return {
+          success: false,
+          error: isScopeIssue ? 'SCOPE_INSUFFICIENT' : 'COMMIT_FAILED',
+          message: isScopeIssue
+            ? 'Permisiuni GitHub insuficiente pentru salvarea fișierului. Te rugăm să te reconectezi cu GitHub.'
+            : commitErr.message || `Nu s-a putut salva fișierul ${filePath} pe GitHub.`,
+        };
+      }
+
+      const commitData = (await commitRes.json()) as {
+        commit?: { html_url?: string };
+        content?: { html_url?: string };
+      };
+
+      if (!primaryCommitUrl) {
+        primaryCommitUrl = commitData.commit?.html_url || commitData.content?.html_url;
+        primaryFilePath = filePath;
+      }
+    }
 
     const repoUrl = `https://github.com/${owner}/${repoName}`;
     const commitUrl =
-      commitData.commit?.html_url ||
-      commitData.content?.html_url ||
-      `${repoUrl}/blob/main/${filePath}`;
+      primaryCommitUrl ||
+      `${repoUrl}/blob/main/${primaryFilePath || getModuleFilePath(moduleNum, validationType)}`;
 
     return {
       success: true,
       repoUrl,
       commitUrl,
-      filePath,
+      filePath: primaryFilePath || getModuleFilePath(moduleNum, validationType),
     };
   } catch (error) {
     console.error('GitHub Sync Error:', error);

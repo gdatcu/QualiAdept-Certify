@@ -9,12 +9,85 @@ export interface FeedbackItem {
   check: string;
   passed: boolean;
   message: string;
+  file?: string;
 }
 
 export interface ValidationResponse {
   status: 'pass' | 'fail';
   score: number;
   feedback: FeedbackItem[];
+}
+
+export interface MultiFilePayload {
+  files: Record<string, string>;
+}
+
+export function parseSubmissionFiles(body: any): {
+  rawPayload: string;
+  files: Record<string, string>;
+  htmlCode: string;
+  cssCode: string;
+  jsCode: string;
+} {
+  let files: Record<string, string> = {};
+  let rawPayload = '';
+
+  if (body.files && typeof body.files === 'object' && !Array.isArray(body.files)) {
+    files = { ...body.files };
+    rawPayload = JSON.stringify({ files });
+  } else if (typeof body.codePayload === 'string') {
+    rawPayload = body.codePayload;
+    try {
+      const parsed = JSON.parse(body.codePayload);
+      if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
+        files = { ...parsed.files };
+      } else {
+        files = { 'index.html': body.codePayload };
+      }
+    } catch {
+      files = { 'index.html': body.codePayload };
+    }
+  } else if (typeof body.codePayload === 'object' && body.codePayload?.files) {
+    files = { ...body.codePayload.files };
+    rawPayload = JSON.stringify(body.codePayload);
+  } else if (typeof body.htmlCode === 'string') {
+    rawPayload = body.htmlCode;
+    try {
+      const parsed = JSON.parse(body.htmlCode);
+      if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
+        files = { ...parsed.files };
+      } else {
+        files = { 'index.html': body.htmlCode };
+      }
+    } catch {
+      files = { 'index.html': body.htmlCode };
+    }
+  }
+
+  const htmlCode =
+    files['index.html'] ||
+    files['sandbox.html'] ||
+    files['main.html'] ||
+    (Object.keys(files).length === 1 ? Object.values(files)[0] : '') ||
+    '';
+  const cssCode = files['style.css'] || files['styles.css'] || files['index.css'] || '';
+  const jsCode = files['app.js'] || files['script.js'] || files['index.js'] || '';
+
+  return { rawPayload, files, htmlCode, cssCode, jsCode };
+}
+
+export function stripCodeComments(code: string, fileName?: string): string {
+  if (!code) return '';
+  if (fileName?.endsWith('.css')) {
+    return code.replace(/\/\*[\s\S]*?\*\//g, '');
+  }
+  if (fileName?.endsWith('.js') || fileName?.endsWith('.ts')) {
+    return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\r\n]*/g, '$1');
+  }
+  if (fileName?.endsWith('.html')) {
+    return code.replace(/<!--[\s\S]*?-->/g, '');
+  }
+  return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
 }
 
 export async function POST(req: NextRequest) {
@@ -29,7 +102,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { htmlCode } = body;
+    const { rawPayload, files, htmlCode, cssCode, jsCode } = parseSubmissionFiles(body);
+
+    if (!rawPayload && !htmlCode && Object.keys(files).length === 0) {
+      return NextResponse.json(
+        { error: 'Missing or invalid required field: htmlCode or codePayload' },
+        { status: 400 }
+      );
+    }
 
     // Retrieve authenticated user session
     const session = await getAuthSession();
@@ -83,13 +163,6 @@ export async function POST(req: NextRequest) {
       assignmentId = activeAssignment.id;
     }
 
-    if (htmlCode === undefined || htmlCode === null || typeof htmlCode !== 'string') {
-      return NextResponse.json(
-        { error: 'Missing or invalid required field: htmlCode' },
-        { status: 400 }
-      );
-    }
-
     // 1. Time-based rate limit lock: Ensure 3 seconds between submissions for same user and assignment
     const recentSubmission = await prisma.submission.findFirst({
       where: { userId, assignmentId },
@@ -131,6 +204,13 @@ export async function POST(req: NextRequest) {
       where: { id: assignmentId },
     });
 
+    if (!targetAssignment) {
+      return NextResponse.json(
+        { error: 'Assignment not found. Please refresh the page from your Dashboard.' },
+        { status: 404 }
+      );
+    }
+
     // Perform static validation checks
     const checks: FeedbackItem[] = [];
 
@@ -146,10 +226,23 @@ export async function POST(req: NextRequest) {
             let checkName = r.name || r.title || '';
             let msg = '';
 
+            // Target file code resolution
+            const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : undefined);
+            const targetCode = targetFileName
+              ? (files[targetFileName] || (targetFileName === 'style.css' ? cssCode : targetFileName === 'app.js' ? jsCode : ''))
+              : htmlCode;
+
             if (checkType === 'regex' || r.type === 'regex') {
               const pattern = r.pattern || r.value || '';
               const regex = new RegExp(pattern, 'i');
-              passed = regex.test(htmlCode);
+              
+              // Strip comments so instructional comments do not produce false positive passes
+              const cleanTargetCode = stripCodeComments(targetCode, targetFileName);
+              const cleanCssCode = stripCodeComments(cssCode, 'style.css');
+              const cleanJsCode = stripCodeComments(jsCode, 'app.js');
+
+              // Test against clean code without comments
+              passed = regex.test(cleanTargetCode) || (targetFileName === undefined && (regex.test(cleanCssCode) || regex.test(cleanJsCode)));
               checkName = checkName || r.check || `Pattern check (${pattern})`;
               msg = passed
                 ? `Matched required pattern: ${pattern}`
@@ -256,6 +349,7 @@ export async function POST(req: NextRequest) {
                 check: checkName,
                 passed,
                 message: msg,
+                file: targetFileName || 'index.html',
               });
             }
           }
@@ -332,7 +426,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         assignmentId,
-        codePayload: htmlCode,
+        codePayload: rawPayload || htmlCode,
         status: dbStatus,
         score,
         feedbackJSON: JSON.stringify(responsePayload),
@@ -355,7 +449,7 @@ export async function POST(req: NextRequest) {
             userId,
             moduleNum: targetAssignment?.module || 1,
             assignmentTitle: targetAssignment?.title,
-            codePayload: htmlCode,
+            codePayload: rawPayload || htmlCode,
             validationType: 'STATIC',
           }),
         ]);

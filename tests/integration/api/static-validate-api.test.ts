@@ -330,5 +330,120 @@ describe('/api/validate/static Integration Tests', () => {
     expect(data.feedback.find((f: any) => f.message.includes('navbar class'))?.passed).toBe(false);
     expect(data.feedback.find((f: any) => f.message.includes('disabled'))?.passed).toBe(false);
   });
+
+  it('handles multi-file payload (index.html + style.css) correctly', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u-mf', name: 'MultiFile Student', email: 'mf@qualiadept.eu', role: 'STUDENT' },
+    } as any);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'u-mf',
+      isEnrolled: true,
+      role: 'STUDENT',
+      name: 'MultiFile Student',
+    } as any);
+
+    const session2Rules = JSON.stringify([
+      {
+        selector: "head link[rel='stylesheet']",
+        check: 'attributeRegex',
+        attrName: 'href',
+        pattern: 'style\\.css',
+        message: 'External CSS linked',
+      },
+      {
+        type: 'regex',
+        file: 'style.css',
+        pattern: 'button:disabled',
+        message: 'CSS disabled button styling exists',
+      },
+    ]);
+
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-mf',
+      module: 2,
+      title: 'Sesiunea 2: CSS',
+      validationRules: session2Rules,
+    } as any);
+
+    vi.mocked(prisma.submission.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.submission.count).mockResolvedValueOnce(0);
+
+    const multiFileBody = {
+      assignmentId: 'a-mf',
+      files: {
+        'index.html': '<html><head><link rel="stylesheet" href="style.css"></head><body><button disabled>Btn</button></body></html>',
+        'style.css': 'button:disabled { opacity: 0.5; background: gray; }',
+      },
+    };
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify(multiFileBody),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    expect(data.feedback.length).toBe(2);
+    expect(data.feedback.every((f: any) => f.passed)).toBe(true);
+    expect(prisma.submission.create).toHaveBeenCalled();
+  });
+
+  it('does NOT count patterns inside CSS/JS/HTML comments as passed', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u1', name: 'Student', email: 's@test.com' },
+    } as any);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      id: 'u1',
+      isEnrolled: true,
+      role: 'STUDENT',
+    } as any);
+
+    const session2Rules = JSON.stringify([
+      {
+        type: 'regex',
+        file: 'style.css',
+        pattern: 'button:disabled\\s*\\{[^}]*[a-zA-Z\\-]+\\s*:',
+        message: 'CSS disabled button styling exists',
+      },
+    ]);
+
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-mf-comments',
+      module: 2,
+      title: 'Sesiunea 2: CSS',
+      validationRules: session2Rules,
+    } as any);
+
+    vi.mocked(prisma.submission.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.submission.count).mockResolvedValueOnce(0);
+
+    // style.css ONLY has the pattern in comments, no actual CSS declaration
+    const multiFileBody = {
+      assignmentId: 'a-mf-comments',
+      files: {
+        'index.html': '<html><head></head><body></body></html>',
+        'style.css': '/* button:disabled { opacity: 0.5; } */\n/* Scrie regulile CSS aici: */',
+      },
+    };
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify(multiFileBody),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.status).toBe('fail');
+    expect(data.score).toBe(0);
+    expect(data.feedback[0].passed).toBe(false);
+  });
 });
 
