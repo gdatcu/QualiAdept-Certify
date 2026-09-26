@@ -418,10 +418,6 @@ export default function AssignmentWorkspace({
         if (typeof window !== 'undefined') {
           localStorage.removeItem(autosaveKey);
         }
-        // Auto-sync to GitHub on 100% PASS
-        if (result.score === 100) {
-          triggerGitHubSync(payloadString);
-        }
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Network error occurred while submitting code.';
