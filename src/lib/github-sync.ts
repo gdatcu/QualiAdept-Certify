@@ -35,6 +35,7 @@ export async function syncModuleCodeToGitHub({
   codePayload,
   validationType,
   repoName = REPO_NAME,
+  targetFile,
 }: {
   userId: string;
   moduleNum: number;
@@ -42,6 +43,7 @@ export async function syncModuleCodeToGitHub({
   codePayload: string;
   validationType?: string;
   repoName?: string;
+  targetFile?: string;
 }): Promise<GitHubSyncResult> {
   if (!userId || !codePayload) {
     return {
@@ -155,6 +157,15 @@ export async function syncModuleCodeToGitHub({
     if (Object.keys(filesToCommit).length === 0) {
       const defaultPath = getModuleFilePath(moduleNum, validationType);
       filesToCommit[defaultPath] = codePayload;
+    }
+
+    if (targetFile && targetFile.trim().length > 0) {
+      const trimmedTarget = targetFile.trim();
+      if (filesToCommit[trimmedTarget]) {
+        filesToCommit = { [trimmedTarget]: filesToCommit[trimmedTarget] };
+      } else {
+        filesToCommit = { [trimmedTarget]: codePayload };
+      }
     }
 
     let primaryCommitUrl: string | undefined;

@@ -139,10 +139,50 @@ describe('/api/github/sync Route Integration Tests', () => {
 
     const json = await res.json();
     expect(json.success).toBe(true);
+  });
+
+  it('syncs specific targetFile successfully when requested', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u-1' },
+    } as any);
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-2',
+      title: 'Sesiunea 2: CSS',
+      module: 2,
+      validationType: 'STATIC',
+    } as any);
+
+    vi.mocked(githubSync.syncModuleCodeToGitHub).mockResolvedValueOnce({
+      success: true,
+      repoUrl: 'https://github.com/student/qualiadept-task-tracker',
+      commitUrl: 'https://github.com/student/qualiadept-task-tracker/commit/css789',
+      filePath: 'style.css',
+    });
+
+    const req = new Request('http://localhost:3000/api/github/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: 'a-2',
+        targetFile: 'style.css',
+        codePayload: JSON.stringify({
+          files: {
+            'index.html': '<h1>Title</h1>',
+            'style.css': 'body { color: blue; }',
+          },
+        }),
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.filePath).toBe('style.css');
     expect(githubSync.syncModuleCodeToGitHub).toHaveBeenCalledWith(
       expect.objectContaining({
         moduleNum: 2,
-        assignmentTitle: 'Sesiunea 2: CSS',
+        targetFile: 'style.css',
       })
     );
   });

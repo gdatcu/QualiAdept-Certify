@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     const userId = session.user.id;
     const body = await req.json().catch(() => ({}));
-    const { assignmentId, codePayload: directCode } = body;
+    const { assignmentId, codePayload: directCode, targetFile } = body;
 
     if (!assignmentId) {
       return NextResponse.json(
@@ -66,6 +66,7 @@ export async function POST(req: Request) {
       assignmentTitle: assignment.title,
       codePayload: codeToSync,
       validationType: assignment.validationType,
+      targetFile: typeof targetFile === 'string' && targetFile.trim().length > 0 ? targetFile.trim() : undefined,
     });
 
     if (!syncResult.success) {
