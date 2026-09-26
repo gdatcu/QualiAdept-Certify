@@ -15,6 +15,8 @@ export interface ValidationResponse {
   status: 'pass' | 'fail';
   score: number;
   feedback: FeedbackItem[];
+  isPartial?: boolean;
+  targetFile?: string;
 }
 
 export interface MultiFilePayload {
@@ -210,6 +212,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const targetFileFilter = typeof body.targetFile === 'string' && body.targetFile.trim().length > 0 ? body.targetFile.trim() : null;
+
     // Perform static validation checks
     const checks: FeedbackItem[] = [];
 
@@ -226,7 +230,12 @@ export async function POST(req: NextRequest) {
             let msg = '';
 
             // Target file code resolution
-            const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : undefined);
+            const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : 'index.html');
+
+            if (targetFileFilter && targetFileName !== targetFileFilter) {
+              continue;
+            }
+
             const targetCode = targetFileName
               ? (files[targetFileName] || (targetFileName === 'style.css' ? cssCode : targetFileName === 'app.js' ? jsCode : ''))
               : htmlCode;
@@ -394,59 +403,64 @@ export async function POST(req: NextRequest) {
     // Calculate score
     const passedCount = checks.filter((c) => c.passed).length;
     const totalChecks = checks.length;
-    const score = Math.round((passedCount / totalChecks) * 100);
+    const score = totalChecks > 0 ? Math.round((passedCount / totalChecks) * 100) : 100;
     const isPass = score === 100;
     const status = isPass ? 'pass' : 'fail';
     const dbStatus = isPass ? 'PASS' : 'FAIL';
+    const isPartial = Boolean(targetFileFilter);
 
     // Build standardized feedback object
     const responsePayload: ValidationResponse = {
       status,
       score,
       feedback: checks,
+      isPartial,
+      targetFile: targetFileFilter || undefined,
     };
 
-    // Ensure User exists in DB to satisfy foreign key constraints
-    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
-    if (!existingUser) {
-      await prisma.user.create({
+    // Save submission to database using Prisma ONLY for full project submissions (not partial file tests)
+    if (!isPartial) {
+      // Ensure User exists in DB to satisfy foreign key constraints
+      const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (!existingUser) {
+        await prisma.user.create({
+          data: {
+            id: userId,
+            email: session?.user?.email || `${userId}@qualiadept.eu`,
+            name: session?.user?.name || `Student ${userId}`,
+            image: session?.user?.image || null,
+            role: 'STUDENT',
+          },
+        });
+      }
+
+      await prisma.submission.create({
         data: {
-          id: userId,
-          email: session?.user?.email || `${userId}@qualiadept.eu`,
-          name: session?.user?.name || `Student ${userId}`,
-          image: session?.user?.image || null,
-          role: 'STUDENT',
+          userId,
+          assignmentId,
+          codePayload: rawPayload || htmlCode,
+          status: dbStatus,
+          score,
+          feedbackJSON: JSON.stringify(responsePayload),
         },
       });
-    }
 
-    // Save submission to database using Prisma
-    await prisma.submission.create({
-      data: {
-        userId,
-        assignmentId,
-        codePayload: rawPayload || htmlCode,
-        status: dbStatus,
-        score,
-        feedbackJSON: JSON.stringify(responsePayload),
-      },
-    });
-
-    // Fire non-blocking Discord Triumph Webhook notification if score === 100
-    if (isPass && score === 100) {
-      const studentName = session?.user?.name || existingUser?.name || 'QA Student';
-      try {
-        await Promise.allSettled([
-          sendDiscordTriumphNotification({
-            studentName,
-            userId,
-            moduleNum: targetAssignment?.module || 1,
-            assignmentTitle: targetAssignment?.title,
-            validationType: 'STATIC',
-          }),
-        ]);
-      } catch (err) {
-        console.error('Post-validation async dispatch error:', err);
+      // Fire non-blocking Discord Triumph Webhook notification if score === 100
+      if (isPass && score === 100) {
+        const studentName = session?.user?.name || existingUser?.name || 'QA Student';
+        try {
+          await Promise.allSettled([
+            sendDiscordTriumphNotification({
+              studentName,
+              userId,
+              moduleNum: targetAssignment?.module || 1,
+              assignmentTitle: targetAssignment?.title,
+              validationType: 'STATIC',
+            }),
+          ]);
+        } catch (err) {
+          console.error('Post-validation async dispatch error:', err);
+        }
       }
     }
 

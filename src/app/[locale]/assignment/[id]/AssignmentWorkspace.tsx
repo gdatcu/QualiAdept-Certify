@@ -28,6 +28,8 @@ interface ValidationResponse {
   status: 'pass' | 'fail';
   score: number;
   feedback: FeedbackItem[];
+  isPartial?: boolean;
+  targetFile?: string;
 }
 
 interface AssignmentData {
@@ -277,6 +279,7 @@ export default function AssignmentWorkspace({
   const [isUnlockedForEdit, setIsUnlockedForEdit] = useState<boolean>(!isMostRecentPassed);
 
   const [isValidating, setIsValidating] = useState<boolean>(false);
+  const [isValidatingFile, setIsValidatingFile] = useState<string | null>(null);
   const tSync = useTranslations('GitHubSync');
   const [cooldown, setCooldown] = useState<number>(0);
   const [validationResult, setValidationResult] = useState<ValidationResponse | null>(null);
@@ -425,6 +428,63 @@ export default function AssignmentWorkspace({
     } finally {
       setIsValidating(false);
       setCooldown(2);
+    }
+  };
+
+  const handleValidateFile = async (targetFile: string) => {
+    if (!session?.user) {
+      setSubmitError('Authentication Required: Please sign in with GitHub before checking code.');
+      return;
+    }
+
+    setIsValidatingFile(targetFile);
+    setSubmitError(null);
+
+    const payloadString = JSON.stringify({ files });
+    const htmlCode = files['index.html'] || files['sandbox.html'] || files[activeFile] || '';
+
+    try {
+      const endpoint =
+        assignment.validationType === 'DYNAMIC'
+          ? '/api/validate/dynamic'
+          : '/api/validate/static';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assignmentId: assignment.id,
+          codePayload: payloadString,
+          files,
+          htmlCode,
+          targetFile,
+        }),
+      });
+
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(autosaveKey, payloadString);
+        }
+        setSubmitError(
+          'Sesiunea ta a expirat. Codul a fost salvat local. Te rugăm să dai refresh și să te reautentifici.'
+        );
+        return;
+      }
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Validation server returned error code ${res.status}`);
+      }
+
+      const result: ValidationResponse = await res.json();
+      setValidationResult(result);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Network error occurred while checking file.';
+      setSubmitError(msg);
+    } finally {
+      setIsValidatingFile(null);
     }
   };
 
@@ -717,8 +777,30 @@ export default function AssignmentWorkspace({
                   </div>
                 </div>
 
-                {/* Right Controls: Live Preview Toggle & Reset Code */}
+                {/* Right Controls: Quick File Check, Reset Code & Live Preview Toggle */}
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleValidateFile(activeFile)}
+                    disabled={isValidating || Boolean(isValidatingFile) || !isUnlockedForEdit}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/50 hover:border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={`Rulează verificarea rapidă pentru ${activeFile}`}
+                  >
+                    {isValidatingFile === activeFile ? (
+                      <>
+                        <svg className="animate-spin h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Checking {activeFile}...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡ Check {activeFile}</span>
+                      </>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -1139,7 +1221,7 @@ export default function AssignmentWorkspace({
               )}
 
               {/* State 2: Validating Loader */}
-              {isValidating && (
+              {(isValidating || Boolean(isValidatingFile)) && (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border border-zinc-800 rounded-xl bg-zinc-950/60">
                   <div className="relative mb-4">
                     <div className="w-14 h-14 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
@@ -1147,13 +1229,19 @@ export default function AssignmentWorkspace({
                       <span className="h-3 w-3 rounded-full bg-emerald-400 animate-ping"></span>
                     </div>
                   </div>
-                  <h3 className="text-sm font-semibold text-zinc-200">Parsing HTML AST</h3>
-                  <p className="text-xs text-zinc-400 mt-1 font-mono">Running Cheerio static inspectors...</p>
+                  <h3 className="text-sm font-semibold text-zinc-200">
+                    {isValidatingFile ? `Checking ${isValidatingFile}...` : 'Parsing AST & Evaluating'}
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1 font-mono">
+                    {isValidatingFile
+                      ? `Running targeted assertions for ${isValidatingFile}...`
+                      : 'Running automated DOM inspectors...'}
+                  </p>
                 </div>
               )}
 
               {/* State 3: Rendered Results ("Green Wall") */}
-              {validationResult && !isValidating && (
+              {validationResult && !isValidating && !isValidatingFile && (
                 <div className="flex flex-col gap-5">
                   {/* Overall Status Banner */}
                   <div
@@ -1183,11 +1271,17 @@ export default function AssignmentWorkspace({
                                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                               }`}
                             >
-                              Status: {validationResult.status.toUpperCase()}
+                              {validationResult.isPartial
+                                ? `PARTIAL CHECK: ${validationResult.targetFile}`
+                                : `Status: ${validationResult.status.toUpperCase()}`}
                             </span>
                           </div>
                           <h3 className="text-xl font-bold text-zinc-50 mt-1">
-                            {validationResult.status === 'pass'
+                            {validationResult.isPartial
+                              ? validationResult.status === 'pass'
+                                ? `All checks passed for ${validationResult.targetFile}!`
+                                : `Issues found in ${validationResult.targetFile}`
+                              : validationResult.status === 'pass'
                               ? 'All Checks Passed!'
                               : 'Validation Failed'}
                           </h3>
@@ -1216,8 +1310,20 @@ export default function AssignmentWorkspace({
                     </div>
                   </div>
 
-                  {/* Module Unlocked CTA Banner */}
-                  {validationResult.status === 'pass' && (
+                  {/* Partial Check Notice Banner */}
+                  {validationResult.isPartial && (
+                    <div className="bg-zinc-950/80 border border-zinc-800 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-zinc-400">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">⚡</span>
+                        <span>
+                          Verificare parțială pentru <strong className="text-zinc-200">{validationResult.targetFile}</strong>. Când ești gata, trimite întregul proiect cu butonul &quot;Submit Project for Validation&quot;.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Module Unlocked CTA Banner (Only on full submissions) */}
+                  {!validationResult.isPartial && validationResult.status === 'pass' && (
                     <div className="bg-emerald-950/60 border border-emerald-500/40 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div>
                         <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">

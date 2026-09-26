@@ -445,5 +445,65 @@ describe('/api/validate/static Integration Tests', () => {
     expect(data.score).toBe(0);
     expect(data.feedback[0].passed).toBe(false);
   });
+
+  it('filters assertions and does not create database submission when targetFile is provided (Option 1 partial check)', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u1', name: 'Student', email: 's@test.com' },
+    } as any);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      id: 'u1',
+      isEnrolled: true,
+      role: 'STUDENT',
+    } as any);
+
+    const multiRules = JSON.stringify([
+      {
+        type: 'selector',
+        file: 'index.html',
+        selector: 'nav.navbar',
+        message: 'Navbar exists in HTML',
+      },
+      {
+        type: 'regex',
+        file: 'style.css',
+        pattern: '\\.navbar\\s*\\{[^}]*display\\s*:\\s*flex',
+        message: 'Navbar flex in CSS',
+      },
+    ]);
+
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-partial-check',
+      module: 2,
+      title: 'Sesiunea 2',
+      validationRules: multiRules,
+    } as any);
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: 'a-partial-check',
+        targetFile: 'style.css',
+        files: {
+          'index.html': '<nav class="navbar"></nav>',
+          'style.css': '.navbar { display: flex; }',
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.isPartial).toBe(true);
+    expect(data.targetFile).toBe('style.css');
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    // Should ONLY have the rule for style.css
+    expect(data.feedback.length).toBe(1);
+    expect(data.feedback[0].file).toBe('style.css');
+    // Prisma submission create should NOT be called for partial checks
+    expect(prisma.submission.create).not.toHaveBeenCalled();
+  });
 });
 
