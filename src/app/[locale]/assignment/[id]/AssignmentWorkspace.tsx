@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -209,7 +209,7 @@ test('QualiAdept Task Tracker E2E Test', async ({ page }) => {
 
 });`;
 
-function parseInitialFiles(
+export function parseInitialFiles(
   codePayload: string | null | undefined,
   moduleNum: number,
   validationType: string,
@@ -237,13 +237,31 @@ function parseInitialFiles(
     try {
       const parsed = JSON.parse(rawSource);
       if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
-        return { ...initial, ...parsed.files };
+        const merged = { ...initial, ...parsed.files };
+        // Self-healing check: If index.html was corrupted with CSS comments/rules, recover HTML starter
+        if (
+          merged['index.html'] &&
+          merged['style.css'] &&
+          (merged['index.html'].trim().startsWith('/*') || !merged['index.html'].includes('<'))
+        ) {
+          merged['index.html'] = moduleNum <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
+        }
+        return merged;
       }
     } catch {
       // Raw string source (legacy single file)
     }
     const primaryName = defaultFiles[0].name;
-    initial[primaryName] = rawSource;
+    // Self-healing check: if raw single file is CSS but primary is HTML, place it into style.css
+    if (
+      primaryName === 'index.html' &&
+      (rawSource.trim().startsWith('/*') || !rawSource.includes('<')) &&
+      defaultFiles.some((f) => f.name === 'style.css')
+    ) {
+      initial['style.css'] = rawSource;
+    } else {
+      initial[primaryName] = rawSource;
+    }
   }
 
   return initial;
@@ -261,6 +279,10 @@ export default function AssignmentWorkspace({
 
   const availableFiles = getModuleFiles(assignment.module, assignment.validationType);
   const [activeFile, setActiveFile] = useState<string>(availableFiles[0].name);
+  const activeFileRef = useRef<string>(activeFile);
+  useEffect(() => {
+    activeFileRef.current = activeFile;
+  }, [activeFile]);
 
   // Multi-file state dictionary
   const [files, setFiles] = useState<Record<string, string>>(() =>
@@ -299,33 +321,43 @@ export default function AssignmentWorkspace({
 
   const autosaveKey = `qualiadept_draft_mf_${assignment.id}`;
 
-  // 1. Initial mount: restore saved draft from localStorage if present
+  // 1. Initial mount: restore saved draft from localStorage if present (unless assignment is already passed)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !isMostRecentPassed) {
       const savedDraft = localStorage.getItem(autosaveKey);
       if (savedDraft && savedDraft.trim().length > 0) {
         try {
           const parsed = JSON.parse(savedDraft);
           if (parsed && typeof parsed === 'object') {
-            setFiles((prev) => ({ ...prev, ...parsed }));
+            const merged = { ...parsed };
+            if (
+              merged['index.html'] &&
+              merged['style.css'] &&
+              (merged['index.html'].trim().startsWith('/*') || !merged['index.html'].includes('<'))
+            ) {
+              merged['index.html'] = assignment.module <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
+            }
+            setFiles((prev) => ({ ...prev, ...merged }));
             return;
           }
         } catch {
-          setFiles((prev) => ({ ...prev, [availableFiles[0].name]: savedDraft }));
+          if (!savedDraft.trim().startsWith('/*')) {
+            setFiles((prev) => ({ ...prev, [availableFiles[0].name]: savedDraft }));
+          }
         }
       }
     }
-  }, [autosaveKey]);
+  }, [autosaveKey, isMostRecentPassed, assignment.module, availableFiles]);
 
   // 2. Debounced Autosave editor code state changes to localStorage (500ms debounce)
   useEffect(() => {
-    if (typeof window !== 'undefined' && Object.keys(files).length > 0) {
+    if (typeof window !== 'undefined' && Object.keys(files).length > 0 && !isMostRecentPassed) {
       const handler = setTimeout(() => {
         localStorage.setItem(autosaveKey, JSON.stringify(files));
       }, 500);
       return () => clearTimeout(handler);
     }
-  }, [files, autosaveKey]);
+  }, [files, autosaveKey, isMostRecentPassed]);
 
   // 3. Cooldown timer for anti-spam (10s countdown)
   useEffect(() => {
@@ -348,11 +380,15 @@ export default function AssignmentWorkspace({
     }
   }, [mostRecent]);
 
-  const handleActiveFileChange = (newVal: string) => {
-    setFiles((prev) => ({
-      ...prev,
-      [activeFile]: newVal,
-    }));
+  const handleActiveFileChange = (newVal: string, targetFileName?: string) => {
+    const fileToUpdate = targetFileName || activeFileRef.current;
+    setFiles((prev) => {
+      if (prev[fileToUpdate] === newVal) return prev;
+      return {
+        ...prev,
+        [fileToUpdate]: newVal,
+      };
+    });
   };
 
   const handleValidation = async () => {
@@ -857,11 +893,13 @@ export default function AssignmentWorkspace({
               {/* VS Code Monaco Editor Window */}
               <div className="relative bg-zinc-950 p-2 sm:p-3 font-mono text-sm w-full max-w-full overflow-hidden border-b border-zinc-800">
                 <Editor
+                  key={activeFile}
+                  path={activeFile}
                   height="460px"
                   language={currentFileObj.language}
                   theme="vs-dark"
                   value={activeCode}
-                  onChange={(value) => handleActiveFileChange(value || '')}
+                  onChange={(value) => handleActiveFileChange(value || '', activeFile)}
                   loading={
                     <div className="h-[460px] w-full flex flex-col items-center justify-center gap-3 bg-zinc-950 text-zinc-400 font-mono text-xs border border-zinc-800 rounded-xl">
                       <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
