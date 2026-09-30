@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -277,12 +277,19 @@ export default function AssignmentWorkspace({
   const mostRecent = submissions.length > 0 ? submissions[0] : null;
   const isMostRecentPassed = mostRecent?.status === 'PASS';
 
-  const availableFiles = getModuleFiles(assignment.module, assignment.validationType);
+  const availableFiles = useMemo(
+    () => getModuleFiles(assignment.module, assignment.validationType),
+    [assignment.module, assignment.validationType]
+  );
   const [activeFile, setActiveFile] = useState<string>(availableFiles[0].name);
   const activeFileRef = useRef<string>(activeFile);
   useEffect(() => {
     activeFileRef.current = activeFile;
   }, [activeFile]);
+
+  // Keep references to mounted Monaco editor and monaco instance
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
 
   // Multi-file state dictionary
   const [files, setFiles] = useState<Record<string, string>>(() =>
@@ -293,6 +300,46 @@ export default function AssignmentWorkspace({
       assignment.passingSample
     )
   );
+
+  // Always synchronized ref to current in-memory file contents
+  const filesRef = useRef<Record<string, string>>(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  // Snapshot the freshest code directly from Monaco editor and models
+  const getLatestFilesSnapshot = (): Record<string, string> => {
+    const snapshot: Record<string, string> = { ...filesRef.current };
+
+    // 1. Pull active editor value directly from Monaco instance if available
+    if (editorRef.current && activeFileRef.current) {
+      try {
+        const currentVal = editorRef.current.getValue();
+        if (typeof currentVal === 'string') {
+          snapshot[activeFileRef.current] = currentVal;
+        }
+      } catch {
+        // Ignore editor inspection errors
+      }
+    }
+
+    // 2. Query all known Monaco models in memory to capture any modified tabs
+    if (monacoRef.current?.editor) {
+      try {
+        const models = monacoRef.current.editor.getModels();
+        for (const model of models) {
+          const rawPath = model.uri?.path?.replace(/^\//, '');
+          if (rawPath && (snapshot[rawPath] !== undefined || availableFiles.some((f) => f.name === rawPath))) {
+            snapshot[rawPath] = model.getValue();
+          }
+        }
+      } catch {
+        // Ignore model query errors
+      }
+    }
+
+    return snapshot;
+  };
 
   const [showLivePreview, setShowLivePreview] = useState<boolean>(false);
   const [previewKey, setPreviewKey] = useState<number>(0);
@@ -319,17 +366,62 @@ export default function AssignmentWorkspace({
     error?: string;
   } | null>(null);
 
-  const autosaveKey = `qualiadept_draft_mf_${assignment.id}`;
+  const saveDraftLocally = (payload: Record<string, string> | string) => {
+    if (typeof window === 'undefined') return;
+    const str = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    try {
+      localStorage.setItem(`qualiadept_draft_mf_${assignment.id}`, str);
+      localStorage.setItem(`qualiadept_draft_mf_mod_${assignment.module}`, str);
+    } catch {
+      // Ignore quota errors if any
+    }
+  };
 
-  // 1. Initial mount: restore saved draft from localStorage if present (unless assignment is already passed)
+  const removeDraftLocally = () => {
+    if (typeof window === 'undefined') return;
+    const candidateKeys = [
+      `qualiadept_draft_mf_${assignment.id}`,
+      `qualiadept_draft_mf_mod_${assignment.module}`,
+      `qualiadept_draft_${assignment.id}`,
+      `qualiadept_draft_mod_${assignment.module}`,
+    ];
+    for (const key of candidateKeys) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // Ignore errors
+      }
+    }
+  };
+
+  // 1. Initial mount: restore saved draft from localStorage ONCE (unless assignment is already passed)
+  const hasRestoredDraftRef = useRef<boolean>(false);
   useEffect(() => {
+    if (hasRestoredDraftRef.current) return;
     if (typeof window !== 'undefined' && !isMostRecentPassed) {
-      const savedDraft = localStorage.getItem(autosaveKey);
+      hasRestoredDraftRef.current = true;
+      const candidateKeys = [
+        `qualiadept_draft_mf_${assignment.id}`,
+        `qualiadept_draft_mf_mod_${assignment.module}`,
+        `qualiadept_draft_${assignment.id}`,
+        `qualiadept_draft_mod_${assignment.module}`,
+      ];
+
+      let savedDraft: string | null = null;
+      for (const key of candidateKeys) {
+        const val = localStorage.getItem(key);
+        if (val && val.trim().length > 0) {
+          savedDraft = val;
+          break;
+        }
+      }
+
       if (savedDraft && savedDraft.trim().length > 0) {
         try {
           const parsed = JSON.parse(savedDraft);
           if (parsed && typeof parsed === 'object') {
-            const merged = { ...parsed };
+            const draftFiles = parsed.files && typeof parsed.files === 'object' ? parsed.files : parsed;
+            const merged = { ...draftFiles };
             if (
               merged['index.html'] &&
               merged['style.css'] &&
@@ -337,27 +429,30 @@ export default function AssignmentWorkspace({
             ) {
               merged['index.html'] = assignment.module <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
             }
+            filesRef.current = merged;
             setFiles((prev) => ({ ...prev, ...merged }));
             return;
           }
         } catch {
           if (!savedDraft.trim().startsWith('/*')) {
-            setFiles((prev) => ({ ...prev, [availableFiles[0].name]: savedDraft }));
+            const fallback = { [availableFiles[0].name]: savedDraft };
+            filesRef.current = { ...filesRef.current, ...fallback };
+            setFiles((prev) => ({ ...prev, ...fallback }));
           }
         }
       }
     }
-  }, [autosaveKey, isMostRecentPassed, assignment.module, availableFiles]);
+  }, [assignment.id, assignment.module, isMostRecentPassed, availableFiles]);
 
   // 2. Debounced Autosave editor code state changes to localStorage (500ms debounce)
   useEffect(() => {
     if (typeof window !== 'undefined' && Object.keys(files).length > 0 && !isMostRecentPassed) {
       const handler = setTimeout(() => {
-        localStorage.setItem(autosaveKey, JSON.stringify(files));
+        saveDraftLocally(files);
       }, 500);
       return () => clearTimeout(handler);
     }
-  }, [files, autosaveKey, isMostRecentPassed]);
+  }, [files, isMostRecentPassed, assignment.id, assignment.module]);
 
   // 3. Cooldown timer for anti-spam (10s countdown)
   useEffect(() => {
@@ -382,6 +477,7 @@ export default function AssignmentWorkspace({
 
   const handleActiveFileChange = (newVal: string, targetFileName?: string) => {
     const fileToUpdate = targetFileName || activeFileRef.current;
+    filesRef.current[fileToUpdate] = newVal;
     setFiles((prev) => {
       if (prev[fileToUpdate] === newVal) return prev;
       return {
@@ -400,8 +496,14 @@ export default function AssignmentWorkspace({
     setIsValidating(true);
     setSubmitError(null);
 
-    const payloadString = JSON.stringify({ files });
-    const htmlCode = files['index.html'] || files['sandbox.html'] || files[activeFile] || '';
+    // Snapshot latest code directly from Monaco editor and models
+    const latestFiles = getLatestFilesSnapshot();
+    filesRef.current = latestFiles;
+    setFiles(latestFiles);
+    saveDraftLocally(latestFiles);
+
+    const payloadString = JSON.stringify({ files: latestFiles });
+    const htmlCode = latestFiles['index.html'] || latestFiles['sandbox.html'] || latestFiles[activeFile] || '';
 
     try {
       const endpoint =
@@ -417,15 +519,13 @@ export default function AssignmentWorkspace({
         body: JSON.stringify({
           assignmentId: assignment.id,
           codePayload: payloadString,
-          files,
+          files: latestFiles,
           htmlCode,
         }),
       });
 
       if (res.status === 401) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(autosaveKey, payloadString);
-        }
+        saveDraftLocally(payloadString);
         setSubmitError(
           'Sesiunea ta a expirat. Codul a fost salvat local. Te rugăm să dai refresh și să te reautentifici.'
         );
@@ -455,9 +555,7 @@ export default function AssignmentWorkspace({
 
       if (result.status === 'pass') {
         setIsUnlockedForEdit(false);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(autosaveKey);
-        }
+        removeDraftLocally();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Network error occurred while submitting code.';
@@ -477,8 +575,14 @@ export default function AssignmentWorkspace({
     setIsValidatingFile(targetFile);
     setSubmitError(null);
 
-    const payloadString = JSON.stringify({ files });
-    const htmlCode = files['index.html'] || files['sandbox.html'] || files[activeFile] || '';
+    // Snapshot latest code directly from Monaco editor and models
+    const latestFiles = getLatestFilesSnapshot();
+    filesRef.current = latestFiles;
+    setFiles(latestFiles);
+    saveDraftLocally(latestFiles);
+
+    const payloadString = JSON.stringify({ files: latestFiles });
+    const htmlCode = latestFiles['index.html'] || latestFiles['sandbox.html'] || latestFiles[activeFile] || '';
 
     try {
       const endpoint =
@@ -494,16 +598,14 @@ export default function AssignmentWorkspace({
         body: JSON.stringify({
           assignmentId: assignment.id,
           codePayload: payloadString,
-          files,
+          files: latestFiles,
           htmlCode,
           targetFile,
         }),
       });
 
       if (res.status === 401) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(autosaveKey, payloadString);
-        }
+        saveDraftLocally(payloadString);
         setSubmitError(
           'Sesiunea ta a expirat. Codul a fost salvat local. Te rugăm să dai refresh și să te reautentifici.'
         );
@@ -580,7 +682,17 @@ export default function AssignmentWorkspace({
       assignment.module,
       assignment.validationType
     );
+    filesRef.current = restored;
     setFiles(restored);
+
+    if (editorRef.current && activeFileRef.current && restored[activeFileRef.current] !== undefined) {
+      try {
+        editorRef.current.setValue(restored[activeFileRef.current]);
+      } catch {
+        // Ignore editor setValue error
+      }
+    }
+
     try {
       const parsed: ValidationResponse = JSON.parse(record.feedbackJSON);
       setValidationResult(parsed);
@@ -847,10 +959,16 @@ export default function AssignmentWorkspace({
                     type="button"
                     onClick={() => {
                       const fresh = parseInitialFiles(null, assignment.module, assignment.validationType);
+                      filesRef.current = fresh;
                       setFiles(fresh);
-                      if (typeof window !== 'undefined') {
-                        localStorage.removeItem(autosaveKey);
+                      if (editorRef.current && activeFileRef.current && fresh[activeFileRef.current] !== undefined) {
+                        try {
+                          editorRef.current.setValue(fresh[activeFileRef.current]);
+                        } catch {
+                          // Ignore
+                        }
                       }
+                      removeDraftLocally();
                       setIsUnlockedForEdit(true);
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
@@ -899,6 +1017,10 @@ export default function AssignmentWorkspace({
                   language={currentFileObj.language}
                   theme="vs-dark"
                   value={activeCode}
+                  onMount={(editor, monaco) => {
+                    editorRef.current = editor;
+                    monacoRef.current = monaco;
+                  }}
                   onChange={(value) => handleActiveFileChange(value || '', activeFile)}
                   loading={
                     <div className="h-[460px] w-full flex flex-col items-center justify-center gap-3 bg-zinc-950 text-zinc-400 font-mono text-xs border border-zinc-800 rounded-xl">
