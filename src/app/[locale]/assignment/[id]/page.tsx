@@ -72,7 +72,9 @@ export default async function AssignmentPage({ params }: PageProps) {
         userId,
         status: 'PASS',
       },
+      orderBy: { submittedAt: 'desc' },
       select: {
+        codePayload: true,
         assignment: {
           select: { module: true },
         },
@@ -107,6 +109,10 @@ export default async function AssignmentPage({ params }: PageProps) {
     }
   }
 
+  const prevPassedSubmission = userPassedSubmissions.find(
+    (s) => s.assignment.module === assignment.module - 1
+  );
+
   const tAssignments = await getTranslations('Assignments');
   const localizedAssignment = getLocalizedAssignment(assignment, (key) => tAssignments(key as any));
 
@@ -129,6 +135,7 @@ export default async function AssignmentPage({ params }: PageProps) {
         validationType: localizedAssignment.validationType,
       }}
       initialSubmissions={initialSubmissions}
+      previousPassedPayload={prevPassedSubmission?.codePayload || null}
     />
   );
 }

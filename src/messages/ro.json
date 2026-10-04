@@ -240,7 +240,7 @@
     "m2_title": "Sesiunea 2: CSS & DOM Selectors",
     "m2_description": "Transformă scheletul Task Tracker-ului într-o aplicație structurată cu fișier CSS extern, navbar flexibil, rânduri tabel structurate și butoane dinamice cu stare disabled.",
     "m3_title": "Sesiunea 3: JavaScript Basics",
-    "m3_description": "Variabile, tipuri de date și Arrow Functions.",
+    "m3_description": "Construiește logica de bază (Business Logic) a Task Tracker-ului: Array-ul de obiecte listaTaskuri, validarea strictă cu Arrow Function (proceseazaTaskNou), adăugarea prin push() și raportarea dinamică a task-urilor folosind o buclă for.",
     "m4_title": "Sesiunea 4: JS DOM Manipulation",
     "m4_description": "Ascultători de evenimente (addEventListener) și adăugarea elementelor în DOM.",
     "m5_title": "Sesiunea 5: JS Asincron (Promises & Fetch)",

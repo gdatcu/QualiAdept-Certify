@@ -54,6 +54,7 @@ export interface SubmissionRecord {
 export interface AssignmentWorkspaceProps {
   assignment: AssignmentData;
   initialSubmissions?: SubmissionRecord[];
+  previousPassedPayload?: string | null;
 }
 
 export interface ProjectFile {
@@ -186,15 +187,129 @@ const STARTER_CSS_S2 = `/* =====================================================
 `;
 
 const STARTER_JS_S3 = `// ============================================================
-// Sesiunea 3: JavaScript & DOM Manipulation
+// Sesiunea 3: JavaScript Basics (Business Logic & Validare)
 // ============================================================
-// Cerința: Adaugă ascultători de evenimente și manipularea DOM.
+// Cerințe Tehnice (Acceptance Criteria):
+// 1. Array de Obiecte: Declară constanta listaTaskuri cu cele 2 task-uri inițiale (id, nume, completat).
+// 2. Funcție Săgeată (Arrow Function): proceseazaTaskNou(taskObj) cu validare strictă if/else.
+//    - Dacă numele lipsește ("") sau este undefined: afișează mesaj de eroare în consolă.
+//    - Dacă datele sunt valide: adaugă noul task în array (push) și afișează mesaj de succes.
+// 3. Buclă de Raportare: Parcurge listaTaskuri cu o buclă for și afișează numele fiecărui task.
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Scrie logica JavaScript aici:
+// 1. Baza temporară de date (Array de Obiecte)
 
-});
+
+// 2. Funcția de Validare (Arrow Function)
+
+
+// 3. Testează funcția apelând-o cu un task invalid și unul valid
+
+
+// 4. Bucla for pentru raportarea task-urilor din memorie
+
+`;
+
+const STARTER_HTML_S3 = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <h1 id="logo">Task Tracker</h1>
+      <button data-testid="btn-login">Log In</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="login-container">
+      <form>
+        <input type="email" id="login-email" data-testid="input-email" placeholder="Email">
+        <input type="password" id="login-password" data-testid="input-password" placeholder="Parolă">
+        <button data-testid="btn-submit-login">Log In</button>
+      </form>
+    </div>
+
+    <section class="task-input-section">
+      <form id="add-task-form">
+        <input type="text" id="task-name" placeholder="Nume Task">
+        <button type="submit" data-testid="submit-task-btn" disabled>Salvează Task</button>
+      </form>
+    </section>
+
+    <section class="task-history-section">
+      <table id="history-table">
+        <tbody>
+          <tr>
+            <td>#1001</td>
+            <td>Task 1</td>
+          </tr>
+          <tr>
+            <td>#1002</td>
+            <td>Task 2</td>
+          </tr>
+          <tr>
+            <td>#1003</td>
+            <td>
+              <button class="delete-row">Șterge</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`;
+
+const STARTER_CSS_S3 = `/* ============================================================
+ * Task Tracker - Stiluri CSS validate (Sesiunea 2)
+ * ============================================================ */
+
+/* 1. Meniu Flexibil (Flexbox) */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #18181b;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #27272a;
+}
+
+#logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+/* 2. Selectori Structurali */
+tr:nth-child(3) {
+  background-color: #27272a;
+  font-weight: 600;
+}
+
+.delete-row {
+  color: #f43f5e;
+  border: 1px solid #e11d48;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: transparent;
+}
+
+/* 3. Stări Dinamice */
+button:not(:disabled):hover {
+  background-color: #059669;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 `;
 
 const STARTER_PLAYWRIGHT = `import { test, expect } from '@playwright/test';
@@ -213,7 +328,8 @@ export function parseInitialFiles(
   codePayload: string | null | undefined,
   moduleNum: number,
   validationType: string,
-  sampleToForce?: string | null
+  sampleToForce?: string | null,
+  previousPassedPayload?: string | null
 ): Record<string, string> {
   const defaultFiles = getModuleFiles(moduleNum, validationType);
   const initial: Record<string, string> = {};
@@ -221,9 +337,10 @@ export function parseInitialFiles(
   // 1. Populate starter scaffolds based on module number
   for (const f of defaultFiles) {
     if (f.name === 'index.html') {
-      initial['index.html'] = moduleNum <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
+      initial['index.html'] =
+        moduleNum <= 1 ? STARTER_HTML_S1 : moduleNum === 2 ? STARTER_HTML_S2 : STARTER_HTML_S3;
     } else if (f.name === 'style.css') {
-      initial['style.css'] = STARTER_CSS_S2;
+      initial['style.css'] = moduleNum <= 2 ? STARTER_CSS_S2 : STARTER_CSS_S3;
     } else if (f.name === 'app.js') {
       initial['app.js'] = STARTER_JS_S3;
     } else if (f.name === 'e2e.spec.ts') {
@@ -231,7 +348,28 @@ export function parseInitialFiles(
     }
   }
 
-  // 2. If a saved submission or sample override is provided, parse and apply it
+  // 1.5 Progressive Inheritance: Inherit student's validated files from previous module
+  if (previousPassedPayload && previousPassedPayload.trim().length > 0) {
+    try {
+      const parsedPrev = JSON.parse(previousPassedPayload);
+      if (parsedPrev && typeof parsedPrev.files === 'object' && !Array.isArray(parsedPrev.files)) {
+        if (parsedPrev.files['index.html']) {
+          let inheritedHtml = parsedPrev.files['index.html'];
+          if (moduleNum >= 3 && !inheritedHtml.includes('app.js')) {
+            inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.js"></script>\n</body>');
+          }
+          initial['index.html'] = inheritedHtml;
+        }
+        if (parsedPrev.files['style.css']) {
+          initial['style.css'] = parsedPrev.files['style.css'];
+        }
+      }
+    } catch {
+      // Ignore parse errors on legacy single file
+    }
+  }
+
+  // 2. If a saved submission or sample override is provided, parse and apply it over starters
   const rawSource = codePayload || sampleToForce;
   if (rawSource && rawSource.trim().length > 0) {
     try {
@@ -244,7 +382,8 @@ export function parseInitialFiles(
           merged['style.css'] &&
           (merged['index.html'].trim().startsWith('/*') || !merged['index.html'].includes('<'))
         ) {
-          merged['index.html'] = moduleNum <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
+          merged['index.html'] =
+            moduleNum <= 1 ? STARTER_HTML_S1 : moduleNum === 2 ? STARTER_HTML_S2 : STARTER_HTML_S3;
         }
         return merged;
       }
@@ -270,6 +409,7 @@ export function parseInitialFiles(
 export default function AssignmentWorkspace({
   assignment,
   initialSubmissions = [],
+  previousPassedPayload = null,
 }: AssignmentWorkspaceProps) {
   const { data: session, status: authStatus } = useSession();
 
@@ -297,7 +437,8 @@ export default function AssignmentWorkspace({
       mostRecent?.codePayload,
       assignment.module,
       assignment.validationType,
-      assignment.passingSample
+      assignment.passingSample,
+      previousPassedPayload
     )
   );
 
@@ -427,7 +568,31 @@ export default function AssignmentWorkspace({
               merged['style.css'] &&
               (merged['index.html'].trim().startsWith('/*') || !merged['index.html'].includes('<'))
             ) {
-              merged['index.html'] = assignment.module <= 1 ? STARTER_HTML_S1 : STARTER_HTML_S2;
+              merged['index.html'] =
+                assignment.module <= 1
+                  ? STARTER_HTML_S1
+                  : assignment.module === 2
+                  ? STARTER_HTML_S2
+                  : STARTER_HTML_S3;
+            }
+            // Auto-heal empty or comment-only style.css draft in Module >= 3
+            if (
+              assignment.module >= 3 &&
+              merged['style.css'] &&
+              (merged['style.css'].trim().startsWith('/*') || !merged['style.css'].includes('{'))
+            ) {
+              merged['style.css'] = STARTER_CSS_S3;
+            }
+            // Ensure script src="app.js" is present in Module >= 3 index.html
+            if (
+              assignment.module >= 3 &&
+              merged['index.html'] &&
+              !merged['index.html'].includes('app.js')
+            ) {
+              merged['index.html'] = merged['index.html'].replace(
+                '</body>',
+                '  <script src="app.js"></script>\n</body>'
+              );
             }
             filesRef.current = merged;
             setFiles((prev) => ({ ...prev, ...merged }));
@@ -680,7 +845,9 @@ export default function AssignmentWorkspace({
     const restored = parseInitialFiles(
       record.codePayload,
       assignment.module,
-      assignment.validationType
+      assignment.validationType,
+      null,
+      previousPassedPayload
     );
     filesRef.current = restored;
     setFiles(restored);
@@ -958,7 +1125,13 @@ export default function AssignmentWorkspace({
                   <button
                     type="button"
                     onClick={() => {
-                      const fresh = parseInitialFiles(null, assignment.module, assignment.validationType);
+                      const fresh = parseInitialFiles(
+                        null,
+                        assignment.module,
+                        assignment.validationType,
+                        null,
+                        previousPassedPayload
+                      );
                       filesRef.current = fresh;
                       setFiles(fresh);
                       if (editorRef.current && activeFileRef.current && fresh[activeFileRef.current] !== undefined) {

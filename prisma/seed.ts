@@ -132,9 +132,67 @@ const curriculum: CurriculumItem[] = [
     validationType: 'STATIC',
     isPublished: true,
     unlockDate: new Date('2026-10-08T00:00:00Z'),
-    description: 'Variabile, tipuri de date și Arrow Functions.',
+    description:
+      'Construiește logica de bază (Business Logic) a Task Tracker-ului: Array-ul de obiecte listaTaskuri, validarea strictă cu Arrow Function (proceseazaTaskNou), adăugarea prin push() și raportarea dinamică a task-urilor folosind o buclă for.',
     validationRules: JSON.stringify([
-      { type: 'regex', value: 'const|let|=>', message: 'Folosește ES6 syntax (const/let/arrow)' },
+      {
+        file: 'index.html',
+        name: '[index.html] Conectare app.js prin tag-ul <script>',
+        selector: "body script[src*='app.js'], script[src*='app.js'], script[src='app.js']",
+        check: 'attributeRegex',
+        attrName: 'src',
+        pattern: '^(?:\\.?\\/)?app\\.js$',
+        message:
+          'Cerință eșuată: Fișierul app.js nu este conectat în index.html (ex: <script src="app.js"></script> înainte de </body>).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Declarare Array listaTaskuri cu obiecte structurate',
+        check: 'regex',
+        pattern: '(?:const|let|var)\\s+listaTaskuri\\s*=\\s*\\[(?=[\\s\\S]*?id\\s*:)(?=[\\s\\S]*?nume\\s*:)(?=[\\s\\S]*?completat\\s*:)[\\s\\S]*?\\]',
+        message:
+          'Cerința 1 eșuată: Declară constanta listaTaskuri ca Array ce conține task-uri cu proprietățile id (Number), nume (String) și completat (Boolean).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Arrow Function proceseazaTaskNou',
+        check: 'regex',
+        pattern: '(?:const|let|var)\\s+proceseazaTaskNou\\s*=\\s*\\(?\\s*[a-zA-Z0-9_$]+\\s*\\)?\\s*=>',
+        message:
+          'Cerința 2 eșuată: Definește funcția săgeată (Arrow Function) const proceseazaTaskNou = (taskObj) => { ... }.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Validare condițională if/else pentru nume lipsă sau invalid',
+        check: 'regex',
+        pattern: 'if\\s*\\([\\s\\S]*?(?:\\.nume|\\[[\'"]nume[\'"]\\])[\\s\\S]*?(?:===|==|!|trim|undefined|[\'"][\'"]|typeof)[\\s\\S]*?\\)',
+        message:
+          'Cerința 2 eșuată: Verifică în blocul if/else dacă numele task-ului lipsește ("") sau este undefined.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Logare mesaj de eroare pentru task invalid',
+        check: 'regex',
+        pattern: 'console\\.log\\s*\\(\\s*["\'`]Eroare:\\s*Task-?ul\\s+trebuie\\s+s[aă]\\s+aib[aă]\\s+un\\s+nume!?["\'`]\\s*\\)',
+        message:
+          'Cerința 2 eșuată: În caz de date invalide, apelează console.log("Eroare: Task-ul trebuie să aibă un nume!").',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Adăugare în Array prin push() și mesaj de succes',
+        check: 'regex',
+        pattern: '(?=[\\s\\S]*?listaTaskuri\\.push\\s*\\()(?=[\\s\\S]*?console\\.log\\s*\\(\\s*["\'`]Task\\s+ad[aă]ugat\\s+cu\\s+succes!?["\'`]\\s*\\))',
+        message:
+          'Cerința 2 eșuată: Adaugă noul task în Array cu listaTaskuri.push(...) și afișează console.log("Task adăugat cu succes!").',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Buclă for de parcurgere și raportare în consolă',
+        check: 'regex',
+        pattern: '(?:for\\s*\\(\\s*(?:let|var)\\s+[a-zA-Z0-9_$]+\\s*=\\s*0;[\\s\\S]*?listaTaskuri\\.length[\\s\\S]*?\\)|for\\s*\\(\\s*(?:const|let|var)\\s+[a-zA-Z0-9_$]+\\s+of\\s+listaTaskuri\\s*\\))[\\s\\S]*?console\\.log\\s*\\([^\\)]*?\\.nume',
+        message:
+          'Cerința 3 eșuată: Scrie o buclă for care parcurge array-ul listaTaskuri și afișează numele task-urilor în consolă cu console.log.',
+      },
     ]),
   },
   {

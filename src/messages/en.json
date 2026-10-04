@@ -240,7 +240,7 @@
     "m2_title": "Session 2: CSS & DOM Selectors",
     "m2_description": "Transform the Task Tracker skeleton into a structured application with an external CSS stylesheet, flexible navbar, structured table rows, and dynamic buttons with disabled states.",
     "m3_title": "Session 3: JavaScript Basics",
-    "m3_description": "Variables, data types, and Arrow Functions.",
+    "m3_description": "Build the core business logic for Task Tracker: the listaTaskuri object array, strict data validation with an Arrow Function (proceseazaTaskNou), array mutations via push(), and dynamic task reporting using a for loop.",
     "m4_title": "Session 4: JS DOM Manipulation",
     "m4_description": "Event listeners (addEventListener) and adding elements to the DOM.",
     "m5_title": "Session 5: Asynchronous JS (Promises & Fetch)",

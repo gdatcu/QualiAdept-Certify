@@ -367,8 +367,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fallback to default Session 1 checks if no dynamic rules were provided
-    if (checks.length === 0) {
+    // If targetFileFilter is specified and no dynamic rules matched that specific file:
+    if (targetFileFilter && checks.length === 0) {
+      checks.push({
+        check: `Validare ${targetFileFilter}`,
+        passed: true,
+        message: `Fișierul ${targetFileFilter} este conform. Nu există cerințe obligatorii pentru acest fișier în acest modul.`,
+        file: targetFileFilter,
+      });
+    }
+
+    // Fallback to default legacy Session 1 checks ONLY if no dynamic rules were provided for the assignment and no target file was filtered
+    if (checks.length === 0 && !targetFileFilter && !targetAssignment?.validationRules) {
       // Check a: Existence of <main> tag
       const hasMainTag = $('main').length > 0;
       checks.push({
