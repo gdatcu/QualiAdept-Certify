@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import DOMPurify from 'isomorphic-dompurify';
 import dynamic from 'next/dynamic';
@@ -435,6 +435,7 @@ export default function AssignmentWorkspace({
   previousPassedPayload = null,
 }: AssignmentWorkspaceProps) {
   const { data: session, status: authStatus } = useSession();
+  const locale = useLocale();
 
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>(initialSubmissions);
   const mostRecent = submissions.length > 0 ? submissions[0] : null;
@@ -709,6 +710,7 @@ export default function AssignmentWorkspace({
           codePayload: payloadString,
           files: latestFiles,
           htmlCode,
+          locale,
         }),
       });
 
@@ -789,6 +791,7 @@ export default function AssignmentWorkspace({
           files: latestFiles,
           htmlCode,
           targetFile,
+          locale,
         }),
       });
 

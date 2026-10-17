@@ -104,10 +104,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { rawPayload, files, htmlCode, cssCode, jsCode } = parseSubmissionFiles(body);
+    const locale = (body.locale || req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || 'ro').toLowerCase();
+    const isEn = locale === 'en';
 
     if (!rawPayload && !htmlCode && Object.keys(files).length === 0) {
       return NextResponse.json(
-        { error: 'Missing or invalid required field: htmlCode or codePayload' },
+        { error: isEn ? 'Missing or invalid required field: htmlCode or codePayload' : 'Câmp obligatoriu lipsă: htmlCode sau codePayload' },
         { status: 400 }
       );
     }
@@ -226,8 +228,16 @@ export async function POST(req: NextRequest) {
             let passed = false;
             const checkType = r.check || r.type || 'exists';
             const selector = r.selector || r.tag || r.value;
-            let checkName = r.name || r.title || '';
+            let checkName = (isEn && r.name_en) ? r.name_en : (r.name || r.title || '');
             let msg = '';
+
+            const defaultPassMsg = isEn ? 'Requirement validated successfully.' : 'Cerință validată cu succes.';
+            const passMsg = (isEn && r.successMessage_en)
+              ? r.successMessage_en
+              : (r.successMessage || defaultPassMsg);
+            const failMsg = (isEn && r.message_en)
+              ? r.message_en
+              : r.message;
 
             // Target file code resolution
             const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : 'index.html');
@@ -251,10 +261,10 @@ export async function POST(req: NextRequest) {
 
               // Test against clean code without comments
               passed = regex.test(cleanTargetCode) || (targetFileName === undefined && (regex.test(cleanCssCode) || regex.test(cleanJsCode)));
-              checkName = checkName || r.check || `Pattern check (${pattern})`;
+              checkName = checkName || r.check || (isEn ? `Pattern check` : `Verificare conformitate cod`);
               msg = passed
-                ? `Matched required pattern: ${pattern}`
-                : (r.message || `Code does not match required pattern: ${pattern}`);
+                ? passMsg
+                : (failMsg || (isEn ? `Code does not match required structure.` : `Codul nu respectă cerința necesară.`));
             } else if (checkType === 'hasClass') {
               const expectedClass = r.expected || r.value;
               const matches = $(selector);
@@ -266,8 +276,8 @@ export async function POST(req: NextRequest) {
                 });
               checkName = checkName || `Element "${selector}" has class "${expectedClass}"`;
               msg = passed
-                ? `Element "${selector}" contains class "${expectedClass}".`
-                : (r.message || `Element "${selector}" is missing required class "${expectedClass}".`);
+                ? passMsg
+                : (failMsg || (isEn ? `Element "${selector}" is missing required class "${expectedClass}".` : `Elementul "${selector}" nu are clasa obligatorie "${expectedClass}".`));
             } else if (checkType === 'hasAttribute') {
               const attrName = (r.attrName || r.attr || r.value || '').toLowerCase();
               const matches = $(selector);
@@ -279,8 +289,8 @@ export async function POST(req: NextRequest) {
                 });
               checkName = checkName || `Element "${selector}" has attribute "${attrName}"`;
               msg = passed
-                ? `Element "${selector}" has attribute "${attrName}".`
-                : (r.message || `Element "${selector}" is missing attribute "${attrName}".`);
+                ? passMsg
+                : (failMsg || (isEn ? `Element "${selector}" is missing attribute "${attrName}".` : `Elementul "${selector}" nu conține atributul "${attrName}".`));
             } else if (checkType === 'attribute') {
               const attrName = (r.attrName || r.attr || '').toLowerCase();
               const expected = (r.expected || r.value || '').trim();
@@ -295,8 +305,8 @@ export async function POST(req: NextRequest) {
                 });
               checkName = checkName || `Element "${selector}" [${attrName}="${expected}"]`;
               msg = passed
-                ? `Element "${selector}" has attribute ${attrName}="${expected}".`
-                : (r.message || `Element "${selector}" attribute "${attrName}" expected "${expected}".`);
+                ? passMsg
+                : (failMsg || (isEn ? `Element "${selector}" attribute "${attrName}" expected "${expected}".` : `Elementul "${selector}" atributul "${attrName}" trebuia să fie "${expected}".`));
             } else if (checkType === 'attributeRegex') {
               const attrName = (r.attrName || r.attr || '').toLowerCase();
               const pattern = r.pattern || r.expected || r.value;
@@ -310,25 +320,25 @@ export async function POST(req: NextRequest) {
                   const val = matchedKey ? attribs[matchedKey] : undefined;
                   return val !== undefined && regex.test(val.trim());
                 });
-              checkName = checkName || `Element "${selector}" [${attrName} matches /${pattern}/]`;
+              checkName = checkName || `Element "${selector}" [${attrName}]`;
               msg = passed
-                ? `Element "${selector}" attribute "${attrName}" matches expected pattern.`
-                : (r.message || `Element "${selector}" attribute "${attrName}" did not match pattern /${pattern}/.`);
+                ? passMsg
+                : (failMsg || (isEn ? `Element "${selector}" attribute "${attrName}" did not match pattern.` : `Elementul "${selector}" atributul "${attrName}" nu are valoarea așteptată.`));
             } else if (checkType === 'textContains') {
               const expectedText = (r.expected || r.value || '').trim().toLowerCase();
               const matches = $(selector);
               passed = matches.length > 0 && matches.text().toLowerCase().includes(expectedText);
               checkName = checkName || `Element "${selector}" contains text "${expectedText}"`;
               msg = passed
-                ? `Element "${selector}" contains expected text.`
-                : (r.message || `Element "${selector}" does not contain "${expectedText}".`);
+                ? passMsg
+                : (failMsg || (isEn ? `Element "${selector}" does not contain "${expectedText}".` : `Elementul "${selector}" nu conține textul "${expectedText}".`));
             } else if (r.type === 'tag') {
               const tagSelector = r.value || r.selector || r.tag;
               passed = $(tagSelector).length > 0;
               checkName = checkName || `<${tagSelector}> tag exists`;
               msg = passed
-                ? `Tag <${tagSelector}> is present.`
-                : (r.message || `Missing required <${tagSelector}> tag.`);
+                ? passMsg
+                : (failMsg || (isEn ? `Missing required <${tagSelector}> tag.` : `Tag-ul obligatoriu <${tagSelector}> lipsește.`));
             } else if (r.type === 'attr') {
               const rawAttr = r.value || r.selector;
               const attrSelector =
@@ -338,8 +348,8 @@ export async function POST(req: NextRequest) {
               passed = $(attrSelector).length > 0;
               checkName = checkName || `Selector "${rawAttr}" exists`;
               msg = passed
-                ? `Found element matching "${rawAttr}".`
-                : (r.message || `Missing required attribute or selector "${rawAttr}".`);
+                ? passMsg
+                : (failMsg || (isEn ? `Missing required attribute or selector "${rawAttr}".` : `Selectorul sau atributul "${rawAttr}" lipsește.`));
             } else {
               // checkType === 'exists' or default selector check
               const targetSelector = selector || r.check;
@@ -347,8 +357,8 @@ export async function POST(req: NextRequest) {
                 passed = $(targetSelector).length > 0;
                 checkName = checkName || (r.check && r.check !== 'exists' ? r.check : `Element "${targetSelector}" exists`);
                 msg = passed
-                  ? `Found element matching "${targetSelector}".`
-                  : (r.message || `Missing element matching "${targetSelector}".`);
+                  ? passMsg
+                  : (failMsg || (isEn ? `Missing element matching "${targetSelector}".` : `Elementul "${targetSelector}" lipsește din pagină.`));
               }
             }
 
