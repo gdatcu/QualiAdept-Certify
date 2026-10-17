@@ -242,7 +242,7 @@
     "m3_title": "Sesiunea 3: JavaScript Basics",
     "m3_description": "Construiește logica de bază (Business Logic) a Task Tracker-ului: Array-ul de obiecte listaTaskuri, validarea strictă cu Arrow Function (proceseazaTaskNou), adăugarea prin push() și raportarea dinamică a task-urilor folosind o buclă for.",
     "m4_title": "Sesiunea 4: JS DOM Manipulation",
-    "m4_description": "Ascultători de evenimente (addEventListener) și adăugarea elementelor în DOM.",
+    "m4_description": "Interceptează formularul de adăugare și injectează noile task-uri direct ca rânduri noi în tabelul HTML, fiecare venind la pachet cu propriul buton funcțional de ștergere.",
     "m5_title": "Sesiunea 5: JS Asincron (Promises & Fetch)",
     "m5_description": "Conceptul de Event Loop. Comunicarea client-server folosind Fetch API.",
     "m6_title": "Sesiunea 6: Kanban Workshop",

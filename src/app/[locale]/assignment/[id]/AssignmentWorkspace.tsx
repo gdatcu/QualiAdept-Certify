@@ -210,6 +210,29 @@ const STARTER_JS_S3 = `// ======================================================
 
 `;
 
+const STARTER_JS_S4 = `// ============================================================
+// Sesiunea 4: JS DOM Manipulation (Task Tracker)
+// ============================================================
+// Cerințe Tehnice:
+// 1. Selectare elemente DOM: formular (#add-task-form), input (#task-name), tbody.
+// 2. Ascultător de eveniment 'submit' pe formular cu preventDefault().
+// 3. Creare dinamică rând nou (document.createElement('tr')).
+// 4. Structura rândului: celule <td> cu numele task-ului și buton cu clasa 'delete-row'.
+// 5. Inserare în DOM folosind appendChild() sau append().
+// 6. Resetare valoare câmp input (input.value = '').
+// 7. Ștergere dinamică din DOM cu .remove() la click pe butonul 'delete-row'.
+// ============================================================
+
+// 1. Selectare elemente DOM
+
+
+// 2. Ascultător eveniment 'submit' și adăugare dinamică în tabel
+
+
+// 3. Ștergere dinamică din DOM (Event Delegation pe document sau click pe buton)
+
+`;
+
 const STARTER_HTML_S3 = `<!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -342,7 +365,7 @@ export function parseInitialFiles(
     } else if (f.name === 'style.css') {
       initial['style.css'] = moduleNum <= 2 ? STARTER_CSS_S2 : STARTER_CSS_S3;
     } else if (f.name === 'app.js') {
-      initial['app.js'] = STARTER_JS_S3;
+      initial['app.js'] = moduleNum <= 3 ? STARTER_JS_S3 : STARTER_JS_S4;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }

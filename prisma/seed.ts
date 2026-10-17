@@ -201,9 +201,83 @@ const curriculum: CurriculumItem[] = [
     validationType: 'STATIC',
     isPublished: true,
     unlockDate: new Date('2026-10-15T00:00:00Z'),
-    description: 'Ascultători de evenimente (addEventListener) și adăugarea elementelor în DOM.',
+    description:
+      'Interceptează formularul de adăugare și injectează noile task-uri direct ca rânduri noi în tabelul HTML, fiecare venind la pachet cu propriul buton funcțional de ștergere.',
     validationRules: JSON.stringify([
-      { type: 'regex', value: 'addEventListener', message: 'Trebuie să interceptezi evenimentele' },
+      {
+        file: 'index.html',
+        name: '[index.html] Conectare app.js prin tag-ul <script>',
+        selector: "body script[src*='app.js'], script[src*='app.js'], script[src='app.js']",
+        check: 'attributeRegex',
+        attrName: 'src',
+        pattern: '^(?:\\.?\\/)?app\\.js$',
+        message:
+          'Cerință eșuată: Fișierul app.js nu este conectat în index.html (ex: <script src="app.js"></script> înainte de </body>).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Selectare elemente DOM (formular și input)',
+        check: 'regex',
+        pattern: '(?:querySelector|getElementById)\\s*\\([\'"`]#?(?:add-task-form|task-name)[\'"`]',
+        message:
+          'Cerința 1 eșuată: Selectează formularul (#add-task-form) și câmpul de text (#task-name) folosind document.querySelector(...) sau document.getElementById(...).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Ascultător pentru evenimentul submit pe formular',
+        check: 'regex',
+        pattern: '(?:form|document\\.querySelector\\([\'"`]#add-task-form[\'"`]\\)|document\\.getElementById\\([\'"`]add-task-form[\'"`]\\))\\.addEventListener\\s*\\(\\s*[\'"`]submit[\'"`]',
+        message:
+          'Cerința 2 eșuată: Adaugă un ascultător de eveniment pe formular folosind addEventListener("submit", ...).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Prevenirea reîncărcării paginii cu preventDefault()',
+        check: 'regex',
+        pattern: '(?:e|event|evt)\\.preventDefault\\s*\\(\\s*\\)',
+        message:
+          'Cerința 3 eșuată: Apelează e.preventDefault() în interiorul ascultătorului pentru a opri reîncărcarea nativă a paginii.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Creare dinamică a elementului de rând tr',
+        check: 'regex',
+        pattern: 'document\\.createElement\\s*\\(\\s*[\'"`]tr[\'"`]\\s*\\)',
+        message:
+          'Cerința 4 eșuată: Creează dinamic un nou element de rând folosind document.createElement("tr").',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Structură rând cu celule și buton cu clasa delete-row',
+        check: 'regex',
+        pattern: '(?=[\\s\\S]*?delete-row)(?=[\\s\\S]*?(?:\\.value|<td))',
+        message:
+          'Cerința 5 eșuată: Asigură-te că rândul conține valoarea din input și include un buton cu clasa "delete-row" (ex: <button class="delete-row">Șterge</button>).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Inserare rând în corpul tabelului (appendChild / append)',
+        check: 'regex',
+        pattern: '(?:tbody|table|taskList|corptabel|document\\.querySelector\\([\'"`]tbody[\'"`]\\))\\.(?:appendChild|append)\\s*\\(',
+        message:
+          'Cerința 6 eșuată: Adaugă noul rând generat în corpul tabelului folosind .appendChild(tr) sau .append(tr).',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Resetare valoare input după salvare',
+        check: 'regex',
+        pattern: '(?:input|taskInput|numeInput|document\\.getElementById\\([\'"`]task-name[\'"`]\\))\\.value\\s*=\\s*[\'"`][\'"`]|\\.reset\\s*\\(\\s*\\)',
+        message:
+          'Cerința 7 eșuată: Resetează valoarea câmpului de input la un string gol (input.value = "") după salvarea task-ului.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Ștergere dinamică din DOM folosind .remove()',
+        check: 'regex',
+        pattern: '(?:closest\\([\'"`]tr[\'"`]\\)|tr|rand|row|parentElement|parentNode)\\.remove\\s*\\(\\s*\\)',
+        message:
+          'Cerința 8 eșuată: Implementează ștergerea rândului din DOM apelând .remove() pe elementul părinte de tip <tr> (ex: e.target.closest("tr").remove()).',
+      },
     ]),
   },
   {
