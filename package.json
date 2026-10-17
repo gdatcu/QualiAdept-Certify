@@ -11,6 +11,7 @@
     "admin:grant": "npx tsx scripts/grant-admin.ts",
     "admin:delete-user": "npx tsx scripts/delete-user.ts",
     "db:seed": "prisma db seed",
+    "db:staging:sync": "npx tsx scripts/sync-staging-db.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
