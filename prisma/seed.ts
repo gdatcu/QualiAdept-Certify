@@ -508,7 +508,14 @@ async function main() {
   console.log('📚 Upserting 20-week curriculum modules into database...');
 
   for (const item of curriculum) {
-    const assignmentId = `00000000-0000-0000-0000-${item.moduleNumber.toString().padStart(12, '0')}`;
+    const existing = await prisma.assignment.findFirst({
+      where: { module: item.moduleNumber },
+    });
+
+    const assignmentId = existing
+      ? existing.id
+      : `00000000-0000-0000-0000-${item.moduleNumber.toString().padStart(12, '0')}`;
+
     const upsertedAssignment = await prisma.assignment.upsert({
       where: { id: assignmentId },
       update: {
