@@ -224,7 +224,7 @@ const curriculum: CurriculumItem[] = [
         name: '[app.js] Selectare elemente DOM (formular și input)',
         name_en: '[app.js] DOM Element Selection (form and input)',
         check: 'regex',
-        pattern: '(?:querySelector|getElementById)\\s*\\([\'"`]#?(?:add-task-form|task-name)[\'"`]',
+        pattern: '(?=[\\s\\S]*?(?:querySelector|getElementById)\\s*\\([\'"`]#?add-task-form[\'"`])(?=[\\s\\S]*?(?:querySelector|getElementById)\\s*\\([\'"`]#?task-name[\'"`])',
         message:
           'Cerința 1 eșuată: Selectează formularul (#add-task-form) și câmpul de text (#task-name) folosind document.querySelector(...) sau document.getElementById(...).',
         message_en:
@@ -237,7 +237,7 @@ const curriculum: CurriculumItem[] = [
         name: '[app.js] Ascultător pentru evenimentul submit pe formular',
         name_en: '[app.js] Submit Event Listener on form',
         check: 'regex',
-        pattern: '(?:form|document\\.querySelector\\([\'"`]#add-task-form[\'"`]\\)|document\\.getElementById\\([\'"`]add-task-form[\'"`]\\))\\.addEventListener\\s*\\(\\s*[\'"`]submit[\'"`]',
+        pattern: '[a-zA-Z0-9_$.]+\\.addEventListener\\s*\\(\\s*[\'"`]submit[\'"`]',
         message:
           'Cerința 2 eșuată: Adaugă un ascultător de eveniment pe formular folosind addEventListener("submit", ...).',
         message_en:
@@ -276,7 +276,7 @@ const curriculum: CurriculumItem[] = [
         name: '[app.js] Structură rând cu celule și buton cu clasa delete-row',
         name_en: '[app.js] Row structure with cells and delete-row button',
         check: 'regex',
-        pattern: '(?=[\\s\\S]*?delete-row)(?=[\\s\\S]*?(?:\\.value|<td))',
+        pattern: '(?=[\\s\\S]*?\\.value)(?=[\\s\\S]*?(?:class\\s*=\\s*[\'"`][^\'"`]*\\bdelete-row\\b|classList\\.add\\s*\\(\\s*[\'"`]delete-row[\'"`]|className\\s*=\\s*[\'"`][^\'"`]*\\bdelete-row\\b))',
         message:
           'Cerința 5 eșuată: Asigură-te că rândul conține valoarea din input și include un buton cu clasa "delete-row" (ex: <button class="delete-row">Șterge</button>).',
         message_en:
@@ -289,7 +289,7 @@ const curriculum: CurriculumItem[] = [
         name: '[app.js] Inserare rând în corpul tabelului (appendChild / append)',
         name_en: '[app.js] Insert row into table body (appendChild / append)',
         check: 'regex',
-        pattern: '(?:tbody|table|taskList|corptabel|document\\.querySelector\\([\'"`]tbody[\'"`]\\))\\.(?:appendChild|append)\\s*\\(',
+        pattern: '[a-zA-Z0-9_$.]+\\.(?:appendChild|append)\\s*\\(',
         message:
           'Cerința 6 eșuată: Adaugă noul rând generat în corpul tabelului folosind .appendChild(tr) sau .append(tr).',
         message_en:
@@ -302,7 +302,7 @@ const curriculum: CurriculumItem[] = [
         name: '[app.js] Resetare valoare input după salvare',
         name_en: '[app.js] Reset input value after saving',
         check: 'regex',
-        pattern: '(?:input|taskInput|numeInput|document\\.getElementById\\([\'"`]task-name[\'"`]\\))\\.value\\s*=\\s*[\'"`][\'"`]|\\.reset\\s*\\(\\s*\\)',
+        pattern: '[a-zA-Z0-9_$.]+\\.value\\s*=\\s*[\'"`][\'"`]|\\.reset\\s*\\(\\s*\\)',
         message:
           'Cerința 7 eșuată: Resetează valoarea câmpului de input la un string gol (input.value = "") după salvarea task-ului.',
         message_en:
