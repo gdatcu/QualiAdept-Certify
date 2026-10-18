@@ -43,10 +43,11 @@ async function main() {
   const targetEmail = process.argv[2] || 'datcugeorgecristian@gmail.com';
   console.log(`\n🔄 Cloning progress for: ${targetEmail}`);
 
-  // 1. Fetch user & submissions from Production
+  // 1. Fetch user, accounts & submissions from Production
   const prodUser = await prodPrisma.user.findFirst({
     where: { email: targetEmail },
     include: {
+      accounts: true,
       submissions: {
         include: { assignment: true },
         orderBy: { submittedAt: 'asc' },
@@ -59,19 +60,62 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`[Prod] Found user "${prodUser.name}" with ${prodUser.submissions.length} submissions.`);
+  console.log(`[Prod] Found user "${prodUser.name}" with ${prodUser.submissions.length} submissions and ${prodUser.accounts.length} accounts.`);
 
-  // 2. Fetch user in Staging
-  const stagingUser = await stagingPrisma.user.findFirst({
+  // 2. Upsert user in Staging
+  const stagingUser = await stagingPrisma.user.upsert({
     where: { email: targetEmail },
+    update: {
+      name: prodUser.name,
+      role: prodUser.role,
+      isEnrolled: prodUser.isEnrolled,
+      isAdmin: prodUser.isAdmin,
+      image: prodUser.image,
+    },
+    create: {
+      id: prodUser.id,
+      email: prodUser.email,
+      name: prodUser.name,
+      role: prodUser.role,
+      isEnrolled: prodUser.isEnrolled,
+      isAdmin: prodUser.isAdmin,
+      image: prodUser.image,
+    },
   });
 
-  if (!stagingUser) {
-    console.error(`❌ User ${targetEmail} not found in Staging database! Please log in on staging once first.`);
-    process.exit(1);
-  }
+  console.log(`[Staging] Target user "${stagingUser.name}" ready (ID: ${stagingUser.id}).`);
 
-  console.log(`[Staging] Found target user "${stagingUser.name}" (ID: ${stagingUser.id}).`);
+  // 2.5 Copy and link OAuth accounts so user can log in without ?error=Callback
+  for (const acc of prodUser.accounts) {
+    await stagingPrisma.account.upsert({
+      where: {
+        provider_providerAccountId: {
+          provider: acc.provider,
+          providerAccountId: acc.providerAccountId,
+        },
+      },
+      update: {
+        userId: stagingUser.id,
+        access_token: acc.access_token,
+        refresh_token: acc.refresh_token,
+        expires_at: acc.expires_at,
+      },
+      create: {
+        userId: stagingUser.id,
+        type: acc.type,
+        provider: acc.provider,
+        providerAccountId: acc.providerAccountId,
+        refresh_token: acc.refresh_token,
+        access_token: acc.access_token,
+        expires_at: acc.expires_at,
+        token_type: acc.token_type,
+        scope: acc.scope,
+        id_token: acc.id_token,
+        session_state: acc.session_state,
+      },
+    });
+    console.log(`[Staging] Linked OAuth account: ${acc.provider}:${acc.providerAccountId}`);
+  }
 
   // 3. Fetch all assignments in Staging to map by module number
   const stagingAssignments = await stagingPrisma.assignment.findMany();
