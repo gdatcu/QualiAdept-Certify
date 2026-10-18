@@ -129,4 +129,66 @@ describe('Workspace Multi-File Configuration Tests', () => {
     expect(parsed['app.js']).toContain('const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];');
     expect(parsed['app.js']).toContain('Sesiunea 4: JS DOM Manipulation');
   });
+
+  it('inherits index.html, style.css, and app.js from Module 4 into Module 5, injecting active-tasks-list', () => {
+    const prevModule4Payload = JSON.stringify({
+      files: {
+        'index.html':
+          '<html><body><main><section class="task-history-section"><table></table></section></main><script src="app.js"></script></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js':
+          'const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];\nconst form = document.querySelector("#add-task-form");',
+      },
+    });
+
+    const parsed = parseInitialFiles(null, 5, 'STATIC', null, prevModule4Payload);
+
+    expect(parsed['index.html']).toContain('<ul id="active-tasks-list"></ul>');
+    expect(parsed['style.css']).toBe('.navbar { display: flex; }');
+    expect(parsed['app.js']).toContain('const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];');
+    expect(parsed['app.js']).toContain('const form = document.querySelector("#add-task-form");');
+    expect(parsed['app.js']).toContain('Sesiunea 5: JS Asincron (Fetch API & Task-uri Active)');
+  });
+
+  it('restores inherited app.js in Module 5 if saved submission was just untouched starter scaffold', () => {
+    const prevModule4Payload = JSON.stringify({
+      files: {
+        'index.html': '<html><body><main><ul id="active-tasks-list"></ul></main></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js': 'const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];',
+      },
+    });
+
+    const untouchedModule5Submission = JSON.stringify({
+      files: {
+        'index.html': '<html><body><main><ul id="active-tasks-list"></ul></main></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js': `// ============================================================
+// Sesiunea 5: JS Asincron (Fetch API & Task-uri Active)
+// ============================================================
+// Cerințe Tehnice:
+// 1. Declară o Arrow Function asincronă:
+//    const incarcaTaskuriInitiale = async () => { ... };
+// 2. În interiorul funcției, apelează:
+//    const response = await fetch('https://jsonplaceholder.typicode.com/todos?_limit=5');
+// 3. Despachetează răspunsul: const taskuri = await response.json();
+// 4. Selectează lista din HTML: const activeTasksList = document.querySelector('#active-tasks-list');
+// 5. Iterează prin taskuri (cu forEach sau for):
+//    - Creează dinamic un element <li> (document.createElement('li')).
+//    - Setează textul cu titlul task-ului (li.textContent = task.title).
+//    - Adaugă elementul în listă (activeTasksList.appendChild(li)).
+// 6. Apelează funcția la finalul fișierului: incarcaTaskuriInitiale();
+// ============================================================
+
+// Adaugă aici funcția asincronă incarcaTaskuriInitiale și apelarea ei:
+
+`,
+      },
+    });
+
+    const parsed = parseInitialFiles(untouchedModule5Submission, 5, 'STATIC', null, prevModule4Payload);
+
+    expect(parsed['app.js']).toContain('const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];');
+    expect(parsed['app.js']).toContain('Sesiunea 5: JS Asincron (Fetch API & Task-uri Active)');
+  });
 });

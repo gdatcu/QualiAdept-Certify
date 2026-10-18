@@ -233,6 +233,27 @@ const STARTER_JS_S4 = `// ======================================================
 
 `;
 
+const STARTER_JS_S5 = `// ============================================================
+// Sesiunea 5: JS Asincron (Fetch API & Task-uri Active)
+// ============================================================
+// Cerințe Tehnice:
+// 1. Declară o Arrow Function asincronă:
+//    const incarcaTaskuriInitiale = async () => { ... };
+// 2. În interiorul funcției, apelează:
+//    const response = await fetch('https://jsonplaceholder.typicode.com/todos?_limit=5');
+// 3. Despachetează răspunsul: const taskuri = await response.json();
+// 4. Selectează lista din HTML: const activeTasksList = document.querySelector('#active-tasks-list');
+// 5. Iterează prin taskuri (cu forEach sau for):
+//    - Creează dinamic un element <li> (document.createElement('li')).
+//    - Setează textul cu titlul task-ului (li.textContent = task.title).
+//    - Adaugă elementul în listă (activeTasksList.appendChild(li)).
+// 6. Apelează funcția la finalul fișierului: incarcaTaskuriInitiale();
+// ============================================================
+
+// Adaugă aici funcția asincronă incarcaTaskuriInitiale și apelarea ei:
+
+`;
+
 const STARTER_HTML_S3 = `<!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -365,7 +386,8 @@ export function parseInitialFiles(
     } else if (f.name === 'style.css') {
       initial['style.css'] = moduleNum <= 2 ? STARTER_CSS_S2 : STARTER_CSS_S3;
     } else if (f.name === 'app.js') {
-      initial['app.js'] = moduleNum <= 3 ? STARTER_JS_S3 : STARTER_JS_S4;
+      initial['app.js'] =
+        moduleNum <= 3 ? STARTER_JS_S3 : moduleNum === 4 ? STARTER_JS_S4 : STARTER_JS_S5;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }
@@ -381,6 +403,19 @@ export function parseInitialFiles(
           if (moduleNum >= 3 && !inheritedHtml.includes('app.js')) {
             inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.js"></script>\n</body>');
           }
+          if (moduleNum >= 5 && !inheritedHtml.includes('active-tasks-list')) {
+            if (inheritedHtml.includes('<section class="task-history-section">')) {
+              inheritedHtml = inheritedHtml.replace(
+                '<section class="task-history-section">',
+                '<section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n\n    <section class="task-history-section">'
+              );
+            } else if (inheritedHtml.includes('</main>')) {
+              inheritedHtml = inheritedHtml.replace(
+                '</main>',
+                '  <section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n  </main>'
+              );
+            }
+          }
           initial['index.html'] = inheritedHtml;
         }
         if (parsedPrev.files['style.css']) {
@@ -388,7 +423,9 @@ export function parseInitialFiles(
         }
         if (parsedPrev.files['app.js'] && parsedPrev.files['app.js'].trim().length > 0) {
           const prevJs = parsedPrev.files['app.js'];
-          if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
+          if (moduleNum === 5 && !prevJs.includes('incarcaTaskuriInitiale')) {
+            initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S5}`;
+          } else if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
             initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
           } else {
             initial['app.js'] = prevJs;
@@ -418,6 +455,14 @@ export function parseInitialFiles(
         }
         // If app.js in the saved submission was just the untouched starter template, prefer inherited previous code
         if (
+          moduleNum === 5 &&
+          merged['app.js'] &&
+          merged['app.js'].trim() === STARTER_JS_S5.trim() &&
+          initial['app.js'] &&
+          initial['app.js'] !== STARTER_JS_S5
+        ) {
+          merged['app.js'] = initial['app.js'];
+        } else if (
           moduleNum === 4 &&
           merged['app.js'] &&
           merged['app.js'].trim() === STARTER_JS_S4.trim() &&

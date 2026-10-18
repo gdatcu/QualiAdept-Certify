@@ -244,7 +244,7 @@
     "m4_title": "Sesiunea 4: JS DOM Manipulation",
     "m4_description": "Interceptează formularul de adăugare și injectează noile task-uri direct ca rânduri noi în tabelul HTML, fiecare venind la pachet cu propriul buton funcțional de ștergere.",
     "m5_title": "Sesiunea 5: JS Asincron (Promises & Fetch)",
-    "m5_description": "Conceptul de Event Loop. Comunicarea client-server folosind Fetch API.",
+    "m5_description": "Descarcă asincron task-uri de pe un API extern folosind Fetch API și async/await, apoi randează-le dinamic într-o listă HTML (#active-tasks-list).",
     "m6_title": "Sesiunea 6: Kanban Workshop",
     "m6_description": "Finalizează logica panoului Kanban. Această aplicație va fi subiectul testelor noastre E2E.",
     "m7_title": "Sesiunea 7: Trecerea la TypeScript",

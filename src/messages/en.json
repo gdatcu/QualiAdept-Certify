@@ -244,7 +244,7 @@
     "m4_title": "Session 4: JS DOM Manipulation",
     "m4_description": "Intercept the add form and dynamically inject new task rows into the HTML table with functional delete buttons.",
     "m5_title": "Session 5: Asynchronous JS (Promises & Fetch)",
-    "m5_description": "The Event Loop concept. Client-server communication using the Fetch API.",
+    "m5_description": "Asynchronously fetch tasks from an external API using the Fetch API and async/await, then render them dynamically into an HTML list (#active-tasks-list).",
     "m6_title": "Session 6: Kanban Workshop",
     "m6_description": "Finalize the Kanban board logic. This application will be the subject of our E2E automated test suites.",
     "m7_title": "Session 7: Transition to TypeScript",
