@@ -67,4 +67,66 @@ describe('Workspace Multi-File Configuration Tests', () => {
     const parsed = parseInitialFiles(legacyHtml, 1, 'STATIC');
     expect(parsed['index.html']).toBe(legacyHtml);
   });
+
+  it('inherits index.html, style.css, and app.js from Module 3 into Module 4', () => {
+    const prevModule3Payload = JSON.stringify({
+      files: {
+        'index.html': '<html><body><script src="app.js"></script></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js': 'const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];',
+      },
+    });
+
+    const parsed = parseInitialFiles(null, 4, 'STATIC', null, prevModule3Payload);
+
+    expect(parsed['index.html']).toBe('<html><body><script src="app.js"></script></body></html>');
+    expect(parsed['style.css']).toBe('.navbar { display: flex; }');
+    expect(parsed['app.js']).toContain('const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];');
+    expect(parsed['app.js']).toContain('Sesiunea 4: JS DOM Manipulation');
+  });
+
+  it('restores inherited app.js if saved submission was just untouched starter scaffold', () => {
+    const prevModule3Payload = JSON.stringify({
+      files: {
+        'index.html': '<html><body><script src="app.js"></script></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js': 'const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];',
+      },
+    });
+
+    // Untouched starter scaffold saved in Module 4
+    const untouchedModule4Submission = JSON.stringify({
+      files: {
+        'index.html': '<html><body><script src="app.js"></script></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js': `// ============================================================
+// Sesiunea 4: JS DOM Manipulation (Task Tracker)
+// ============================================================
+// Cerințe Tehnice:
+// 1. Selectare elemente DOM: formular (#add-task-form), input (#task-name), tbody.
+// 2. Ascultător de eveniment 'submit' pe formular cu preventDefault().
+// 3. Creare dinamică rând nou (document.createElement('tr')).
+// 4. Structura rândului: celule <td> cu numele task-ului și buton cu clasa 'delete-row'.
+// 5. Inserare în DOM folosind appendChild() sau append().
+// 6. Resetare valoare câmp input (input.value = '').
+// 7. Ștergere dinamică din DOM cu .remove() la click pe butonul 'delete-row'.
+// ============================================================
+
+// 1. Selectare elemente DOM
+
+
+// 2. Ascultător eveniment 'submit' și adăugare dinamică în tabel
+
+
+// 3. Ștergere dinamică din DOM (Event Delegation pe document sau click pe buton)
+
+`,
+      },
+    });
+
+    const parsed = parseInitialFiles(untouchedModule4Submission, 4, 'STATIC', null, prevModule3Payload);
+
+    expect(parsed['app.js']).toContain('const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];');
+    expect(parsed['app.js']).toContain('Sesiunea 4: JS DOM Manipulation');
+  });
 });

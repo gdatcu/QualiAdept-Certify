@@ -386,6 +386,14 @@ export function parseInitialFiles(
         if (parsedPrev.files['style.css']) {
           initial['style.css'] = parsedPrev.files['style.css'];
         }
+        if (parsedPrev.files['app.js'] && parsedPrev.files['app.js'].trim().length > 0) {
+          const prevJs = parsedPrev.files['app.js'];
+          if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
+            initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
+          } else {
+            initial['app.js'] = prevJs;
+          }
+        }
       }
     } catch {
       // Ignore parse errors on legacy single file
@@ -407,6 +415,16 @@ export function parseInitialFiles(
         ) {
           merged['index.html'] =
             moduleNum <= 1 ? STARTER_HTML_S1 : moduleNum === 2 ? STARTER_HTML_S2 : STARTER_HTML_S3;
+        }
+        // If app.js in the saved submission was just the untouched starter template, prefer inherited previous code
+        if (
+          moduleNum === 4 &&
+          merged['app.js'] &&
+          merged['app.js'].trim() === STARTER_JS_S4.trim() &&
+          initial['app.js'] &&
+          initial['app.js'] !== STARTER_JS_S4
+        ) {
+          merged['app.js'] = initial['app.js'];
         }
         return merged;
       }
@@ -1171,7 +1189,11 @@ export default function AssignmentWorkspace({
                       setIsUnlockedForEdit(true);
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
-                    title="Resetează fișierele la codul inițial de pornire"
+                    title={
+                      previousPassedPayload
+                        ? `Resetează și preia codul validat din Sesiunea ${assignment.module - 1}`
+                        : 'Resetează fișierele la codul inițial de pornire'
+                    }
                   >
                     <span>🔄 Reset Code</span>
                   </button>
