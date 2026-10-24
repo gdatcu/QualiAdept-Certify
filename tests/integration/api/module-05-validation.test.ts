@@ -568,4 +568,85 @@ describe('Module 05 (Async JS & Fetch API) Static Validation Integration Tests',
     expect(data.feedback.some((f: any) => f.check.includes('Async Arrow Function declaration'))).toBe(true);
     expect(data.feedback.some((f: any) => f.message.includes('Fetch call with limit=5 is correctly configured'))).toBe(true);
   });
+
+  it('TC-11: Creative syntax with for...of, getElementById, .append(li), and double quotes passes 100%', async () => {
+    const creativeJs = `
+      // Prior module code
+      const listaTaskuri = [{ id: 1, nume: "T1", completat: false }];
+      const proceseazaTaskNou = (t) => true;
+
+      const incarcaTaskuriInitiale = async () => {
+        const res = await fetch("https://jsonplaceholder.typicode.com/todos?_limit=5");
+        const data = await res.json();
+        const container = document.getElementById("active-tasks-list");
+
+        for (const item of data) {
+          const li = document.createElement("li");
+          li.innerText = item.title;
+          container.append(li);
+        }
+      };
+
+      incarcaTaskuriInitiale();
+    `;
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: '00000000-0000-0000-0000-000000000005',
+        targetFile: 'app.js',
+        locale: 'ro',
+        files: {
+          'index.html': validIndexHtml,
+          'app.js': creativeJs,
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    expect(data.feedback.every((f: any) => f.passed)).toBe(true);
+  });
+
+  it('TC-12: Classic for loop, innerHTML, and template literal URL passes 100%', async () => {
+    const classicJs = `
+      const incarcaTaskuriInitiale = async () => {
+        const response = await fetch(\`https://jsonplaceholder.typicode.com/todos?_limit=5\`);
+        const items = await response.json();
+        const list = document.querySelector("#active-tasks-list");
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const li = document.createElement('li');
+          li.innerHTML = item.title;
+          list.appendChild(li);
+        }
+      };
+
+      incarcaTaskuriInitiale();
+    `;
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: '00000000-0000-0000-0000-000000000005',
+        targetFile: 'app.js',
+        locale: 'ro',
+        files: {
+          'index.html': validIndexHtml,
+          'app.js': classicJs,
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    expect(data.feedback.every((f: any) => f.passed)).toBe(true);
+  });
 });
