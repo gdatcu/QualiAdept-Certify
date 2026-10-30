@@ -380,13 +380,13 @@ const STARTER_HTML_S6 = `<!DOCTYPE html>
       <h2>Adaugă un Scenariu Nou</h2>
       <form id="add-task-form">
         <div class="input-group">
-          <!-- Câmpul de text cu hook pentru Playwright -->
-          <input type="text" id="task-name" placeholder="ex: Testare validare login..." data-testid="input-task-name">
-          <!-- Butonul pornește dezactivat din start -->
-          <button type="submit" id="submit-task-btn" data-testid="submit-task-btn" disabled>Salvează</button>
+          <!-- TODO Task 3 (Auditul QA): Adaugă atributul de test pe input: input-task-name -->
+          <input type="text" id="task-name" placeholder="ex: Testare validare login...">
+          <!-- TODO Task 3 (Auditul QA): Adaugă atributul submit-task-btn și dezactivează butonul nativ (disabled) -->
+          <button type="submit" id="submit-task-btn">Salvează</button>
         </div>
-        <!-- Mesaj de eroare ascuns inițial -->
-        <small id="error-msg" class="error-text" style="display: none;" data-testid="error-message">Numele task-ului nu poate fi gol!</small>
+        <!-- TODO Task 3 (Auditul QA): Adaugă atributul error-message -->
+        <small id="error-msg" class="error-text" style="display: none;">Numele task-ului nu poate fi gol!</small>
       </form>
     </section>
 
@@ -394,9 +394,9 @@ const STARTER_HTML_S6 = `<!DOCTYPE html>
     <section class="card list-section">
       <h2>Scenarii de Testare (Live)</h2>
       <!-- Element vizual pentru latență asincronă -->
-      <div id="loading-spinner" class="spinner" data-testid="loading-spinner">Se încarcă datele de la server...</div>
-      <!-- Lista pe care o populează JavaScript -->
-      <ul id="task-list" class="task-list" data-testid="task-list">
+      <div id="loading-spinner" class="spinner">Se încarcă datele de la server...</div>
+      <!-- TODO Task 3 (Auditul QA): Adaugă atributul task-list pe elementul <ul> -->
+      <ul id="task-list" class="task-list">
         <!-- Rândurile (<li>) vor fi injectate dinamic de JavaScript -->
       </ul>
     </section>
@@ -551,12 +551,9 @@ button:disabled {
 
 /* ============================================================
  * Cerința Task 2: Stil pentru Task-uri Finalizate (.completed)
- * Adaugă stilul pentru clasa .completed cu text-decoration: line-through:
+ * Adaugă stilul pentru clasa .completed cu tăierea textului (efect line-through)
  * ============================================================ */
-.completed {
-  text-decoration: line-through;
-  color: #7f8c8d;
-}
+/* TODO Task 2: Scrie regula pentru clasa de finalizare aici */
 
 /* ============================================================
  * Modul Chaos: Overlay & Pop-up Promoțional
@@ -610,9 +607,9 @@ const STARTER_JS_S6 = `// ======================================================
 // Sesiunea 6: Livrarea Proiectului "Task Tracker" (Capstone)
 // ============================================================
 // Cerințe Tehnice (Acceptance Criteria):
-// Task 1: Integrarea completă a codului (GET 5 task-uri, POST la salvare, DELETE la ștergere, Modul Chaos)
+// Task 1: Integrarea completă a codului (GET 5 task-uri & ascunde spinner, POST la salvare, DELETE la ștergere, Modul Chaos)
 // Task 2: Funcționalitatea Nouă (Marcare ca Finalizat la click pe .task-title prin toggle pe clasa 'completed')
-// Task 3: Auditul de Testabilitate (Verifică data-testid pe input, submit-btn, error-msg, task-list, delete-btn-ID, close-promo-btn)
+// Task 3: Auditul de Testabilitate (Verifică atributele data-testid pe input, submit-btn, error-msg, task-list, delete-btn-ID, close-promo-btn)
 // ============================================================
 
 // 1. SELECTOARE (Prindem elementele din HTML)
@@ -623,17 +620,18 @@ const errorMsg = document.querySelector('#error-msg');
 const taskList = document.querySelector('#task-list');
 const spinner = document.querySelector('#loading-spinner');
 
-// API-ul nostru public pentru testare
+// API-ul public pentru testare
 const API_URL = 'https://jsonplaceholder.typicode.com/todos';
 
-// 2. FUNCȚIE REUTILIZABILĂ: Desenarea unui rând HTML în pagină cu data-testid="delete-btn-ID"
+// 2. FUNCȚIE: Desenarea unui rând HTML în listă
 const deseneazaTaskInDOM = (id, titlu) => {
   const li = document.createElement('li');
   li.className = 'task-item';
 
+  // TODO Task 3: Adaugă atributul dinamic de test pe butonul de ștergere
   li.innerHTML = \`
     <span class="task-title">\${titlu}</span>
-    <button class="btn-delete" data-testid="delete-btn-\${id}">Șterge</button>
+    <button class="btn-delete">Șterge</button>
   \`;
 
   taskList.appendChild(li);
@@ -646,16 +644,17 @@ const incarcaDateServer = async () => {
     if (!response.ok) throw new Error('A picat serverul!');
     const data = await response.json();
 
-    // Ascundem spinner-ul odată ce datele au sosit
-    spinner.style.display = 'none';
+    // TODO Task 1: Ascunde indicatorul de latență (spinner.style.display = 'none')
 
     // Desenăm fiecare task primit
     data.forEach((task) => {
       deseneazaTaskInDOM(task.id, task.title);
     });
   } catch (error) {
-    spinner.textContent = 'Eroare la aducerea datelor!';
-    spinner.style.backgroundColor = '#f8d7da';
+    if (spinner) {
+      spinner.textContent = 'Eroare la aducerea datelor!';
+      spinner.style.backgroundColor = '#f8d7da';
+    }
     console.error(error);
   }
 };
@@ -669,31 +668,10 @@ form.addEventListener('submit', async (e) => {
   const taskTitle = inputNode.value.trim();
   if (!taskTitle) return;
 
-  submitBtn.textContent = 'Se salvează...';
-  submitBtn.disabled = true;
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: taskTitle,
-        completed: false,
-        userId: 1,
-      }),
-    });
-
-    if (response.status === 201) {
-      const newTask = await response.json();
-      deseneazaTaskInDOM(newTask.id, newTask.title);
-      inputNode.value = '';
-    }
-  } catch (error) {
-    alert('Eroare la salvarea pe rețea!');
-  } finally {
-    submitBtn.textContent = 'Salvează';
-    submitBtn.disabled = true;
-  }
+  // TODO Task 1: Trimite noul task la server prin fetch cu method: "POST", headers JSON și body { title, completed: false, userId: 1 }
+  // Adaugă-l în DOM cu deseneazaTaskInDOM doar după ce primești status 201 de la server.
+  deseneazaTaskInDOM(Date.now(), taskTitle);
+  inputNode.value = '';
 });
 
 // 5. VALIDARE LIVE: Evenimentul 'input' pentru deblocarea butonului și afișarea erorii
@@ -709,65 +687,23 @@ inputNode.addEventListener('input', () => {
 
 // 6. EVENT DELEGATION pe lista <ul> (Ștergere pe rețea + Task 2: Marcare ca Finalizat)
 taskList.addEventListener('click', async (e) => {
-  // Cerința Task 2: Dacă dăm click pe titlul task-ului (.task-title), adăugăm/eliminăm clasa .completed
-  if (e.target.classList.contains('task-title')) {
-    e.target.classList.toggle('completed');
-  }
+  // TODO Task 2: Dacă dăm click pe titlul task-ului (.task-title), adăugăm/eliminăm clasa .completed (e.target.classList.toggle('completed'))
 
-  // Ștergere pe rețea (DELETE)
+  // TODO Task 1: Trimite cererea fetch pe rețea cu method: "DELETE" înainte de a elimina rândul din DOM (.remove())
   if (e.target.classList.contains('btn-delete')) {
     const deleteBtn = e.target;
     const randTask = deleteBtn.closest('.task-item');
-    const testId = deleteBtn.getAttribute('data-testid') || '';
-    const taskId = testId.split('-')[2] || '1';
-
-    deleteBtn.textContent = 'Se șterge...';
-    deleteBtn.disabled = true;
-    randTask.style.opacity = '0.6';
-
-    try {
-      const response = await fetch(\`\${API_URL}/\${taskId}\`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        randTask.remove();
-      } else {
-        throw new Error('Serverul a refuzat ștergerea!');
-      }
-    } catch (error) {
-      alert('Eroare de rețea la ștergere!');
-      deleteBtn.textContent = 'Șterge';
-      deleteBtn.disabled = false;
-      randTask.style.opacity = '1';
-    }
+    randTask.remove();
   }
 });
 
-// 7. MODUL CHAOS (Capitolul 5): Pop-up promoțional aleatoriu cu data-testid="close-promo-btn"
+// 7. MODUL CHAOS: Pop-up promoțional aleatoriu cu buton de închidere
 const initChaosMode = () => {
   const randomDelay = Math.floor(Math.random() * 4000) + 2000;
 
   setTimeout(() => {
-    const modal = document.createElement('div');
-    modal.className = 'overlay-modal';
-    modal.setAttribute('data-testid', 'promo-overlay');
-
-    modal.innerHTML = \`
-      <div class="promo-box">
-        <h3>Ofertă Specială! 🚀</h3>
-        <p>Fă upgrade la versiunea Premium pentru a adăuga task-uri nelimitate!</p>
-        <button class="btn-close-promo" data-testid="close-promo-btn">Nu, mulțumesc</button>
-      </div>
-    \`;
-
-    const closeBtn = modal.querySelector('.btn-close-promo');
-    closeBtn.addEventListener('click', () => {
-      modal.remove();
-    });
-
-    document.body.appendChild(modal);
-    console.warn(\`[Chaos Mode] Promo modal a apărut după \${randomDelay}ms!\`);
+    // TODO Task 1 & 3: Creează pop-up-ul overlay-modal având un buton de închidere (close-promo-btn)
+    // și ascultător de click pentru închiderea pop-up-ului (modal.remove()).
   }, randomDelay);
 };
 
@@ -803,26 +739,26 @@ export function parseInitialFiles(
         moduleNum <= 1
           ? STARTER_HTML_S1
           : moduleNum === 2
-          ? STARTER_HTML_S2
-          : moduleNum <= 5
-          ? STARTER_HTML_S3
-          : STARTER_HTML_S6;
+            ? STARTER_HTML_S2
+            : moduleNum <= 5
+              ? STARTER_HTML_S3
+              : STARTER_HTML_S6;
     } else if (f.name === 'style.css') {
       initial['style.css'] =
         moduleNum <= 2
           ? STARTER_CSS_S2
           : moduleNum <= 5
-          ? STARTER_CSS_S3
-          : STARTER_CSS_S6;
+            ? STARTER_CSS_S3
+            : STARTER_CSS_S6;
     } else if (f.name === 'app.js') {
       initial['app.js'] =
         moduleNum <= 3
           ? STARTER_JS_S3
           : moduleNum === 4
-          ? STARTER_JS_S4
-          : moduleNum === 5
-          ? STARTER_JS_S5
-          : STARTER_JS_S6;
+            ? STARTER_JS_S4
+            : moduleNum === 5
+              ? STARTER_JS_S5
+              : STARTER_JS_S6;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }
@@ -833,45 +769,67 @@ export function parseInitialFiles(
     try {
       const parsedPrev = JSON.parse(previousPassedPayload);
       if (parsedPrev && typeof parsedPrev.files === 'object' && !Array.isArray(parsedPrev.files)) {
-        if (moduleNum >= 6) {
-          // Module 6 is the Capstone Project: provide the complete assembled SUT scaffold
-          // while preserving custom styling from earlier modules if present
-          initial['index.html'] = STARTER_HTML_S6;
-          initial['style.css'] = parsedPrev.files['style.css'] ? `${parsedPrev.files['style.css'].trim()}\n\n${STARTER_CSS_S6}` : STARTER_CSS_S6;
-          initial['app.js'] = STARTER_JS_S6;
-        } else {
-          if (parsedPrev.files['index.html']) {
-            let inheritedHtml = parsedPrev.files['index.html'];
-            if (moduleNum >= 3 && !inheritedHtml.includes('app.js')) {
-              inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.js"></script>\n</body>');
-            }
-            if (moduleNum >= 5 && !inheritedHtml.includes('active-tasks-list')) {
-              if (inheritedHtml.includes('<section class="task-history-section">')) {
-                inheritedHtml = inheritedHtml.replace(
-                  '<section class="task-history-section">',
-                  '<section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n\n    <section class="task-history-section">'
-                );
-              } else if (inheritedHtml.includes('</main>')) {
-                inheritedHtml = inheritedHtml.replace(
-                  '</main>',
-                  '  <section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n  </main>'
-                );
-              }
-            }
-            initial['index.html'] = inheritedHtml;
+        if (parsedPrev.files['index.html']) {
+          let inheritedHtml = parsedPrev.files['index.html'];
+          if (moduleNum >= 3 && !inheritedHtml.includes('app.js')) {
+            inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.js"></script>\n</body>');
           }
-          if (parsedPrev.files['style.css']) {
+          if (moduleNum >= 5 && !inheritedHtml.includes('active-tasks-list')) {
+            if (inheritedHtml.includes('<section class="task-history-section">')) {
+              inheritedHtml = inheritedHtml.replace(
+                '<section class="task-history-section">',
+                '<section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n\n    <section class="task-history-section">'
+              );
+            } else if (inheritedHtml.includes('</main>')) {
+              inheritedHtml = inheritedHtml.replace(
+                '</main>',
+                '  <section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n  </main>'
+              );
+            }
+          }
+          if (moduleNum === 6) {
+            // For Module 6 Capstone, ensure the inherited HTML has the error-msg, loading-spinner, and task-list containers
+            if (!inheritedHtml.includes('loading-spinner') && !inheritedHtml.includes('spinner')) {
+              inheritedHtml = inheritedHtml.replace(
+                /(<ul id=["'](?:active-tasks-list|task-list)["'].*?>)/i,
+                '<div id="loading-spinner" class="spinner">Se încarcă datele de la server...</div>\n      $1'
+              );
+            }
+            if (!inheritedHtml.includes('error-msg') && inheritedHtml.includes('</form>')) {
+              inheritedHtml = inheritedHtml.replace(
+                '</form>',
+                '  <small id="error-msg" class="error-text" style="display: none;">Numele task-ului nu poate fi gol!</small>\n      </form>'
+              );
+            }
+            if (inheritedHtml.includes('id="active-tasks-list"') && !inheritedHtml.includes('id="task-list"')) {
+              inheritedHtml = inheritedHtml.replace('id="active-tasks-list"', 'id="task-list"');
+            }
+          }
+          initial['index.html'] = inheritedHtml;
+        }
+
+        if (parsedPrev.files['style.css']) {
+          if (moduleNum === 6) {
+            initial['style.css'] = `${parsedPrev.files['style.css'].trim()}\n\n${STARTER_CSS_S6}`;
+          } else {
             initial['style.css'] = parsedPrev.files['style.css'];
           }
-          if (parsedPrev.files['app.js'] && parsedPrev.files['app.js'].trim().length > 0) {
-            const prevJs = parsedPrev.files['app.js'];
-            if (moduleNum === 5 && !prevJs.includes('incarcaTaskuriInitiale')) {
-              initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S5}`;
-            } else if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
-              initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
+        }
+
+        if (parsedPrev.files['app.js'] && parsedPrev.files['app.js'].trim().length > 0) {
+          const prevJs = parsedPrev.files['app.js'];
+          if (moduleNum === 6) {
+            if (!prevJs.includes('Sesiunea 6: Livrarea Proiectului')) {
+              initial['app.js'] = `${prevJs.trim()}\n\n// ============================================================\n// Sesiunea 6: Livrarea Proiectului "Task Tracker" (Capstone)\n// Cerințe de completat peste codul din Sesiunea 5:\n// 1. Ascunde spinner-ul (#loading-spinner) odată ce au sosit datele prin GET.\n// 2. Interceptează formularul și trimite noul task pe rețea prin fetch POST.\n// 3. Adaugă pe butonul de ștergere atributul data-testid="delete-btn-\${id}".\n// 4. Implementează marcare ca finalizat (toggle clasa 'completed' pe .task-title).\n// 5. Trimite cerere fetch DELETE pe rețea înainte de a elimina rândul din DOM.\n// 6. Adaugă pop-up-ul promoțional Chaos Mode cu butonul data-testid="close-promo-btn".\n// ============================================================\n`;
             } else {
               initial['app.js'] = prevJs;
             }
+          } else if (moduleNum === 5 && !prevJs.includes('incarcaTaskuriInitiale')) {
+            initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S5}`;
+          } else if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
+            initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
+          } else {
+            initial['app.js'] = prevJs;
           }
         }
       }
@@ -897,10 +855,10 @@ export function parseInitialFiles(
             moduleNum <= 1
               ? STARTER_HTML_S1
               : moduleNum === 2
-              ? STARTER_HTML_S2
-              : moduleNum <= 5
-              ? STARTER_HTML_S3
-              : STARTER_HTML_S6;
+                ? STARTER_HTML_S2
+                : moduleNum <= 5
+                  ? STARTER_HTML_S3
+                  : STARTER_HTML_S6;
         }
         // If app.js in the saved submission was just the untouched starter template, prefer inherited previous code
         if (
@@ -1116,16 +1074,18 @@ export default function AssignmentWorkspace({
                 assignment.module <= 1
                   ? STARTER_HTML_S1
                   : assignment.module === 2
-                  ? STARTER_HTML_S2
-                  : STARTER_HTML_S3;
+                    ? STARTER_HTML_S2
+                    : assignment.module <= 5
+                      ? STARTER_HTML_S3
+                      : STARTER_HTML_S6;
             }
-            // Auto-heal empty or comment-only style.css draft in Module >= 3
+            // Auto-heal empty or rule-less style.css draft
             if (
               assignment.module >= 3 &&
               merged['style.css'] &&
-              (merged['style.css'].trim().startsWith('/*') || !merged['style.css'].includes('{'))
+              !merged['style.css'].includes('{')
             ) {
-              merged['style.css'] = STARTER_CSS_S3;
+              merged['style.css'] = assignment.module >= 6 ? STARTER_CSS_S6 : STARTER_CSS_S3;
             }
             // Ensure script src="app.js" is present in Module >= 3 index.html
             if (
@@ -1428,12 +1388,12 @@ export default function AssignmentWorkspace({
 </head>
 <body>
   ${(files['index.html'] || files['sandbox.html'] || '')
-    .replace(/<!DOCTYPE.*?>/i, '')
-    .replace(/<html.*?>/i, '')
-    .replace(/<\/html>/i, '')
-    .replace(/<head[\s\S]*?<\/head>/i, '')
-    .replace(/<body.*?>/i, '')
-    .replace(/<\/body>/i, '')}
+      .replace(/<!DOCTYPE.*?>/i, '')
+      .replace(/<html.*?>/i, '')
+      .replace(/<\/html>/i, '')
+      .replace(/<head[\s\S]*?<\/head>/i, '')
+      .replace(/<body.*?>/i, '')
+      .replace(/<\/body>/i, '')}
   <script>
     try {
       ${files['app.js'] || ''}
@@ -1627,11 +1587,10 @@ export default function AssignmentWorkspace({
                           key={f.name}
                           type="button"
                           onClick={() => setActiveFile(f.name)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all cursor-pointer ${
-                            isActive
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all cursor-pointer ${isActive
                               ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm font-semibold'
                               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
-                          }`}
+                            }`}
                         >
                           <span>{f.icon}</span>
                           <span>{f.name}</span>
@@ -1704,11 +1663,10 @@ export default function AssignmentWorkspace({
                     <button
                       type="button"
                       onClick={() => setShowLivePreview((prev) => !prev)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer border ${
-                        showLivePreview
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer border ${showLivePreview
                           ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                           : 'bg-zinc-900 text-zinc-300 hover:text-zinc-100 border-zinc-800 hover:bg-zinc-800'
-                      }`}
+                        }`}
                     >
                       <span className={`h-2 w-2 rounded-full ${showLivePreview ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
                       <span>{showLivePreview ? 'Hide Preview' : '👁️ Live Preview'}</span>
@@ -1794,7 +1752,7 @@ export default function AssignmentWorkspace({
                         key={previewKey}
                         title="QualiAdept App Preview Sandbox"
                         srcDoc={livePreviewHtml}
-                        sandbox="allow-scripts"
+                        sandbox="allow-scripts allow-forms"
                         className="w-full h-full border-0 bg-slate-900"
                       />
                     </div>
@@ -1888,11 +1846,10 @@ export default function AssignmentWorkspace({
             {/* GitHub Sync Status Card */}
             {githubSyncResult && (
               <div
-                className={`p-4 rounded-xl border text-xs font-mono flex items-start gap-3 transition-all ${
-                  githubSyncResult.success
+                className={`p-4 rounded-xl border text-xs font-mono flex items-start gap-3 transition-all ${githubSyncResult.success
                     ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-200'
                     : 'bg-amber-950/40 border-amber-800/80 text-amber-200'
-                }`}
+                  }`}
               >
                 <div className="shrink-0 mt-0.5">
                   <svg className="w-5 h-5 text-current" fill="currentColor" viewBox="0 0 24 24">
@@ -2005,18 +1962,16 @@ export default function AssignmentWorkspace({
                       <div
                         key={sub.id || idx}
                         onClick={() => loadHistorySubmission(sub)}
-                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer font-mono text-xs ${
-                          isSelected
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer font-mono text-xs ${isSelected
                             ? 'bg-zinc-800/90 border-cyan-500/60 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
                             : 'bg-zinc-950/60 border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Git Commit Dot Status */}
                           <div
-                            className={`h-3 w-3 rounded-full flex-shrink-0 ${
-                              isPass ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
-                            }`}
+                            className={`h-3 w-3 rounded-full flex-shrink-0 ${isPass ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+                              }`}
                           ></div>
 
                           <div className="flex flex-col min-w-0">
@@ -2025,11 +1980,10 @@ export default function AssignmentWorkspace({
                                 Attempt #{submissions.length - idx}
                               </span>
                               <span
-                                className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                                  isPass
+                                className={`text-[10px] px-2 py-0.5 rounded font-bold ${isPass
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                     : 'bg-rose-950 text-rose-300 border border-rose-800'
-                                }`}
+                                  }`}
                               >
                                 {sub.status}
                               </span>
@@ -2046,11 +2000,10 @@ export default function AssignmentWorkspace({
                           </span>
                           <button
                             type="button"
-                            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
-                              isSelected
+                            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${isSelected
                                 ? 'bg-cyan-500 text-zinc-950'
                                 : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                            }`}
+                              }`}
                           >
                             {isSelected ? 'Active Code' : 'Load Code'}
                           </button>
@@ -2097,7 +2050,7 @@ export default function AssignmentWorkspace({
                   <p className="text-xs text-zinc-400 max-w-xs mt-1 leading-relaxed">
                     Paste your HTML code on the left editor and click <strong>&quot;Submit Code&quot;</strong> to view real-time assertion feedback.
                   </p>
-                  
+
                   <div className="mt-6 w-full text-left bg-zinc-950 p-3 rounded-lg border border-zinc-800 text-[11px] font-mono text-zinc-400">
                     <span className="text-emerald-400 block font-semibold mb-1">// Assertion Requirements:</span>
                     <ul className="space-y-1 list-disc list-inside text-zinc-400">
@@ -2134,31 +2087,28 @@ export default function AssignmentWorkspace({
                 <div className="flex flex-col gap-5">
                   {/* Overall Status Banner */}
                   <div
-                    className={`rounded-xl p-5 border shadow-lg transition-all ${
-                      validationResult.status === 'pass'
+                    className={`rounded-xl p-5 border shadow-lg transition-all ${validationResult.status === 'pass'
                         ? 'bg-emerald-950/40 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]'
                         : 'bg-rose-950/40 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.15)]'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`h-12 w-12 rounded-xl flex items-center justify-center font-black text-2xl ${
-                            validationResult.status === 'pass'
+                          className={`h-12 w-12 rounded-xl flex items-center justify-center font-black text-2xl ${validationResult.status === 'pass'
                               ? 'bg-emerald-500 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                               : 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-                          }`}
+                            }`}
                         >
                           {validationResult.status === 'pass' ? '✓' : '✕'}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-xs font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded ${
-                                validationResult.status === 'pass'
+                              className={`text-xs font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded ${validationResult.status === 'pass'
                                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                              }`}
+                                }`}
                             >
                               {validationResult.isPartial
                                 ? `PARTIAL CHECK: ${validationResult.targetFile}`
@@ -2171,8 +2121,8 @@ export default function AssignmentWorkspace({
                                 ? `All checks passed for ${validationResult.targetFile}!`
                                 : `Issues found in ${validationResult.targetFile}`
                               : validationResult.status === 'pass'
-                              ? 'All Checks Passed!'
-                              : 'Validation Failed'}
+                                ? 'All Checks Passed!'
+                                : 'Validation Failed'}
                           </h3>
                         </div>
                       </div>
@@ -2191,9 +2141,8 @@ export default function AssignmentWorkspace({
                     {/* Progress Score Bar */}
                     <div className="mt-4 w-full bg-zinc-950 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-800">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          validationResult.status === 'pass' ? 'bg-emerald-400' : 'bg-rose-500'
-                        }`}
+                        className={`h-full rounded-full transition-all duration-500 ${validationResult.status === 'pass' ? 'bg-emerald-400' : 'bg-rose-500'
+                          }`}
                         style={{ width: `${validationResult.score}%` }}
                       ></div>
                     </div>
@@ -2335,8 +2284,8 @@ export default function AssignmentWorkspace({
                             const fileIcon = fileName.endsWith('.css')
                               ? '🎨'
                               : fileName.endsWith('.js') || fileName.endsWith('.ts')
-                              ? '📜'
-                              : '🌐';
+                                ? '📜'
+                                : '🌐';
 
                             return (
                               <div
@@ -2348,11 +2297,10 @@ export default function AssignmentWorkspace({
                                     <span className="text-base">{fileIcon}</span>
                                     <span className="font-mono text-xs font-bold text-zinc-200">{fileName}</span>
                                     <span
-                                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
-                                        isAllPass
+                                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${isAllPass
                                           ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                           : 'bg-amber-950 text-amber-300 border border-amber-800'
-                                      }`}
+                                        }`}
                                     >
                                       {passedCount}/{items.length} Passed
                                     </span>
@@ -2387,11 +2335,10 @@ export default function AssignmentWorkspace({
                                       <button
                                         type="button"
                                         onClick={() => setActiveFile(fileName)}
-                                        className={`text-[11px] font-mono px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer ${
-                                          activeFile === fileName
+                                        className={`text-[11px] font-mono px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer ${activeFile === fileName
                                             ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
                                             : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
-                                        }`}
+                                          }`}
                                       >
                                         <span>{activeFile === fileName ? '✓ Active Editor' : `Open ${fileName} →`}</span>
                                       </button>
@@ -2403,18 +2350,16 @@ export default function AssignmentWorkspace({
                                   {items.map((item, idx) => (
                                     <div
                                       key={idx}
-                                      className={`p-3 rounded-lg border flex items-start gap-2.5 transition-all ${
-                                        item.passed
+                                      className={`p-3 rounded-lg border flex items-start gap-2.5 transition-all ${item.passed
                                           ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-100'
                                           : 'bg-rose-950/20 border-rose-800/40 text-rose-100'
-                                      }`}
+                                        }`}
                                     >
                                       <div
-                                        className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold ${
-                                          item.passed
+                                        className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold ${item.passed
                                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                                             : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                                        }`}
+                                          }`}
                                       >
                                         {item.passed ? '✓' : '✕'}
                                       </div>
@@ -2425,11 +2370,10 @@ export default function AssignmentWorkspace({
                                             {item.check.replace(/^\[.*?\]\s*/, '')}
                                           </h5>
                                           <span
-                                            className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded ${
-                                              item.passed
+                                            className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded ${item.passed
                                                 ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                                 : 'bg-rose-950 text-rose-300 border border-rose-800'
-                                            }`}
+                                              }`}
                                           >
                                             {item.passed ? 'PASS' : 'FAIL'}
                                           </span>

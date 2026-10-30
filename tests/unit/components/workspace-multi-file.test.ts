@@ -191,4 +191,42 @@ describe('Workspace Multi-File Configuration Tests', () => {
     expect(parsed['app.js']).toContain('const listaTaskuri = [{ id: 1001, nume: "Task 1", completat: true }];');
     expect(parsed['app.js']).toContain('Sesiunea 5: JS Asincron (Fetch API & Task-uri Active)');
   });
+
+  it('inherits index.html, style.css, and app.js from Module 5 into Module 6', () => {
+    const prevModule5Payload = JSON.stringify({
+      files: {
+        'index.html':
+          '<html><body><main><form id="add-task-form"><input type="text" id="task-name"><button type="submit" id="submit-btn">Adauga</button></form><ul id="active-tasks-list"></ul></main><script src="app.js"></script></body></html>',
+        'style.css': '.navbar { display: flex; }',
+        'app.js':
+          'const incarcaTaskuriInitiale = async () => { const res = await fetch("https://jsonplaceholder.typicode.com/todos?_limit=5"); };\nincarcaTaskuriInitiale();',
+      },
+    });
+
+    const parsed = parseInitialFiles(null, 6, 'STATIC', null, prevModule5Payload);
+
+    expect(parsed['index.html']).toContain('<div id="loading-spinner" class="spinner">');
+    expect(parsed['index.html']).toContain('id="task-list"');
+    expect(parsed['style.css']).toContain('.navbar { display: flex; }');
+    expect(parsed['app.js']).toContain('incarcaTaskuriInitiale');
+    expect(parsed['app.js']).toContain('Sesiunea 6: Livrarea Proiectului "Task Tracker" (Capstone)');
+  });
+
+  it('ensures default starter files for Module 6 without inheritance do not pre-solve assertions', () => {
+    const parsed = parseInitialFiles(null, 6, 'STATIC');
+
+    // Should not have pre-solved QA test-ids in HTML
+    expect(parsed['index.html']).not.toContain('data-testid="input-task-name"');
+    expect(parsed['index.html']).not.toContain('data-testid="submit-task-btn"');
+    expect(parsed['index.html']).not.toContain('data-testid="error-message"');
+    expect(parsed['index.html']).not.toContain('data-testid="task-list"');
+
+    // Should not have .completed CSS rule defined in style.css
+    expect(parsed['style.css']).not.toContain('.completed {');
+    expect(parsed['style.css']).not.toContain('text-decoration: line-through;');
+
+    // Should not have pre-solved delete button data-testid in JS
+    expect(parsed['app.js']).not.toContain('data-testid="delete-btn-');
+    expect(parsed['app.js']).not.toContain('data-testid="close-promo-btn"');
+  });
 });
