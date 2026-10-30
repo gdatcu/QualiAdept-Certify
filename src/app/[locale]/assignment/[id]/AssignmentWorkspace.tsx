@@ -356,6 +356,424 @@ button:disabled {
 }
 `;
 
+const STARTER_HTML_S6 = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Task Tracker Pro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Antetul Aplicației -->
+  <header class="navbar">
+    <h1 id="logo">QA Task Tracker</h1>
+    <div class="user-controls">
+      <span id="network-status" class="status-indicator online">API Online</span>
+    </div>
+  </header>
+
+  <!-- Containerul principal -->
+  <main class="container">
+    <!-- Secțiunea de adăugare task -->
+    <section class="card input-section">
+      <h2>Adaugă un Scenariu Nou</h2>
+      <form id="add-task-form">
+        <div class="input-group">
+          <!-- Câmpul de text cu hook pentru Playwright -->
+          <input type="text" id="task-name" placeholder="ex: Testare validare login..." data-testid="input-task-name">
+          <!-- Butonul pornește dezactivat din start -->
+          <button type="submit" id="submit-task-btn" data-testid="submit-task-btn" disabled>Salvează</button>
+        </div>
+        <!-- Mesaj de eroare ascuns inițial -->
+        <small id="error-msg" class="error-text" style="display: none;" data-testid="error-message">Numele task-ului nu poate fi gol!</small>
+      </form>
+    </section>
+
+    <!-- Secțiunea de listare task-uri -->
+    <section class="card list-section">
+      <h2>Scenarii de Testare (Live)</h2>
+      <!-- Element vizual pentru latență asincronă -->
+      <div id="loading-spinner" class="spinner" data-testid="loading-spinner">Se încarcă datele de la server...</div>
+      <!-- Lista pe care o populează JavaScript -->
+      <ul id="task-list" class="task-list" data-testid="task-list">
+        <!-- Rândurile (<li>) vor fi injectate dinamic de JavaScript -->
+      </ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>`;
+
+const STARTER_CSS_S6 = `/* ============================================================
+ * Task Tracker Pro - Stiluri Capstone (Sesiunea 6)
+ * ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #f4f6f8;
+  color: #333;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2c3e50;
+  color: white;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.status-indicator {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.status-indicator.online {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.card h2 {
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+#task-name {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.error-text {
+  color: #e74c3c;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.spinner {
+  padding: 1rem;
+  background-color: #fcf3cf;
+  color: #7d6608;
+  border-radius: 4px;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.task-list {
+  list-style: none;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
+}
+
+.task-item:hover {
+  background-color: #f9f9f9;
+}
+
+.task-title {
+  cursor: pointer;
+}
+
+.btn-delete {
+  background-color: #e74c3c;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+
+/* ============================================================
+ * Cerința Task 2: Stil pentru Task-uri Finalizate (.completed)
+ * Adaugă stilul pentru clasa .completed cu text-decoration: line-through:
+ * ============================================================ */
+.completed {
+  text-decoration: line-through;
+  color: #7f8c8d;
+}
+
+/* ============================================================
+ * Modul Chaos: Overlay & Pop-up Promoțional
+ * ============================================================ */
+.overlay-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(3px);
+}
+
+.promo-box {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  max-width: 400px;
+}
+
+.promo-box h3 {
+  color: #e74c3c;
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.promo-box p {
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+.btn-close-promo {
+  background-color: #2c3e50;
+  color: white;
+  width: 100%;
+}
+
+.btn-close-promo:hover:not(:disabled) {
+  background-color: #1a252f;
+}
+`;
+
+const STARTER_JS_S6 = `// ============================================================
+// Sesiunea 6: Livrarea Proiectului "Task Tracker" (Capstone)
+// ============================================================
+// Cerințe Tehnice (Acceptance Criteria):
+// Task 1: Integrarea completă a codului (GET 5 task-uri, POST la salvare, DELETE la ștergere, Modul Chaos)
+// Task 2: Funcționalitatea Nouă (Marcare ca Finalizat la click pe .task-title prin toggle pe clasa 'completed')
+// Task 3: Auditul de Testabilitate (Verifică data-testid pe input, submit-btn, error-msg, task-list, delete-btn-ID, close-promo-btn)
+// ============================================================
+
+// 1. SELECTOARE (Prindem elementele din HTML)
+const form = document.querySelector('#add-task-form');
+const inputNode = document.querySelector('#task-name');
+const submitBtn = document.querySelector('#submit-task-btn');
+const errorMsg = document.querySelector('#error-msg');
+const taskList = document.querySelector('#task-list');
+const spinner = document.querySelector('#loading-spinner');
+
+// API-ul nostru public pentru testare
+const API_URL = 'https://jsonplaceholder.typicode.com/todos';
+
+// 2. FUNCȚIE REUTILIZABILĂ: Desenarea unui rând HTML în pagină cu data-testid="delete-btn-ID"
+const deseneazaTaskInDOM = (id, titlu) => {
+  const li = document.createElement('li');
+  li.className = 'task-item';
+
+  li.innerHTML = \`
+    <span class="task-title">\${titlu}</span>
+    <button class="btn-delete" data-testid="delete-btn-\${id}">Șterge</button>
+  \`;
+
+  taskList.appendChild(li);
+};
+
+// 3. GET: Aducerea celor 5 task-uri inițiale de la Server și ascunderea spinner-ului
+const incarcaDateServer = async () => {
+  try {
+    const response = await fetch(\`\${API_URL}?_limit=5\`);
+    if (!response.ok) throw new Error('A picat serverul!');
+    const data = await response.json();
+
+    // Ascundem spinner-ul odată ce datele au sosit
+    spinner.style.display = 'none';
+
+    // Desenăm fiecare task primit
+    data.forEach((task) => {
+      deseneazaTaskInDOM(task.id, task.title);
+    });
+  } catch (error) {
+    spinner.textContent = 'Eroare la aducerea datelor!';
+    spinner.style.backgroundColor = '#f8d7da';
+    console.error(error);
+  }
+};
+
+incarcaDateServer();
+
+// 4. POST: Adăugarea unui task nou pe rețea
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const taskTitle = inputNode.value.trim();
+  if (!taskTitle) return;
+
+  submitBtn.textContent = 'Se salvează...';
+  submitBtn.disabled = true;
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: taskTitle,
+        completed: false,
+        userId: 1,
+      }),
+    });
+
+    if (response.status === 201) {
+      const newTask = await response.json();
+      deseneazaTaskInDOM(newTask.id, newTask.title);
+      inputNode.value = '';
+    }
+  } catch (error) {
+    alert('Eroare la salvarea pe rețea!');
+  } finally {
+    submitBtn.textContent = 'Salvează';
+    submitBtn.disabled = true;
+  }
+});
+
+// 5. VALIDARE LIVE: Evenimentul 'input' pentru deblocarea butonului și afișarea erorii
+inputNode.addEventListener('input', () => {
+  if (inputNode.value.trim().length > 0) {
+    submitBtn.disabled = false;
+    errorMsg.style.display = 'none';
+  } else {
+    submitBtn.disabled = true;
+    errorMsg.style.display = 'block';
+  }
+});
+
+// 6. EVENT DELEGATION pe lista <ul> (Ștergere pe rețea + Task 2: Marcare ca Finalizat)
+taskList.addEventListener('click', async (e) => {
+  // Cerința Task 2: Dacă dăm click pe titlul task-ului (.task-title), adăugăm/eliminăm clasa .completed
+  if (e.target.classList.contains('task-title')) {
+    e.target.classList.toggle('completed');
+  }
+
+  // Ștergere pe rețea (DELETE)
+  if (e.target.classList.contains('btn-delete')) {
+    const deleteBtn = e.target;
+    const randTask = deleteBtn.closest('.task-item');
+    const testId = deleteBtn.getAttribute('data-testid') || '';
+    const taskId = testId.split('-')[2] || '1';
+
+    deleteBtn.textContent = 'Se șterge...';
+    deleteBtn.disabled = true;
+    randTask.style.opacity = '0.6';
+
+    try {
+      const response = await fetch(\`\${API_URL}/\${taskId}\`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        randTask.remove();
+      } else {
+        throw new Error('Serverul a refuzat ștergerea!');
+      }
+    } catch (error) {
+      alert('Eroare de rețea la ștergere!');
+      deleteBtn.textContent = 'Șterge';
+      deleteBtn.disabled = false;
+      randTask.style.opacity = '1';
+    }
+  }
+});
+
+// 7. MODUL CHAOS (Capitolul 5): Pop-up promoțional aleatoriu cu data-testid="close-promo-btn"
+const initChaosMode = () => {
+  const randomDelay = Math.floor(Math.random() * 4000) + 2000;
+
+  setTimeout(() => {
+    const modal = document.createElement('div');
+    modal.className = 'overlay-modal';
+    modal.setAttribute('data-testid', 'promo-overlay');
+
+    modal.innerHTML = \`
+      <div class="promo-box">
+        <h3>Ofertă Specială! 🚀</h3>
+        <p>Fă upgrade la versiunea Premium pentru a adăuga task-uri nelimitate!</p>
+        <button class="btn-close-promo" data-testid="close-promo-btn">Nu, mulțumesc</button>
+      </div>
+    \`;
+
+    const closeBtn = modal.querySelector('.btn-close-promo');
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+
+    document.body.appendChild(modal);
+    console.warn(\`[Chaos Mode] Promo modal a apărut după \${randomDelay}ms!\`);
+  }, randomDelay);
+};
+
+initChaosMode();
+`;
+
 const STARTER_PLAYWRIGHT = `import { test, expect } from '@playwright/test';
 
 test('QualiAdept Task Tracker E2E Test', async ({ page }) => {
@@ -382,12 +800,29 @@ export function parseInitialFiles(
   for (const f of defaultFiles) {
     if (f.name === 'index.html') {
       initial['index.html'] =
-        moduleNum <= 1 ? STARTER_HTML_S1 : moduleNum === 2 ? STARTER_HTML_S2 : STARTER_HTML_S3;
+        moduleNum <= 1
+          ? STARTER_HTML_S1
+          : moduleNum === 2
+          ? STARTER_HTML_S2
+          : moduleNum <= 5
+          ? STARTER_HTML_S3
+          : STARTER_HTML_S6;
     } else if (f.name === 'style.css') {
-      initial['style.css'] = moduleNum <= 2 ? STARTER_CSS_S2 : STARTER_CSS_S3;
+      initial['style.css'] =
+        moduleNum <= 2
+          ? STARTER_CSS_S2
+          : moduleNum <= 5
+          ? STARTER_CSS_S3
+          : STARTER_CSS_S6;
     } else if (f.name === 'app.js') {
       initial['app.js'] =
-        moduleNum <= 3 ? STARTER_JS_S3 : moduleNum === 4 ? STARTER_JS_S4 : STARTER_JS_S5;
+        moduleNum <= 3
+          ? STARTER_JS_S3
+          : moduleNum === 4
+          ? STARTER_JS_S4
+          : moduleNum === 5
+          ? STARTER_JS_S5
+          : STARTER_JS_S6;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }
@@ -398,37 +833,45 @@ export function parseInitialFiles(
     try {
       const parsedPrev = JSON.parse(previousPassedPayload);
       if (parsedPrev && typeof parsedPrev.files === 'object' && !Array.isArray(parsedPrev.files)) {
-        if (parsedPrev.files['index.html']) {
-          let inheritedHtml = parsedPrev.files['index.html'];
-          if (moduleNum >= 3 && !inheritedHtml.includes('app.js')) {
-            inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.js"></script>\n</body>');
-          }
-          if (moduleNum >= 5 && !inheritedHtml.includes('active-tasks-list')) {
-            if (inheritedHtml.includes('<section class="task-history-section">')) {
-              inheritedHtml = inheritedHtml.replace(
-                '<section class="task-history-section">',
-                '<section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n\n    <section class="task-history-section">'
-              );
-            } else if (inheritedHtml.includes('</main>')) {
-              inheritedHtml = inheritedHtml.replace(
-                '</main>',
-                '  <section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n  </main>'
-              );
+        if (moduleNum >= 6) {
+          // Module 6 is the Capstone Project: provide the complete assembled SUT scaffold
+          // while preserving custom styling from earlier modules if present
+          initial['index.html'] = STARTER_HTML_S6;
+          initial['style.css'] = parsedPrev.files['style.css'] ? `${parsedPrev.files['style.css'].trim()}\n\n${STARTER_CSS_S6}` : STARTER_CSS_S6;
+          initial['app.js'] = STARTER_JS_S6;
+        } else {
+          if (parsedPrev.files['index.html']) {
+            let inheritedHtml = parsedPrev.files['index.html'];
+            if (moduleNum >= 3 && !inheritedHtml.includes('app.js')) {
+              inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.js"></script>\n</body>');
             }
+            if (moduleNum >= 5 && !inheritedHtml.includes('active-tasks-list')) {
+              if (inheritedHtml.includes('<section class="task-history-section">')) {
+                inheritedHtml = inheritedHtml.replace(
+                  '<section class="task-history-section">',
+                  '<section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n\n    <section class="task-history-section">'
+                );
+              } else if (inheritedHtml.includes('</main>')) {
+                inheritedHtml = inheritedHtml.replace(
+                  '</main>',
+                  '  <section class="active-tasks-section">\n      <h2>Task-uri Active (Server)</h2>\n      <ul id="active-tasks-list"></ul>\n    </section>\n  </main>'
+                );
+              }
+            }
+            initial['index.html'] = inheritedHtml;
           }
-          initial['index.html'] = inheritedHtml;
-        }
-        if (parsedPrev.files['style.css']) {
-          initial['style.css'] = parsedPrev.files['style.css'];
-        }
-        if (parsedPrev.files['app.js'] && parsedPrev.files['app.js'].trim().length > 0) {
-          const prevJs = parsedPrev.files['app.js'];
-          if (moduleNum === 5 && !prevJs.includes('incarcaTaskuriInitiale')) {
-            initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S5}`;
-          } else if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
-            initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
-          } else {
-            initial['app.js'] = prevJs;
+          if (parsedPrev.files['style.css']) {
+            initial['style.css'] = parsedPrev.files['style.css'];
+          }
+          if (parsedPrev.files['app.js'] && parsedPrev.files['app.js'].trim().length > 0) {
+            const prevJs = parsedPrev.files['app.js'];
+            if (moduleNum === 5 && !prevJs.includes('incarcaTaskuriInitiale')) {
+              initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S5}`;
+            } else if (moduleNum === 4 && !prevJs.includes('Sesiunea 4: JS DOM Manipulation')) {
+              initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
+            } else {
+              initial['app.js'] = prevJs;
+            }
           }
         }
       }
@@ -451,10 +894,24 @@ export function parseInitialFiles(
           (merged['index.html'].trim().startsWith('/*') || !merged['index.html'].includes('<'))
         ) {
           merged['index.html'] =
-            moduleNum <= 1 ? STARTER_HTML_S1 : moduleNum === 2 ? STARTER_HTML_S2 : STARTER_HTML_S3;
+            moduleNum <= 1
+              ? STARTER_HTML_S1
+              : moduleNum === 2
+              ? STARTER_HTML_S2
+              : moduleNum <= 5
+              ? STARTER_HTML_S3
+              : STARTER_HTML_S6;
         }
         // If app.js in the saved submission was just the untouched starter template, prefer inherited previous code
         if (
+          moduleNum === 6 &&
+          merged['app.js'] &&
+          merged['app.js'].trim() === STARTER_JS_S6.trim() &&
+          initial['app.js'] &&
+          initial['app.js'] !== STARTER_JS_S6
+        ) {
+          merged['app.js'] = initial['app.js'];
+        } else if (
           moduleNum === 5 &&
           merged['app.js'] &&
           merged['app.js'].trim() === STARTER_JS_S5.trim() &&

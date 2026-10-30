@@ -468,13 +468,155 @@ const curriculum: CurriculumItem[] = [
   },
   {
     moduleNumber: 6,
-    title: 'Sesiunea 6: Kanban Workshop',
-    validationType: 'DYNAMIC',
+    title: 'Sesiunea 6: Livrarea Proiectului "Task Tracker" (Capstone)',
+    validationType: 'STATIC',
     isPublished: true,
     unlockDate: new Date('2026-10-29T00:00:00Z'),
     description:
-      'Finalizează logica panoului Kanban. Această aplicație va fi subiectul testelor noastre E2E.',
-    validationRules: JSON.stringify([]),
+      'Evaluarea finală a Modulului 2: Asamblează aplicația completă Task Tracker (HTML5, CSS3, JS Asincron CRUD, Modul Chaos, Marcare ca Finalizat și atributele complete de testare data-testid).',
+    validationRules: JSON.stringify([
+      {
+        file: 'index.html',
+        name: '[index.html] Câmpul de text cu data-testid="input-task-name"',
+        name_en: '[index.html] Text input with data-testid="input-task-name"',
+        selector: "input[data-testid='input-task-name'], [data-testid='input-task-name']",
+        check: 'exists',
+        message: 'Cerința QA eșuată: Câmpul de text nu are atributul data-testid="input-task-name".',
+        message_en: 'QA requirement failed: Text input field is missing data-testid="input-task-name".',
+        successMessage: 'Câmpul de input conține atributul data-testid="input-task-name".',
+        successMessage_en: 'Input field correctly contains data-testid="input-task-name".',
+      },
+      {
+        file: 'index.html',
+        name: '[index.html] Buton salvare dezactivat inițial cu data-testid="submit-task-btn"',
+        name_en: '[index.html] Save button initially disabled with data-testid="submit-task-btn"',
+        selector: "button[data-testid='submit-task-btn'][disabled], [data-testid='submit-task-btn'][disabled]",
+        check: 'exists',
+        message:
+          'Cerința QA eșuată: Butonul de salvare trebuie să aibă data-testid="submit-task-btn" și atributul disabled setat nativ.',
+        message_en:
+          'QA requirement failed: Save button must have data-testid="submit-task-btn" and disabled attribute set natively.',
+        successMessage: 'Butonul de salvare are data-testid="submit-task-btn" și este dezactivat inițial.',
+        successMessage_en: 'Save button has data-testid="submit-task-btn" and is disabled initially.',
+      },
+      {
+        file: 'index.html',
+        name: '[index.html] Mesaj eroare cu data-testid="error-message"',
+        name_en: '[index.html] Error message with data-testid="error-message"',
+        selector: "[data-testid='error-message']",
+        check: 'exists',
+        message: 'Cerința QA eșuată: Elementul pentru mesajul de eroare nu are atributul data-testid="error-message".',
+        message_en: 'QA requirement failed: Error message element is missing data-testid="error-message".',
+        successMessage: 'Elementul mesajului de eroare conține data-testid="error-message".',
+        successMessage_en: 'Error message element correctly contains data-testid="error-message".',
+      },
+      {
+        file: 'index.html',
+        name: '[index.html] Lista <ul> cu data-testid="task-list"',
+        name_en: '[index.html] Task list <ul> with data-testid="task-list"',
+        selector: "ul[data-testid='task-list'], [data-testid='task-list']",
+        check: 'exists',
+        message: 'Cerința QA eșuată: Lista principală <ul> nu are atributul data-testid="task-list".',
+        message_en: 'QA requirement failed: Task list <ul> is missing data-testid="task-list".',
+        successMessage: 'Lista <ul> conține atributul data-testid="task-list".',
+        successMessage_en: 'Task list <ul> correctly contains data-testid="task-list".',
+      },
+      {
+        file: 'style.css',
+        name: '[style.css] Stilizare pentru task finalizat (.completed cu line-through)',
+        name_en: '[style.css] Completed task styling (.completed with line-through)',
+        check: 'regex',
+        pattern: '\\.completed\\s*\\{[^}]*text-decoration\\s*:\\s*line-through',
+        message:
+          'Cerința Task 2 eșuată: În style.css trebuie definită clasa .completed cu proprietatea text-decoration: line-through.',
+        message_en:
+          'Task 2 failed: Define .completed class with text-decoration: line-through in style.css.',
+        successMessage: 'Clasa .completed este definită corect cu text-decoration: line-through.',
+        successMessage_en: '.completed class is properly styled with text-decoration: line-through.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Aducere 5 task-uri inițiale (GET) și ascundere spinner',
+        name_en: '[app.js] Initial 5 tasks retrieval (GET) and spinner hide',
+        check: 'regex',
+        pattern:
+          '(?=[\\s\\S]*?fetch\\s*\\([\\s\\S]*?(?:_limit=5|todos))(?=[\\s\\S]*?\\.json\\s*\\()(?=[\\s\\S]*?(?:display\\s*=\\s*[\'"]none[\'"]|\\.remove\\s*\\(\\s*\\)|classList\\.add\\s*\\([\'"][^\'"]*hidden))',
+        message:
+          'Cerința Task 1 eșuată: Aplicația trebuie să aducă primele 5 task-uri prin fetch și să ascundă indicatorul de latență (spinner).',
+        message_en: 'Task 1 failed: App must fetch first 5 tasks and hide the loading spinner.',
+        successMessage: 'Aducerea inițială a celor 5 task-uri și ascunderea spinner-ului sunt implementate corect.',
+        successMessage_en: 'Initial fetch of 5 tasks and spinner hiding are properly implemented.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Salvare task nou pe rețea (POST fetch)',
+        name_en: '[app.js] Save new task via network (POST fetch)',
+        check: 'regex',
+        pattern: 'fetch\\s*\\([\\s\\S]*?method\\s*:\\s*[\'"`]POST[\'"`]',
+        message:
+          'Cerința Task 1 eșuată: Adăugarea unui nou task trebuie trimisă la server prin fetch cu method: "POST".',
+        message_en: 'Task 1 failed: New task must be saved to server via fetch with method: "POST".',
+        successMessage: 'Trimiterea pe rețea a noului task folosește metoda POST.',
+        successMessage_en: 'Network submission for new task properly uses POST method.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Buton de ștergere dinamic cu data-testid="delete-btn-ID"',
+        name_en: '[app.js] Dynamic delete button with data-testid="delete-btn-ID"',
+        check: 'regex',
+        pattern:
+          'data-testid\\s*=\\s*[\'"`]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\})[\'"`]',
+        message:
+          'Cerința QA eșuată: Butoanele de ștergere generate dinamic trebuie să aibă atributul data-testid="delete-btn-${id}".',
+        message_en:
+          'QA requirement failed: Dynamically generated delete buttons must have data-testid="delete-btn-${id}".',
+        successMessage: 'Atributul data-testid="delete-btn-${id}" este generat dinamic pe fiecare buton de ștergere.',
+        successMessage_en: 'data-testid="delete-btn-${id}" attribute is dynamically generated on delete buttons.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Marcare task ca finalizat la click pe .task-title (.completed)',
+        name_en: '[app.js] Mark task completed on click on .task-title (.completed)',
+        check: 'regex',
+        pattern:
+          '(?=[\\s\\S]*?(?:classList\\.(?:toggle|add)\\s*\\(\\s*[\'"`]completed[\'"`]|className\\s*\\+?=\\s*[\'"`][^\'"`]*completed|style\\.textDecoration))(?=[\\s\\S]*?(?:task-title|\\.task-title))',
+        message:
+          'Cerința Task 2 eșuată: Adaugă în Event Delegation logica pentru click pe .task-title care aplică clasa .completed (ex: e.target.classList.toggle("completed")).',
+        message_en:
+          'Task 2 failed: Implement click on .task-title in event delegation to toggle "completed" class.',
+        successMessage:
+          'Funcționalitatea de marcare ca finalizat este implementată prin Event Delegation pe .task-title.',
+        successMessage_en:
+          'Completion toggle functionality is correctly implemented via event delegation on .task-title.',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Ștergere pe rețea (DELETE) și eliminare rând din DOM (.remove())',
+        name_en: '[app.js] Network deletion (DELETE) and DOM removal (.remove())',
+        check: 'regex',
+        pattern: '(?=[\\s\\S]*?fetch\\s*\\([\\s\\S]*?method\\s*:\\s*[\'"`]DELETE[\'"`])(?=[\\s\\S]*?\\.remove\\s*\\(\\s*\\))',
+        message:
+          'Cerința Task 1 eșuată: Ștergerea trebuie să apeleze fetch cu method: "DELETE" și să elimine rândul din DOM cu .remove().',
+        message_en:
+          'Task 1 failed: Deletion must trigger fetch with method: "DELETE" and remove row from DOM using .remove().',
+        successMessage: 'Ștergerea trimite cererea HTTP DELETE și elimină elementul din DOM cu .remove().',
+        successMessage_en: 'Deletion issues HTTP DELETE request and removes the element with .remove().',
+      },
+      {
+        file: 'app.js',
+        name: '[app.js] Modul Chaos: Pop-up promoțional cu data-testid="close-promo-btn"',
+        name_en: '[app.js] Chaos Mode: Promotional pop-up with data-testid="close-promo-btn"',
+        check: 'regex',
+        pattern:
+          '(?=[\\s\\S]*?data-testid\\s*=\\s*[\'"`]close-promo-btn[\'"`])(?=[\\s\\S]*?(?:addEventListener\\s*\\(\\s*[\'"`]click[\'"`]|onclick))',
+        message:
+          'Cerința QA eșuată: Butonul de închidere din pop-up-ul Chaos Mode trebuie să aibă data-testid="close-promo-btn" și să permită închiderea.',
+        message_en:
+          'QA requirement failed: Close button in Chaos Mode pop-up must have data-testid="close-promo-btn" and allow closing.',
+        successMessage: 'Pop-up-ul Chaos Mode conține data-testid="close-promo-btn" și handler de închidere.',
+        successMessage_en: 'Chaos Mode pop-up includes data-testid="close-promo-btn" and closing handler.',
+      },
+    ]),
   },
   {
     moduleNumber: 7,
