@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { getModuleFiles, parseInitialFiles } from '@/app/[locale]/assignment/[id]/AssignmentWorkspace';
+import {
+  getModuleFiles,
+  parseInitialFiles,
+  getAssignmentCurriculumTask,
+  CURRICULUM_TASKS,
+} from '@/app/[locale]/assignment/[id]/AssignmentWorkspace';
 
 describe('Workspace Multi-File Configuration Tests', () => {
   it('returns single HTML file for Module 0 Sandbox', () => {
@@ -228,5 +233,91 @@ describe('Workspace Multi-File Configuration Tests', () => {
     // Should not have pre-solved delete button data-testid in JS
     expect(parsed['app.js']).not.toContain('data-testid="delete-btn-');
     expect(parsed['app.js']).not.toContain('data-testid="close-promo-btn"');
+  });
+
+  describe('Dynamic Curriculum Task & Acceptance Criteria Checklist', () => {
+    it('defines curriculum tasks for all core modules (0-6)', () => {
+      expect(Object.keys(CURRICULUM_TASKS).length).toBeGreaterThanOrEqual(7);
+      [0, 1, 2, 3, 4, 5, 6].forEach((mod) => {
+        expect(CURRICULUM_TASKS[mod]).toBeDefined();
+        expect(CURRICULUM_TASKS[mod].criteria.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('returns exact Business Task and acceptance criteria for Module 1', () => {
+      const task = getAssignmentCurriculumTask({
+        id: 'mod1',
+        title: 'Session 1',
+        description: 'Default desc',
+        module: 1,
+        validationType: 'STATIC',
+      });
+
+      expect(task.businessTask).toContain('Login și Înregistrare');
+      expect(task.criteria.length).toBeGreaterThanOrEqual(5);
+      const fileNames = task.criteria.map((c) => c.file);
+      expect(fileNames.every((f) => f === 'index.html')).toBe(true);
+      expect(task.criteria.some((c) => c.title.includes('login-email'))).toBe(true);
+      expect(task.criteria.some((c) => c.title.includes('btn-submit-login'))).toBe(true);
+    });
+
+    it('returns multi-file criteria for Module 2 including CSS', () => {
+      const task = getAssignmentCurriculumTask({
+        id: 'mod2',
+        title: 'Session 2',
+        description: 'Default desc',
+        module: 2,
+        validationType: 'STATIC',
+      });
+
+      expect(task.businessTask).toContain('Task Tracker-ului');
+      const cssCriteria = task.criteria.filter((c) => c.file === 'style.css');
+      const htmlCriteria = task.criteria.filter((c) => c.file === 'index.html');
+      expect(cssCriteria.length).toBeGreaterThanOrEqual(4);
+      expect(htmlCriteria.length).toBeGreaterThanOrEqual(5);
+      expect(task.criteria.some((c) => c.title.includes('tr:nth-child(3)'))).toBe(true);
+      expect(task.criteria.some((c) => c.title.includes('disabled'))).toBe(true);
+    });
+
+    it('returns multi-file criteria for Module 3, 4, 5, and 6 including JS', () => {
+      [3, 4, 5, 6].forEach((modNum) => {
+        const task = getAssignmentCurriculumTask({
+          id: `mod${modNum}`,
+          title: `Session ${modNum}`,
+          description: 'Default desc',
+          module: modNum,
+          validationType: 'STATIC',
+        });
+
+        expect(task.businessTask.length).toBeGreaterThan(20);
+        const jsCriteria = task.criteria.filter((c) => c.file === 'app.js');
+        expect(jsCriteria.length).toBeGreaterThanOrEqual(4);
+      });
+    });
+
+    it('falls back to parsing validationRules JSON for custom or unknown modules', () => {
+      const customRules = JSON.stringify([
+        {
+          file: 'custom.ts',
+          name: 'Custom rule check',
+          message: 'Expected custom logic',
+        },
+      ]);
+
+      const task = getAssignmentCurriculumTask({
+        id: 'mod99',
+        title: 'Session 99',
+        description: 'Custom module description',
+        module: 99,
+        validationType: 'STATIC',
+        validationRules: customRules,
+      });
+
+      expect(task.businessTask).toBe('Custom module description');
+      expect(task.criteria).toHaveLength(1);
+      expect(task.criteria[0].file).toBe('custom.ts');
+      expect(task.criteria[0].title).toBe('Custom rule check');
+      expect(task.criteria[0].detail).toBe('Expected custom logic');
+    });
   });
 });

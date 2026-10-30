@@ -40,6 +40,7 @@ interface AssignmentData {
   validationType: string;
   passingSample?: string | null;
   failingSample?: string | null;
+  validationRules?: string | null;
 }
 
 export interface SubmissionRecord {
@@ -82,6 +83,407 @@ export function getModuleFiles(moduleNum: number, validationType: string): Proje
     { name: 'style.css', language: 'css', icon: '🎨' },
     { name: 'app.js', language: 'javascript', icon: '📜' },
   ];
+}
+
+export interface CurriculumCriterion {
+  file: string;
+  title: string;
+  detail?: string;
+}
+
+export interface CurriculumModuleTask {
+  businessTask: string;
+  notes?: string;
+  criteria: CurriculumCriterion[];
+}
+
+export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
+  0: {
+    businessTask:
+      'Modul de acomodare cu platforma QualiAdept. Testează editorul Monaco, verifică aserțiunile automate în timp real și trimite primul tău layout HTML pentru a te familiariza cu fluxul de validare înainte de începerea cursului.',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Tag-ul semantic <main>',
+        detail: 'Documentul trebuie să includă elementul structural semantic <main>.',
+      },
+      {
+        file: 'index.html',
+        title: 'Secțiune de practică cu id="practice-section"',
+        detail: 'Adaugă un container sau secțiune având atributul id="practice-section".',
+      },
+      {
+        file: 'index.html',
+        title: 'Buton submit cu data-testid="submit-btn"',
+        detail: 'Buton de acțiune având atributul data-testid="submit-btn".',
+      },
+    ],
+  },
+  1: {
+    businessTask:
+      'Construiește o pagină HTML de "Login și Înregistrare" pentru aplicația noastră Task Tracker, structurată conform bunelor practici și pregătită din start pentru a fi testată de roboții de automatizare.',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Structură Boilerplate validă',
+        detail: 'Documentul trebuie să aibă structura standard completă: <!DOCTYPE html>, <html>, <head> și <body>.',
+      },
+      {
+        file: 'index.html',
+        title: 'Titlul paginii în browser (tag <title>)',
+        detail: 'Titlul paginii în tab-ul browserului trebuie să fie: Task Tracker Login.',
+      },
+      {
+        file: 'index.html',
+        title: 'Container părinte <div class="login-container">',
+        detail: 'Formularul trebuie să aibă un container părinte având clasa "login-container".',
+      },
+      {
+        file: 'index.html',
+        title: 'Formular de autentificare (<form>)',
+        detail: 'Include un element <form> care încapsulează câmpurile de login.',
+      },
+      {
+        file: 'index.html',
+        title: 'Câmp Email (id="login-email", data-testid="input-email")',
+        detail: 'Un <input> pentru Email, având id="login-email" și data-testid="input-email".',
+      },
+      {
+        file: 'index.html',
+        title: 'Câmp Parolă (type="password", id="login-password", data-testid="input-password")',
+        detail: 'Un <input> pentru Parolă (type="password"), având id="login-password" și data-testid="input-password".',
+      },
+      {
+        file: 'index.html',
+        title: 'Buton trimitere "Log In" (data-testid="btn-submit-login")',
+        detail: 'Un <button> pentru trimitere, având textul "Log In" și atributul data-testid="btn-submit-login".',
+      },
+    ],
+  },
+  2: {
+    businessTask:
+      'Transformă scheletul HTML simplu al "Task Tracker-ului" din Sesiunea 1 într-o aplicație structurată, pregătită atât vizual (cu un layout flexibil de bază), cât și tehnic (cu clase, id-uri și data-testid-uri) pentru prima noastră interacțiune cu Playwright.',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Conectare fișier CSS extern în <head>',
+        detail: 'Tag <link rel="stylesheet" href="style.css"> conectat în <head>.',
+      },
+      {
+        file: 'index.html',
+        title: 'Meniu Flexibil (Navbar)',
+        detail: 'În <header>, adaugă un <nav> care să aibă clasa "navbar".',
+      },
+      {
+        file: 'index.html',
+        title: 'Element Logo în navbar',
+        detail: 'În interiorul acestui <nav>, include un element cu id-ul "logo".',
+      },
+      {
+        file: 'index.html',
+        title: 'Buton de Login în navbar',
+        detail: 'Un buton de login având atributul data-testid="btn-login".',
+      },
+      {
+        file: 'index.html',
+        title: 'Selector structural tabel (Rândul 3)',
+        detail: 'Al 3-lea rând din <tbody> (elementul <tr>) conține un buton de "Șterge" având clasa "delete-row".',
+      },
+      {
+        file: 'index.html',
+        title: 'Buton cu Stare Dinamică (disabled)',
+        detail: 'În formularul de adăugare task, butonul are data-testid="submit-task-btn" și atributul HTML disabled.',
+      },
+      {
+        file: 'style.css',
+        title: 'Layout Flexbox pentru navbar',
+        detail: 'Stilizare .navbar cu display: flex (și align-items / justify-content) pentru aliniere.',
+      },
+      {
+        file: 'style.css',
+        title: 'Selector pseudo-clasă structural tr:nth-child(3)',
+        detail: 'Regulă CSS dedicată folosind pseudo-clasa :nth-child(3) pe rândurile tabelului.',
+      },
+      {
+        file: 'style.css',
+        title: 'Stare interactivă :hover pentru butoane',
+        detail: 'Regulă CSS cu pseudo-clasa :hover definită pentru butoane.',
+      },
+      {
+        file: 'style.css',
+        title: 'Stare :disabled pentru butoane',
+        detail: 'Regulă CSS cu pseudo-clasa :disabled definită pentru butoanele dezactivate.',
+      },
+    ],
+  },
+  3: {
+    businessTask:
+      'Construiește prima parte din "creierul" aplicației (logica de bază în JavaScript). Scrie un script care stochează și procesează lista de task-uri, validând datele înainte de a fi afișate pe ecran.',
+    notes:
+      'Vei scrie acest cod fie în fișierul app.js (legat cu <script src="app.js"></script> la finalul <body>), fie direct în tab-ul Console din Chrome DevTools.',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Conectare fișier script app.js',
+        detail: 'Fișierul app.js este inclus în index.html folosind tag-ul <script src="app.js"></script>.',
+      },
+      {
+        file: 'app.js',
+        title: 'Structura Datelor E2E (Arrays & Objects)',
+        detail: 'Declară o constantă numită listaTaskuri inițializată ca Array cu 2 obiecte ({ id, nume, completat }).',
+      },
+      {
+        file: 'app.js',
+        title: 'Funcția Săgeată de Validare (Business Logic)',
+        detail: 'Scrie o Arrow Function numită proceseazaTaskNou primind parametrul taskObj.',
+      },
+      {
+        file: 'app.js',
+        title: 'Validare strictă dacă numele lipsește sau e invalid',
+        detail: 'Verifică condițional (if/else) dacă numele task-ului lipsește ("") SAU este undefined.',
+      },
+      {
+        file: 'app.js',
+        title: 'Afișare mesaj de eroare în consolă',
+        detail: 'Dacă datele sunt invalide, folosește console.log pentru a afișa: "Eroare: Task-ul trebuie să aibă un nume!".',
+      },
+      {
+        file: 'app.js',
+        title: 'Adăugare în Array prin push() și mesaj de succes',
+        detail: 'Dacă datele sunt corecte, adaugă în listaTaskuri prin push() și afișează: "Task adăugat cu succes!".',
+      },
+      {
+        file: 'app.js',
+        title: 'Bucla de Raportare (Repetiția)',
+        detail: 'Parcurge întregul Array listaTaskuri cu o buclă for și afișează în consolă doar numele fiecărui task.',
+      },
+    ],
+  },
+  4: {
+    businessTask:
+      'Interceptează formularul de adăugare și injectează noile task-uri direct ca rânduri noi în tabelul HTML, fiecare venind la pachet cu propriul buton funcțional de ștergere.',
+    notes:
+      'Testează de fiecare dată în browser dând refresh la pagina index.html, iar la final validează-ți munca în platformă!',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Conectarea fișierului app.js în index.html',
+        detail: 'Asigură-te că fișierul app.js este inclus în index.html folosind tag-ul <script>.',
+      },
+      {
+        file: 'app.js',
+        title: 'Selectarea Elementelor DOM',
+        detail: 'Folosește document.querySelector(...) sau getElementById(...) pentru formular (#add-task-form), input (#task-name) și tabel (tbody).',
+      },
+      {
+        file: 'app.js',
+        title: 'Ascultător de Eveniment pe formular',
+        detail: 'Adaugă un ascultător de eveniment pentru formular folosind addEventListener(\'submit\', ...).',
+      },
+      {
+        file: 'app.js',
+        title: 'Prevenirea Reîncărcării Paginii',
+        detail: 'În interiorul ascultătorului, apelează metoda e.preventDefault() pentru a opri reîncărcarea nativă.',
+      },
+      {
+        file: 'app.js',
+        title: 'Crearea Dinamică a elementului de rând',
+        detail: 'Extrage textul din input, apoi creează un rând nou folosind document.createElement(\'tr\').',
+      },
+      {
+        file: 'app.js',
+        title: 'Structura Rândului și Buton de Ștergere',
+        detail: 'Adaugă celulele (<td>), inclusiv butonul de ștergere având obligatoriu clasa "delete-row".',
+      },
+      {
+        file: 'app.js',
+        title: 'Inserarea în DOM',
+        detail: 'Adaugă noul rând în corpul tabelului folosind metoda .appendChild(...) sau .append(...).',
+      },
+      {
+        file: 'app.js',
+        title: 'Curățarea Inputului',
+        detail: 'Resetează valoarea câmpului de input la un string gol (input.value = \'\') după salvarea task-ului.',
+      },
+      {
+        file: 'app.js',
+        title: 'Ștergerea Dinamică din DOM',
+        detail: 'Implementează logica de ștergere la apăsarea butonului folosind metoda .remove() pe rândul părinte (<tr>).',
+      },
+    ],
+  },
+  5: {
+    businessTask:
+      'La încărcarea paginii, descarcă automat 5 task-uri de la un API public extern și desenează-le pe ecran în containerul listă!',
+    notes:
+      'Vei adăuga acest cod în fișierul app.js existent. Endpoint public: https://jsonplaceholder.typicode.com/todos?_limit=5.',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Containerul listă în DOM (#active-tasks-list)',
+        detail: 'În index.html trebuie să ai un element (ex: <ul> sau <div>) cu id-ul "active-tasks-list".',
+      },
+      {
+        file: 'app.js',
+        title: 'Crearea funcției asincrone incarcaTaskuriInitiale',
+        detail: 'Declară o Arrow Function asincronă numită const incarcaTaskuriInitiale = async () => { ... }.',
+      },
+      {
+        file: 'app.js',
+        title: 'Fetch API GET request',
+        detail: 'Folosește await fetch(\'https://jsonplaceholder.typicode.com/todos?_limit=5\') pentru cererea HTTP.',
+      },
+      {
+        file: 'app.js',
+        title: 'Conversia răspunsului cu await .json()',
+        detail: 'Despachetează răspunsul primit folosind await raspuns.json() obținând un Array cu 5 Obiecte.',
+      },
+      {
+        file: 'app.js',
+        title: 'Selectare container din DOM',
+        detail: 'Găsește lista principală din HTML (#active-tasks-list) pentru populare.',
+      },
+      {
+        file: 'app.js',
+        title: 'Iterare prin lista de task-uri',
+        detail: 'Folosește o buclă for (sau .forEach()) pentru a parcurge Array-ul primit de la server.',
+      },
+      {
+        file: 'app.js',
+        title: 'Creare dinamică a elementelor <li>',
+        detail: 'Pentru fiecare obiect din listă, creează dinamic un element cu document.createElement(\'li\').',
+      },
+      {
+        file: 'app.js',
+        title: 'Setare titlu din proprietatea .title',
+        detail: 'Setează textul elementului <li> cu proprietatea .title a obiectului JSON primit de pe rețea.',
+      },
+      {
+        file: 'app.js',
+        title: 'Injectare în listă cu appendChild()',
+        detail: 'Injectează fiecare element <li> în containerul #active-tasks-list folosind appendChild().',
+      },
+      {
+        file: 'app.js',
+        title: 'Apelarea automată a funcției la pornire',
+        detail: 'Scrie incarcaTaskuriInitiale(); la finalul fișierului app.js pentru declanșare imediată.',
+      },
+    ],
+  },
+  6: {
+    businessTask:
+      'Livrarea Proiectului "Task Tracker" (Capstone): Ești la finalul sprintului de dezvoltare. Asamblează aplicația completă, adaugă funcționalitatea de Marcare ca Finalizat (line-through) și efectuează auditul strict de testabilitate QA pentru pregătirea testelor Playwright!',
+    notes:
+      'Asigură-te că toate cele 3 fișiere (index.html, style.css, app.js) sunt active și integrate!',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Câmpul de text cu data-testid="input-task-name"',
+        detail: 'Câmpul de input pentru task conține atributul data-testid="input-task-name".',
+      },
+      {
+        file: 'index.html',
+        title: 'Buton salvare dezactivat inițial cu data-testid="submit-task-btn"',
+        detail: 'Butonul de salvare are data-testid="submit-task-btn" și atributul HTML disabled setat nativ.',
+      },
+      {
+        file: 'index.html',
+        title: 'Mesaj de eroare cu data-testid="error-message"',
+        detail: 'Element dedicat mesajelor de eroare având atributul data-testid="error-message".',
+      },
+      {
+        file: 'index.html',
+        title: 'Containerul listă cu data-testid="task-list"',
+        detail: 'Lista <ul> principală are atributul data-testid="task-list".',
+      },
+      {
+        file: 'style.css',
+        title: 'Stilizare task finalizat (.completed)',
+        detail: 'Regulă CSS .completed { text-decoration: line-through; color: gray; } pentru marcarea vizuală.',
+      },
+      {
+        file: 'app.js',
+        title: 'Task 1: Integrarea completă a codului (GET inițial)',
+        detail: 'Aplicația aduce cele 5 task-uri inițiale de la server la încărcare și ascunde spinnerul.',
+      },
+      {
+        file: 'app.js',
+        title: 'Task 1: Salvare task nou pe rețea (POST fetch)',
+        detail: 'Trimiterea formularului adaugă task-ul printr-o cerere POST către server.',
+      },
+      {
+        file: 'app.js',
+        title: 'Task 2: Marcare ca Finalizat (.completed la click)',
+        detail: 'La click pe elementul .task-title, activează/dezactivează clasa cu e.target.classList.toggle(\'completed\').',
+      },
+      {
+        file: 'app.js',
+        title: 'Task 3: Buton de ștergere dinamic cu data-testid="delete-btn-ID"',
+        detail: 'Fiecare buton de ștergere generat dinamic conține atributul data-testid="delete-btn-ID".',
+      },
+      {
+        file: 'app.js',
+        title: 'Task 3: Ștergere pe rețea (DELETE fetch) și eliminare din DOM',
+        detail: 'La ștergere, trimite cererea DELETE pe rețea și elimină rândul din DOM cu .remove().',
+      },
+      {
+        file: 'app.js',
+        title: 'Chaos Mode: Pop-up promoțional cu data-testid="close-promo-btn"',
+        detail: 'Pop-up-ul din Chaos Mode conține un buton de închidere cu data-testid="close-promo-btn".',
+      },
+      {
+        file: 'app.js',
+        title: 'Bonus Senior: Prevenire task-uri duplicate',
+        detail: 'Blochează trimiterea unui task dacă textul există deja în lista afișată.',
+      },
+    ],
+  },
+};
+
+export function getAssignmentCurriculumTask(
+  assignment: AssignmentData
+): {
+  businessTask: string;
+  notes?: string;
+  criteria: CurriculumCriterion[];
+} {
+  const predefined = CURRICULUM_TASKS[assignment.module];
+  if (predefined) {
+    return predefined;
+  }
+
+  // Fallback: parse assignment.validationRules if available
+  let parsedCriteria: CurriculumCriterion[] = [];
+  if (assignment.validationRules) {
+    try {
+      const rules = JSON.parse(assignment.validationRules);
+      if (Array.isArray(rules)) {
+        parsedCriteria = rules.map((r: Record<string, string | undefined>) => {
+          const file = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : 'index.html');
+          const title = r.name || r.name_en || r.message || r.title || r.selector || 'Assertion Check';
+          const detail = r.message || (r.selector ? `Selector: ${r.selector}` : undefined);
+          return { file, title, detail };
+        });
+      }
+    } catch {
+      // ignore JSON parse errors
+    }
+  }
+
+  if (parsedCriteria.length === 0) {
+    parsedCriteria = [
+      {
+        file: 'index.html',
+        title: 'Implementare conform cerințelor modulului',
+        detail: 'Scrie codul corespunzător în editor și apasă Submit pentru evaluare automată.',
+      },
+    ];
+  }
+
+  return {
+    businessTask: assignment.description,
+    criteria: parsedCriteria,
+  };
 }
 
 // ==========================================
@@ -2038,29 +2440,95 @@ export default function AssignmentWorkspace({
                 )}
               </div>
 
-              {/* State 1: Awaiting Submission */}
-              {!validationResult && !isValidating && (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-950/40">
-                  <div className="h-12 w-12 rounded-full bg-zinc-800/80 border border-zinc-700 flex items-center justify-center text-zinc-400 mb-3">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-sm font-semibold text-zinc-300">Ready to Evaluate</h3>
-                  <p className="text-xs text-zinc-400 max-w-xs mt-1 leading-relaxed">
-                    Paste your HTML code on the left editor and click <strong>&quot;Submit Code&quot;</strong> to view real-time assertion feedback.
-                  </p>
+              {/* State 1: Awaiting Submission (Dynamic Checklist & Business Task) */}
+              {!validationResult && !isValidating && (() => {
+                const curriculumInfo = getAssignmentCurriculumTask(assignment);
+                const grouped = curriculumInfo.criteria.reduce((acc, item) => {
+                  if (!acc[item.file]) acc[item.file] = [];
+                  acc[item.file].push(item);
+                  return acc;
+                }, {} as Record<string, typeof curriculumInfo.criteria>);
 
-                  <div className="mt-6 w-full text-left bg-zinc-950 p-3 rounded-lg border border-zinc-800 text-[11px] font-mono text-zinc-400">
-                    <span className="text-emerald-400 block font-semibold mb-1">// Assertion Requirements:</span>
-                    <ul className="space-y-1 list-disc list-inside text-zinc-400">
-                      <li>Semantic <code className="text-zinc-200">&lt;main&gt;</code> tag</li>
-                      <li>Element with <code className="text-zinc-200">id=&quot;add-task-section&quot;</code></li>
-                      <li>Button with <code className="text-zinc-200">data-testid=&quot;submit-btn&quot;</code></li>
-                    </ul>
+                return (
+                  <div className="flex-1 flex flex-col text-left p-4 sm:p-5 border border-zinc-800 rounded-xl bg-zinc-950/40 gap-4 overflow-y-auto max-h-[750px]">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-zinc-800/80">
+                      <div className="h-9 w-9 rounded-lg bg-zinc-800/80 border border-zinc-700 flex items-center justify-center text-zinc-300 shrink-0">
+                        <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-200">Ghid de Rezolvare & Criterii de Validare</h3>
+                        <p className="text-[11px] text-zinc-400 font-mono">
+                          Implementează cerințele de mai jos, apoi apasă <span className="text-emerald-400 font-semibold">Submit</span> pentru validare automată.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Business Task Card */}
+                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-lg">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider mb-1.5">
+                        <span>🎯</span>
+                        <span>Sarcina ta de Business</span>
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed">
+                        {curriculumInfo.businessTask}
+                      </p>
+                      {curriculumInfo.notes && (
+                        <div className="mt-2 pt-2 border-t border-zinc-800/80 text-[11px] text-zinc-400 leading-relaxed">
+                          <span className="text-amber-400 font-semibold font-mono">💡 Notă: </span>
+                          {curriculumInfo.notes}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Acceptance Criteria Checklist (Grouped by file) */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                          <span>📋</span>
+                          <span>Cerințe Tehnice (Acceptance Criteria)</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                          {curriculumInfo.criteria.length} cerințe
+                        </span>
+                      </div>
+
+                      {Object.entries(grouped).map(([file, items]) => (
+                        <div key={file} className="bg-zinc-900/60 border border-zinc-800/90 rounded-lg p-3 flex flex-col gap-2">
+                          <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800 text-xs font-mono font-bold text-zinc-300">
+                            <span>{file.endsWith('.css') ? '🎨' : file.endsWith('.js') ? '📜' : '🌐'}</span>
+                            <span className="text-zinc-100">{file}</span>
+                            <span className="text-[10px] text-zinc-400 font-normal">({items.length} cerințe)</span>
+                          </div>
+                          <ul className="space-y-2 text-xs">
+                            {items.map((criterion, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-zinc-300">
+                                <span className="text-zinc-500 font-mono text-sm leading-none mt-0.5">○</span>
+                                <div className="flex-1 text-[11px] leading-snug">
+                                  <strong className="text-zinc-200">{criterion.title}</strong>
+                                  {criterion.detail && (
+                                    <div className="text-zinc-400 font-mono text-[10px] mt-0.5">{criterion.detail}</div>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bottom Helper Hint */}
+                    <div className="text-[11px] text-zinc-400 font-mono bg-zinc-900/40 p-2.5 rounded border border-zinc-800/60 flex items-center gap-2 mt-auto">
+                      <span>⚡</span>
+                      <span>
+                        Verifică codul fiecărui fișier cu butonul <strong className="text-zinc-300">&quot;Check [fișier]&quot;</strong> din editor, sau apasă butonul mare verde de jos când proiectul este gata.
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* State 2: Validating Loader */}
               {(isValidating || Boolean(isValidatingFile)) && (

@@ -133,6 +133,7 @@ export default async function AssignmentPage({ params }: PageProps) {
         description: localizedAssignment.description,
         module: localizedAssignment.module,
         validationType: localizedAssignment.validationType,
+        validationRules: assignment.validationRules || null,
       }}
       initialSubmissions={initialSubmissions}
       previousPassedPayload={prevPassedSubmission?.codePayload || null}
