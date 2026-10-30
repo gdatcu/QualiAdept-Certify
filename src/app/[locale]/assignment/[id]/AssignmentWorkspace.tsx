@@ -88,12 +88,16 @@ export function getModuleFiles(moduleNum: number, validationType: string): Proje
 export interface CurriculumCriterion {
   file: string;
   title: string;
+  title_en?: string;
   detail?: string;
+  detail_en?: string;
 }
 
 export interface CurriculumModuleTask {
   businessTask: string;
+  businessTask_en?: string;
   notes?: string;
+  notes_en?: string;
   criteria: CurriculumCriterion[];
 }
 
@@ -101,355 +105,503 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
   0: {
     businessTask:
       'Modul de acomodare cu platforma QualiAdept. Testează editorul Monaco, verifică aserțiunile automate în timp real și trimite primul tău layout HTML pentru a te familiariza cu fluxul de validare înainte de începerea cursului.',
+    businessTask_en:
+      'Platform onboarding and sandbox module. Test the Monaco code editor, verify real-time automated assertions, and submit your first HTML layout to become familiar with the validation workflow before the live sessions start.',
     criteria: [
       {
         file: 'index.html',
         title: 'Tag-ul semantic <main>',
+        title_en: 'Semantic <main> tag',
         detail: 'Documentul trebuie să includă elementul structural semantic <main>.',
+        detail_en: 'Document must include the semantic structural <main> element.',
       },
       {
         file: 'index.html',
         title: 'Secțiune de practică cu id="practice-section"',
+        title_en: 'Practice section with id="practice-section"',
         detail: 'Adaugă un container sau secțiune având atributul id="practice-section".',
+        detail_en: 'Add a container or section having id="practice-section".',
       },
       {
         file: 'index.html',
         title: 'Buton submit cu data-testid="submit-btn"',
+        title_en: 'Submit button with data-testid="submit-btn"',
         detail: 'Buton de acțiune având atributul data-testid="submit-btn".',
+        detail_en: 'Action button with attribute data-testid="submit-btn".',
       },
     ],
   },
   1: {
     businessTask:
       'Construiește o pagină HTML de "Login și Înregistrare" pentru aplicația noastră Task Tracker, structurată conform bunelor practici și pregătită din start pentru a fi testată de roboții de automatizare.',
+    businessTask_en:
+      'Build a "Login and Registration" HTML page for our Task Tracker application, structured according to best practices and ready to be tested by automated Playwright robots.',
     criteria: [
       {
         file: 'index.html',
         title: 'Structură Boilerplate validă',
+        title_en: 'Valid Boilerplate structure',
         detail: 'Documentul trebuie să aibă structura standard completă: <!DOCTYPE html>, <html>, <head> și <body>.',
+        detail_en: 'Document must contain standard Boilerplate structure: <!DOCTYPE html>, <html>, <head>, and <body>.',
       },
       {
         file: 'index.html',
         title: 'Titlul paginii în browser (tag <title>)',
+        title_en: 'Page title in browser tab (<title>)',
         detail: 'Titlul paginii în tab-ul browserului trebuie să fie: Task Tracker Login.',
+        detail_en: 'Page title in browser tab must be: Task Tracker Login.',
       },
       {
         file: 'index.html',
         title: 'Container părinte <div class="login-container">',
+        title_en: 'Parent container <div class="login-container">',
         detail: 'Formularul trebuie să aibă un container părinte având clasa "login-container".',
+        detail_en: 'Form must be wrapped inside a parent container with class "login-container".',
       },
       {
         file: 'index.html',
         title: 'Formular de autentificare (<form>)',
+        title_en: 'Authentication form (<form>)',
         detail: 'Include un element <form> care încapsulează câmpurile de login.',
+        detail_en: 'Include a semantic <form> element encapsulating the login fields.',
       },
       {
         file: 'index.html',
         title: 'Câmp Email (id="login-email", data-testid="input-email")',
+        title_en: 'Email input (id="login-email", data-testid="input-email")',
         detail: 'Un <input> pentru Email, având id="login-email" și data-testid="input-email".',
+        detail_en: 'An <input> for Email with id="login-email" and data-testid="input-email".',
       },
       {
         file: 'index.html',
         title: 'Câmp Parolă (type="password", id="login-password", data-testid="input-password")',
+        title_en: 'Password input (type="password", id="login-password", data-testid="input-password")',
         detail: 'Un <input> pentru Parolă (type="password"), având id="login-password" și data-testid="input-password".',
+        detail_en: 'An <input> for Password with type="password", id="login-password" and data-testid="input-password".',
       },
       {
         file: 'index.html',
         title: 'Buton trimitere "Log In" (data-testid="btn-submit-login")',
+        title_en: 'Submit button "Log In" (data-testid="btn-submit-login")',
         detail: 'Un <button> pentru trimitere, având textul "Log In" și atributul data-testid="btn-submit-login".',
+        detail_en: 'A <button> to submit with text "Log In" and attribute data-testid="btn-submit-login".',
       },
     ],
   },
   2: {
     businessTask:
       'Transformă scheletul HTML simplu al "Task Tracker-ului" din Sesiunea 1 într-o aplicație structurată, pregătită atât vizual (cu un layout flexibil de bază), cât și tehnic (cu clase, id-uri și data-testid-uri) pentru prima noastră interacțiune cu Playwright.',
+    businessTask_en:
+      'Transform the simple HTML skeleton of the "Task Tracker" into a structured application, prepared visually (with a flexible base layout) and technically (with classes, IDs, and data-testid attributes) for our first Playwright interaction.',
     criteria: [
       {
         file: 'index.html',
         title: 'Conectare fișier CSS extern în <head>',
+        title_en: 'Connect external CSS file in <head>',
         detail: 'Tag <link rel="stylesheet" href="style.css"> conectat în <head>.',
+        detail_en: '<link rel="stylesheet" href="style.css"> tag correctly linked inside <head>.',
       },
       {
         file: 'index.html',
         title: 'Meniu Flexibil (Navbar)',
+        title_en: 'Flexible menu (Navbar)',
         detail: 'În <header>, adaugă un <nav> care să aibă clasa "navbar".',
+        detail_en: 'Inside <header>, add a <nav> element with class "navbar".',
       },
       {
         file: 'index.html',
         title: 'Element Logo în navbar',
+        title_en: 'Logo element in navbar',
         detail: 'În interiorul acestui <nav>, include un element cu id-ul "logo".',
+        detail_en: 'Inside <nav>, include an element with id="logo".',
       },
       {
         file: 'index.html',
         title: 'Buton de Login în navbar',
+        title_en: 'Login button in navbar',
         detail: 'Un buton de login având atributul data-testid="btn-login".',
+        detail_en: 'A login button inside <nav> having data-testid="btn-login".',
       },
       {
         file: 'index.html',
         title: 'Selector structural tabel (Rândul 3)',
+        title_en: 'Table structural selector (Row 3)',
         detail: 'Al 3-lea rând din <tbody> (elementul <tr>) conține un buton de "Șterge" având clasa "delete-row".',
+        detail_en: '3rd row in <tbody> (<tr> element) contains a Delete button with class "delete-row".',
       },
       {
         file: 'index.html',
         title: 'Buton cu Stare Dinamică (disabled)',
+        title_en: 'Submit button with dynamic state (disabled)',
         detail: 'În formularul de adăugare task, butonul are data-testid="submit-task-btn" și atributul HTML disabled.',
+        detail_en: 'In task creation form, button has data-testid="submit-task-btn" and native disabled HTML attribute.',
       },
       {
         file: 'style.css',
         title: 'Layout Flexbox pentru navbar',
+        title_en: 'Flexbox layout for navbar',
         detail: 'Stilizare .navbar cu display: flex (și align-items / justify-content) pentru aliniere.',
+        detail_en: '.navbar CSS rule with display: flex for proper alignment.',
       },
       {
         file: 'style.css',
         title: 'Selector pseudo-clasă structural tr:nth-child(3)',
+        title_en: 'Structural pseudo-class selector tr:nth-child(3)',
         detail: 'Regulă CSS dedicată folosind pseudo-clasa :nth-child(3) pe rândurile tabelului.',
+        detail_en: 'CSS rule using :nth-child(3) pseudo-class targeting table rows.',
       },
       {
         file: 'style.css',
         title: 'Stare interactivă :hover pentru butoane',
+        title_en: ':hover interactive state for buttons',
         detail: 'Regulă CSS cu pseudo-clasa :hover definită pentru butoane.',
+        detail_en: 'CSS rule with :hover pseudo-class defined for buttons.',
       },
       {
         file: 'style.css',
         title: 'Stare :disabled pentru butoane',
+        title_en: ':disabled state for buttons',
         detail: 'Regulă CSS cu pseudo-clasa :disabled definită pentru butoanele dezactivate.',
+        detail_en: 'CSS rule with :disabled pseudo-class defined for disabled buttons.',
       },
     ],
   },
   3: {
     businessTask:
       'Construiește prima parte din "creierul" aplicației (logica de bază în JavaScript). Scrie un script care stochează și procesează lista de task-uri, validând datele înainte de a fi afișate pe ecran.',
+    businessTask_en:
+      'Build the first part of the application\'s "brain" (core business logic in JavaScript). Write a script that stores and processes tasks, validating data before displaying it on screen.',
     notes:
       'Vei scrie acest cod fie în fișierul app.js (legat cu <script src="app.js"></script> la finalul <body>), fie direct în tab-ul Console din Chrome DevTools.',
+    notes_en:
+      'Write this code in app.js linked in index.html with <script src="app.js"></script> before the closing </body> tag.',
     criteria: [
       {
         file: 'index.html',
         title: 'Conectare fișier script app.js',
+        title_en: 'Connect app.js script file',
         detail: 'Fișierul app.js este inclus în index.html folosind tag-ul <script src="app.js"></script>.',
+        detail_en: 'Include app.js in index.html using <script src="app.js"></script>.',
       },
       {
         file: 'app.js',
         title: 'Structura Datelor E2E (Arrays & Objects)',
+        title_en: 'Data structure: listaTaskuri array',
         detail: 'Declară o constantă numită listaTaskuri inițializată ca Array cu 2 obiecte ({ id, nume, completat }).',
+        detail_en: 'Declare a constant named listaTaskuri initialized as an array of 2 task objects ({ id, nume, completat }).',
       },
       {
         file: 'app.js',
         title: 'Funcția Săgeată de Validare (Business Logic)',
+        title_en: 'Validation Arrow Function proceseazaTaskNou',
         detail: 'Scrie o Arrow Function numită proceseazaTaskNou primind parametrul taskObj.',
+        detail_en: 'Write arrow function proceseazaTaskNou accepting taskObj as parameter.',
       },
       {
         file: 'app.js',
         title: 'Validare strictă dacă numele lipsește sau e invalid',
+        title_en: 'Strict validation if name is missing or invalid',
         detail: 'Verifică condițional (if/else) dacă numele task-ului lipsește ("") SAU este undefined.',
+        detail_en: 'Check conditionally (if/else) whether task name is empty ("") or undefined.',
       },
       {
         file: 'app.js',
         title: 'Afișare mesaj de eroare în consolă',
+        title_en: 'Console error message for invalid task',
         detail: 'Dacă datele sunt invalide, folosește console.log pentru a afișa: "Eroare: Task-ul trebuie să aibă un nume!".',
+        detail_en: 'Log error message: "Eroare: Task-ul trebuie să aibă un nume!" via console.log.',
       },
       {
         file: 'app.js',
         title: 'Adăugare în Array prin push() și mesaj de succes',
+        title_en: 'Add to collection via push() with success message',
         detail: 'Dacă datele sunt corecte, adaugă în listaTaskuri prin push() și afișează: "Task adăugat cu succes!".',
+        detail_en: 'If valid, push taskObj to listaTaskuri and log "Task adăugat cu succes!".',
       },
       {
         file: 'app.js',
         title: 'Bucla de Raportare (Repetiția)',
+        title_en: 'Reporting loop (for loop)',
         detail: 'Parcurge întregul Array listaTaskuri cu o buclă for și afișează în consolă doar numele fiecărui task.',
+        detail_en: 'Loop through listaTaskuri with a for loop and console.log only the name of each task.',
       },
     ],
   },
   4: {
     businessTask:
       'Interceptează formularul de adăugare și injectează noile task-uri direct ca rânduri noi în tabelul HTML, fiecare venind la pachet cu propriul buton funcțional de ștergere.',
+    businessTask_en:
+      'Connect JavaScript to the DOM! Intercept the submission form and inject new tasks dynamically as table rows in HTML, each with its own functional delete button.',
     notes:
       'Testează de fiecare dată în browser dând refresh la pagina index.html, iar la final validează-ți munca în platformă!',
+    notes_en:
+      'Test in browser by refreshing index.html, then validate your work in the QualiAdept platform!',
     criteria: [
       {
         file: 'index.html',
         title: 'Conectarea fișierului app.js în index.html',
+        title_en: 'Include app.js in index.html',
         detail: 'Asigură-te că fișierul app.js este inclus în index.html folosind tag-ul <script>.',
+        detail_en: 'Ensure app.js is linked in index.html with <script> tag.',
       },
       {
         file: 'app.js',
         title: 'Selectarea Elementelor DOM',
+        title_en: 'Select essential DOM elements',
         detail: 'Folosește document.querySelector(...) sau getElementById(...) pentru formular (#add-task-form), input (#task-name) și tabel (tbody).',
+        detail_en: 'Use querySelector or getElementById for form (#add-task-form), input (#task-name), and table body (tbody).',
       },
       {
         file: 'app.js',
         title: 'Ascultător de Eveniment pe formular',
+        title_en: 'Form submit event listener',
         detail: 'Adaugă un ascultător de eveniment pentru formular folosind addEventListener(\'submit\', ...).',
+        detail_en: 'Attach submit event listener to form using addEventListener(\'submit\', ...).',
       },
       {
         file: 'app.js',
         title: 'Prevenirea Reîncărcării Paginii',
+        title_en: 'Prevent default page reload',
         detail: 'În interiorul ascultătorului, apelează metoda e.preventDefault() pentru a opri reîncărcarea nativă.',
+        detail_en: 'Call e.preventDefault() inside the event handler to stop native form submission.',
       },
       {
         file: 'app.js',
         title: 'Crearea Dinamică a elementului de rând',
+        title_en: 'Dynamic creation of table row (<tr>)',
         detail: 'Extrage textul din input, apoi creează un rând nou folosind document.createElement(\'tr\').',
+        detail_en: 'Extract text from input and create row using document.createElement(\'tr\').',
       },
       {
         file: 'app.js',
         title: 'Structura Rândului și Buton de Ștergere',
+        title_en: 'Row structure with delete button',
         detail: 'Adaugă celulele (<td>), inclusiv butonul de ștergere având obligatoriu clasa "delete-row".',
+        detail_en: 'Add cells (<td>), including delete button required to have class "delete-row".',
       },
       {
         file: 'app.js',
         title: 'Inserarea în DOM',
+        title_en: 'Insert row into table body',
         detail: 'Adaugă noul rând în corpul tabelului folosind metoda .appendChild(...) sau .append(...).',
+        detail_en: 'Append new row into table body using .appendChild(...) or .append(...).',
       },
       {
         file: 'app.js',
         title: 'Curățarea Inputului',
+        title_en: 'Reset input field',
         detail: 'Resetează valoarea câmpului de input la un string gol (input.value = \'\') după salvarea task-ului.',
+        detail_en: 'Clear text input value (input.value = \'\') after saving task.',
       },
       {
         file: 'app.js',
         title: 'Ștergerea Dinamică din DOM',
+        title_en: 'Dynamic removal from DOM on click',
         detail: 'Implementează logica de ștergere la apăsarea butonului folosind metoda .remove() pe rândul părinte (<tr>).',
+        detail_en: 'Implement delete handler calling .remove() on parent <tr> when delete button is clicked.',
       },
     ],
   },
   5: {
     businessTask:
       'La încărcarea paginii, descarcă automat 5 task-uri de la un API public extern și desenează-le pe ecran în containerul listă!',
+    businessTask_en:
+      'Fetch tasks from an external API using asynchronous JavaScript! On page load, automatically download 5 test tasks from a public server and render them dynamically in the interface list.',
     notes:
       'Vei adăuga acest cod în fișierul app.js existent. Endpoint public: https://jsonplaceholder.typicode.com/todos?_limit=5.',
+    notes_en:
+      'Add this code in your existing app.js file. Public endpoint: https://jsonplaceholder.typicode.com/todos?_limit=5.',
     criteria: [
       {
         file: 'index.html',
         title: 'Containerul listă în DOM (#active-tasks-list)',
+        title_en: 'List container in DOM (#active-tasks-list)',
         detail: 'În index.html trebuie să ai un element (ex: <ul> sau <div>) cu id-ul "active-tasks-list".',
+        detail_en: 'index.html must have a container element (e.g. <ul> or <div>) with id="active-tasks-list".',
       },
       {
         file: 'app.js',
         title: 'Crearea funcției asincrone incarcaTaskuriInitiale',
+        title_en: 'Declare async function incarcaTaskuriInitiale',
         detail: 'Declară o Arrow Function asincronă numită const incarcaTaskuriInitiale = async () => { ... }.',
+        detail_en: 'Declare an async arrow function: const incarcaTaskuriInitiale = async () => { ... }.',
       },
       {
         file: 'app.js',
         title: 'Fetch API GET request',
+        title_en: 'Fetch API GET request',
         detail: 'Folosește await fetch(\'https://jsonplaceholder.typicode.com/todos?_limit=5\') pentru cererea HTTP.',
+        detail_en: 'Call await fetch(\'https://jsonplaceholder.typicode.com/todos?_limit=5\') inside the function.',
       },
       {
         file: 'app.js',
         title: 'Conversia răspunsului cu await .json()',
+        title_en: 'Unpack response with await .json()',
         detail: 'Despachetează răspunsul primit folosind await raspuns.json() obținând un Array cu 5 Obiecte.',
+        detail_en: 'Convert HTTP response into an array of 5 objects using await response.json().',
       },
       {
         file: 'app.js',
         title: 'Selectare container din DOM',
+        title_en: 'Select DOM container element',
         detail: 'Găsește lista principală din HTML (#active-tasks-list) pentru populare.',
+        detail_en: 'Select #active-tasks-list in DOM for inserting fetched tasks.',
       },
       {
         file: 'app.js',
         title: 'Iterare prin lista de task-uri',
+        title_en: 'Iterate over fetched tasks',
         detail: 'Folosește o buclă for (sau .forEach()) pentru a parcurge Array-ul primit de la server.',
+        detail_en: 'Use forEach or for..of loop to iterate over the array of 5 tasks.',
       },
       {
         file: 'app.js',
         title: 'Creare dinamică a elementelor <li>',
+        title_en: 'Dynamically create <li> elements',
         detail: 'Pentru fiecare obiect din listă, creează dinamic un element cu document.createElement(\'li\').',
+        detail_en: 'For each task in list, create element using document.createElement(\'li\').',
       },
       {
         file: 'app.js',
         title: 'Setare titlu din proprietatea .title',
+        title_en: 'Set text from .title property',
         detail: 'Setează textul elementului <li> cu proprietatea .title a obiectului JSON primit de pe rețea.',
+        detail_en: 'Set <li> text content using task.title from the JSON object.',
       },
       {
         file: 'app.js',
         title: 'Injectare în listă cu appendChild()',
+        title_en: 'Append elements to list with appendChild()',
         detail: 'Injectează fiecare element <li> în containerul #active-tasks-list folosind appendChild().',
+        detail_en: 'Append each created <li> element into #active-tasks-list.',
       },
       {
         file: 'app.js',
         title: 'Apelarea automată a funcției la pornire',
+        title_en: 'Auto-invoke function on page load',
         detail: 'Scrie incarcaTaskuriInitiale(); la finalul fișierului app.js pentru declanșare imediată.',
+        detail_en: 'Call incarcaTaskuriInitiale(); at bottom of app.js to trigger loading immediately.',
       },
     ],
   },
   6: {
     businessTask:
       'Livrarea Proiectului "Task Tracker" (Capstone): Ești la finalul sprintului de dezvoltare. Asamblează aplicația completă, adaugă funcționalitatea de Marcare ca Finalizat (line-through) și efectuează auditul strict de testabilitate QA pentru pregătirea testelor Playwright!',
+    businessTask_en:
+      'Delivery of the "Task Tracker" Project (Capstone): Assemble the complete application, implement the Mark as Completed feature (line-through), and run the strict QA testability audit to prepare for automated Playwright tests!',
     notes:
       'Asigură-te că toate cele 3 fișiere (index.html, style.css, app.js) sunt active și integrate!',
+    notes_en:
+      'Ensure all 3 files (index.html, style.css, app.js) are active and integrated!',
     criteria: [
       {
         file: 'index.html',
         title: 'Câmpul de text cu data-testid="input-task-name"',
+        title_en: 'Text input with data-testid="input-task-name"',
         detail: 'Câmpul de input pentru task conține atributul data-testid="input-task-name".',
+        detail_en: 'Task name input field must have attribute data-testid="input-task-name".',
       },
       {
         file: 'index.html',
         title: 'Buton salvare dezactivat inițial cu data-testid="submit-task-btn"',
+        title_en: 'Save button initially disabled with data-testid="submit-task-btn"',
         detail: 'Butonul de salvare are data-testid="submit-task-btn" și atributul HTML disabled setat nativ.',
+        detail_en: 'Submit button has data-testid="submit-task-btn" and disabled HTML attribute set natively.',
       },
       {
         file: 'index.html',
         title: 'Mesaj de eroare cu data-testid="error-message"',
+        title_en: 'Error message element with data-testid="error-message"',
         detail: 'Element dedicat mesajelor de eroare având atributul data-testid="error-message".',
+        detail_en: 'Dedicated error message element with data-testid="error-message".',
       },
       {
         file: 'index.html',
         title: 'Containerul listă cu data-testid="task-list"',
+        title_en: 'List container with data-testid="task-list"',
         detail: 'Lista <ul> principală are atributul data-testid="task-list".',
+        detail_en: 'Main <ul> list container has data-testid="task-list".',
       },
       {
         file: 'style.css',
         title: 'Stilizare task finalizat (.completed)',
+        title_en: 'Completed task styling (.completed)',
         detail: 'Regulă CSS .completed { text-decoration: line-through; color: gray; } pentru marcarea vizuală.',
+        detail_en: 'CSS rule .completed { text-decoration: line-through; color: gray; } for visual completion marking.',
       },
       {
         file: 'app.js',
         title: 'Task 1: Integrarea completă a codului (GET inițial)',
+        title_en: 'Task 1: Complete integration (initial GET)',
         detail: 'Aplicația aduce cele 5 task-uri inițiale de la server la încărcare și ascunde spinnerul.',
+        detail_en: 'App fetches initial 5 tasks from server on load and hides loading spinner.',
       },
       {
         file: 'app.js',
         title: 'Task 1: Salvare task nou pe rețea (POST fetch)',
+        title_en: 'Task 1: Save task to network (POST fetch)',
         detail: 'Trimiterea formularului adaugă task-ul printr-o cerere POST către server.',
+        detail_en: 'Form submit sends POST request to server to persist new task.',
       },
       {
         file: 'app.js',
         title: 'Task 2: Marcare ca Finalizat (.completed la click)',
+        title_en: 'Task 2: Mark as Completed (.completed on click)',
         detail: 'La click pe elementul .task-title, activează/dezactivează clasa cu e.target.classList.toggle(\'completed\').',
+        detail_en: 'Clicking on .task-title toggles completed class via e.target.classList.toggle(\'completed\').',
       },
       {
         file: 'app.js',
         title: 'Task 3: Buton de ștergere dinamic cu data-testid="delete-btn-ID"',
+        title_en: 'Task 3: Dynamic delete button with data-testid="delete-btn-ID"',
         detail: 'Fiecare buton de ștergere generat dinamic conține atributul data-testid="delete-btn-ID".',
+        detail_en: 'Each dynamically generated delete button contains data-testid="delete-btn-ID".',
       },
       {
         file: 'app.js',
         title: 'Task 3: Ștergere pe rețea (DELETE fetch) și eliminare din DOM',
+        title_en: 'Task 3: Network deletion (DELETE fetch) and remove from DOM',
         detail: 'La ștergere, trimite cererea DELETE pe rețea și elimină rândul din DOM cu .remove().',
+        detail_en: 'Clicking delete sends DELETE request to server and removes row via .remove().',
       },
       {
         file: 'app.js',
         title: 'Chaos Mode: Pop-up promoțional cu data-testid="close-promo-btn"',
+        title_en: 'Chaos Mode: Promotional pop-up with data-testid="close-promo-btn"',
         detail: 'Pop-up-ul din Chaos Mode conține un buton de închidere cu data-testid="close-promo-btn".',
+        detail_en: 'Chaos mode promotional pop-up has close button with data-testid="close-promo-btn".',
       },
       {
         file: 'app.js',
         title: 'Bonus Senior: Prevenire task-uri duplicate',
+        title_en: 'Senior Bonus: Prevent duplicate tasks',
         detail: 'Blochează trimiterea unui task dacă textul există deja în lista afișată.',
+        detail_en: 'Prevent adding a task if identical text already exists in current task list.',
       },
     ],
   },
 };
 
 export function getAssignmentCurriculumTask(
-  assignment: AssignmentData
+  assignment: AssignmentData,
+  locale: string = 'ro'
 ): {
   businessTask: string;
   notes?: string;
-  criteria: CurriculumCriterion[];
+  criteria: Array<{ file: string; title: string; detail?: string }>;
 } {
+  const isEn = locale === 'en';
   const predefined = CURRICULUM_TASKS[assignment.module];
   if (predefined) {
-    return predefined;
+    return {
+      businessTask: (isEn && predefined.businessTask_en) ? predefined.businessTask_en : predefined.businessTask,
+      notes: (isEn && predefined.notes_en) ? predefined.notes_en : predefined.notes,
+      criteria: predefined.criteria.map((c) => ({
+        file: c.file,
+        title: (isEn && c.title_en) ? c.title_en : c.title,
+        detail: (isEn && c.detail_en) ? c.detail_en : c.detail,
+      })),
+    };
   }
 
   // Fallback: parse assignment.validationRules if available
@@ -460,8 +612,12 @@ export function getAssignmentCurriculumTask(
       if (Array.isArray(rules)) {
         parsedCriteria = rules.map((r: Record<string, string | undefined>) => {
           const file = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : 'index.html');
-          const title = r.name || r.name_en || r.message || r.title || r.selector || 'Assertion Check';
-          const detail = r.message || (r.selector ? `Selector: ${r.selector}` : undefined);
+          const title = (isEn && r.name_en)
+            ? r.name_en
+            : (r.name || r.title || r.message || r.selector || 'Assertion Check');
+          const detail = (isEn && r.message_en)
+            ? r.message_en
+            : (r.message || (r.selector ? `Selector: ${r.selector}` : undefined));
           return { file, title, detail };
         });
       }
@@ -474,8 +630,10 @@ export function getAssignmentCurriculumTask(
     parsedCriteria = [
       {
         file: 'index.html',
-        title: 'Implementare conform cerințelor modulului',
-        detail: 'Scrie codul corespunzător în editor și apasă Submit pentru evaluare automată.',
+        title: isEn ? 'Module implementation requirements' : 'Implementare conform cerințelor modulului',
+        detail: isEn
+          ? 'Write the required code in the editor and click Submit for automated evaluation.'
+          : 'Scrie codul corespunzător în editor și apasă Submit pentru evaluare automată.',
       },
     ];
   }
@@ -485,6 +643,75 @@ export function getAssignmentCurriculumTask(
     criteria: parsedCriteria,
   };
 }
+
+export const getWorkspaceTranslations = (locale: string) => {
+  const isRo = locale === 'ro';
+  return {
+    staticValidation: isRo ? 'Validare Statică' : 'STATIC Validation',
+    dynamicValidation: isRo ? 'Validare Dinamică' : 'DYNAMIC Validation',
+    moduleCompleted: isRo ? 'Modul Finalizat' : 'Module Completed',
+    submissions: isRo ? 'Trimiteri' : 'Submissions',
+    attempts: isRo ? 'Încercări' : 'Attempts',
+    role: isRo ? 'Rol' : 'Role',
+    guest: isRo ? 'Vizitator' : 'Guest',
+    assignmentPassed: isRo ? 'Modul Promovat!' : 'Assignment Passed!',
+    assignmentPassedDesc: isRo
+      ? 'Editorul este blocat pentru a preveni modificările accidentale. Apasă "Editează / Retrimite Codul" pentru a-ți actualiza soluția.'
+      : 'The editor is read-only to prevent accidental overwrites. Click "Edit / Resubmit" to modify your solution.',
+    editResubmit: isRo ? 'Editează / Retrimite Codul' : 'Edit / Resubmit Code',
+    checkFile: (file: string) => (isRo ? `Verifică ${file}` : `Check ${file}`),
+    resetCode: isRo ? 'Resetează Codul' : '{wt.resetCode}',
+    livePreview: isRo ? 'Previzualizare Live' : '{wt.livePreview}',
+    editing: (file: string) => (isRo ? `Editare: ${file}` : `Editing: ${file}`),
+    projectFiles: (count: number) => (isRo ? `${count} fișiere în proiect` : `${count} project files`),
+    lines: (count: number) => (isRo ? `${count} linii` : `${count} lines`),
+    submitProject: isRo ? 'Trimite Proiectul spre Validare' : 'Submit Project for Validation',
+    submitCode: isRo ? 'Trimite Codul' : 'Submit Code',
+    syncToGitHub: isRo ? 'Sincronizează pe GitHub' : 'Sync to GitHub',
+    unlockEditor: isRo ? 'Deblochează Editorul' : 'Unlock Editor',
+    activeFooter: (file: string, count: number) =>
+      isRo ? `Activ: ${file}  Total Fișiere: ${count}` : `Active: ${file}  Total Files: ${count}`,
+    submissionHistory: isRo ? 'Istoric Trimiteri' : '{wt.submissionHistory}',
+    gitHistoryDesc: isRo ? 'Istoricul trimiterilor pentru acest modul' : '{wt.gitHistoryDesc}',
+    noSubmissions: isRo ? 'Nicio trimitere înregistrată încă pentru acest modul.' : '{wt.noSubmissions}',
+    activeCode: isRo ? 'Cod Activ' : 'Active Code',
+    viewCode: isRo ? 'Vizualizează Cod' : 'View Code',
+    greenWallTitle: isRo ? 'Panou Evaluare & Criterii' : 'Green Wall Feedback',
+    domAssertions: isRo ? 'Aserțiuni automate DOM & JS' : 'Automated DOM Assertions',
+    playwrightEngine: isRo ? 'Analiză motor Playwright' : 'Playwright Engine Analysis',
+    tabCriteria: isRo ? 'Cerințe & Ghid' : 'Requirements & Guide',
+    tabResults: isRo ? 'Rezultate Validare' : 'Validation Results',
+    guideHeader: isRo ? 'Ghid de Rezolvare & Criterii de Validare' : 'Implementation Guide & Validation Criteria',
+    guideSubhead: isRo
+      ? 'Implementează cerințele de mai jos, apoi apasă Submit pentru validare automată.'
+      : 'Implement the requirements below, then click Submit for automated validation.',
+    businessTask: isRo ? 'Sarcina ta de Business' : 'Your Business Task',
+    note: isRo ? 'Notă:' : 'Note:',
+    technicalCriteria: isRo ? 'Cerințe Tehnice (Acceptance Criteria)' : 'Technical Acceptance Criteria',
+    requirementsCount: (count: number) => (isRo ? `${count} cerințe` : `${count} requirements`),
+    bottomTip: isRo
+      ? 'Verifică codul fiecărui fișier cu butonul "Check [fișier]" din editor, sau apasă butonul mare de jos când proiectul este gata.'
+      : 'Test individual files using the "Check [file]" button in the editor, or click the bottom submit button when your project is ready.',
+    statusPass: isRo ? 'STATUS: TRECUT' : 'STATUS: PASS',
+    statusFail: isRo ? 'STATUS: PICAT' : 'STATUS: FAIL',
+    allChecksPassed: isRo ? 'Toate Aserțiunile au Trecut!' : '{wt.allChecksPassed}',
+    validationFailed: isRo ? 'Validare Eșuată' : '{wt.validationFailed}',
+    score: isRo ? 'Scor' : 'Score',
+    modulePassedCongrats: isRo ? '🎉 Modul Promovat!' : '{wt.modulePassedCongrats}',
+    modulePassedDesc: isRo
+      ? 'Următorul modul din programă este acum deblocat în Dashboard.'
+      : '{wt.modulePassedDesc}',
+    dashboardBtn: isRo ? 'Către {wt.dashboardBtn}' : 'Dashboard →',
+    assertionResults: isRo ? 'REZULTATE ASERȚIUNI' : 'ASSERTION RESULTS',
+    evaluatedAcross: (count: number) =>
+      isRo ? `Evaluate pe ${count} ${count === 1 ? 'fișier' : 'fișiere'}` : `Evaluated across ${count} ${count === 1 ? 'file' : 'files'}`,
+    noResultsYetTitle: isRo ? 'Niciun rezultat încă' : 'No validation results yet',
+    noResultsYetDesc: isRo
+      ? 'Scrie codul în editorul din stânga și apasă "Trimite Proiectul spre Validare" pentru a rula testele.'
+      : 'Write code in the left editor and click "Submit Project for Validation" to run tests.',
+    switchToCriteriaBtn: isRo ? 'Vezi Cerințele Modulului →' : 'View Module Requirements →',
+  };
+};
 
 // ==========================================
 // 1. STARTER TEMPLATES (Challenge Scaffolds)
@@ -1397,6 +1624,10 @@ export default function AssignmentWorkspace({
   const tSync = useTranslations('GitHubSync');
   const [cooldown, setCooldown] = useState<number>(0);
   const [validationResult, setValidationResult] = useState<ValidationResponse | null>(null);
+  const wt = getWorkspaceTranslations(locale);
+  const [activeRightTab, setActiveRightTab] = useState<'criteria' | 'results'>(
+    mostRecent?.feedbackJSON ? 'results' : 'criteria'
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(mostRecent?.id || null);
 
@@ -1540,6 +1771,7 @@ export default function AssignmentWorkspace({
       try {
         const parsed: ValidationResponse = JSON.parse(mostRecent.feedbackJSON);
         setValidationResult(parsed);
+        setActiveRightTab('results');
       } catch {
         // Fallback if parsing fails
       }
@@ -1611,6 +1843,8 @@ export default function AssignmentWorkspace({
 
       const result: ValidationResponse = await res.json();
       setValidationResult(result);
+      setActiveRightTab('results');
+      setActiveRightTab('results');
 
       // Prepend newly created submission record to history state
       const newRecord: SubmissionRecord = {
@@ -2193,7 +2427,7 @@ export default function AssignmentWorkspace({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>Submit Project for Validation</span>
+                          <span>{wt.submitProject}</span>
                         </>
                       )}
                     </button>
@@ -2418,19 +2652,18 @@ export default function AssignmentWorkspace({
             </div>
           </div>
 
-          {/* Right Column: "Green Wall" Feedback UI (5 cols) */}
+          {/* Right Column: Feedback & Requirements UI (5 cols) */}
           <div className="lg:col-span-5 flex flex-col gap-4">
             <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 sm:p-6 shadow-xl flex flex-col gap-5 min-h-[500px]">
+              {/* Header */}
               <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
                 <div>
                   <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-                    Green Wall Feedback
+                    {wt.greenWallTitle}
                   </h2>
                   <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                    {assignment.validationType === 'DYNAMIC'
-                      ? 'Playwright Engine Analysis'
-                      : 'Automated DOM Assertions'}
+                    {assignment.validationType === 'DYNAMIC' ? wt.playwrightEngine : wt.domAssertions}
                   </p>
                 </div>
                 {validationResult && (
@@ -2440,9 +2673,44 @@ export default function AssignmentWorkspace({
                 )}
               </div>
 
-              {/* State 1: Awaiting Submission (Dynamic Checklist & Business Task) */}
-              {!validationResult && !isValidating && (() => {
-                const curriculumInfo = getAssignmentCurriculumTask(assignment);
+              {/* Tab Navigation: [ 📋 Cerințe & Ghid ] | [ ✓ Rezultate Validare ] */}
+              <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveRightTab('criteria')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeRightTab === 'criteria'
+                      ? 'bg-zinc-800 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 border border-transparent'
+                  }`}
+                >
+                  <span>📋</span>
+                  <span>{wt.tabCriteria}</span>
+                </button>
+
+                {validationResult && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveRightTab('results')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeRightTab === 'results'
+                        ? validationResult.status === 'pass'
+                          ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                          : 'bg-rose-950/60 text-rose-300 border border-rose-500/50 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 border border-transparent'
+                    }`}
+                  >
+                    <span>{validationResult.status === 'pass' ? '✓' : '✕'}</span>
+                    <span>
+                      {wt.tabResults} ({validationResult.score}%)
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              {/* View 1: Cerințe & Ghid (Always accessible!) */}
+              {!isValidating && !isValidatingFile && activeRightTab === 'criteria' && (() => {
+                const curriculumInfo = getAssignmentCurriculumTask(assignment, locale);
                 const grouped = curriculumInfo.criteria.reduce((acc, item) => {
                   if (!acc[item.file]) acc[item.file] = [];
                   acc[item.file].push(item);
@@ -2459,9 +2727,9 @@ export default function AssignmentWorkspace({
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-zinc-200">Ghid de Rezolvare & Criterii de Validare</h3>
+                        <h3 className="text-sm font-semibold text-zinc-200">{wt.guideHeader}</h3>
                         <p className="text-[11px] text-zinc-400 font-mono">
-                          Implementează cerințele de mai jos, apoi apasă <span className="text-emerald-400 font-semibold">Submit</span> pentru validare automată.
+                          {wt.guideSubhead}
                         </p>
                       </div>
                     </div>
@@ -2470,14 +2738,14 @@ export default function AssignmentWorkspace({
                     <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-lg">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider mb-1.5">
                         <span>🎯</span>
-                        <span>Sarcina ta de Business</span>
+                        <span>{wt.businessTask}</span>
                       </div>
                       <p className="text-xs text-zinc-300 leading-relaxed">
                         {curriculumInfo.businessTask}
                       </p>
                       {curriculumInfo.notes && (
                         <div className="mt-2 pt-2 border-t border-zinc-800/80 text-[11px] text-zinc-400 leading-relaxed">
-                          <span className="text-amber-400 font-semibold font-mono">💡 Notă: </span>
+                          <span className="text-amber-400 font-semibold font-mono">💡 {wt.note} </span>
                           {curriculumInfo.notes}
                         </div>
                       )}
@@ -2488,10 +2756,10 @@ export default function AssignmentWorkspace({
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
                           <span>📋</span>
-                          <span>Cerințe Tehnice (Acceptance Criteria)</span>
+                          <span>{wt.technicalCriteria}</span>
                         </span>
                         <span className="text-[11px] font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
-                          {curriculumInfo.criteria.length} cerințe
+                          {wt.requirementsCount(curriculumInfo.criteria.length)}
                         </span>
                       </div>
 
@@ -2500,7 +2768,7 @@ export default function AssignmentWorkspace({
                           <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800 text-xs font-mono font-bold text-zinc-300">
                             <span>{file.endsWith('.css') ? '🎨' : file.endsWith('.js') ? '📜' : '🌐'}</span>
                             <span className="text-zinc-100">{file}</span>
-                            <span className="text-[10px] text-zinc-400 font-normal">({items.length} cerințe)</span>
+                            <span className="text-[10px] text-zinc-400 font-normal">({wt.requirementsCount(items.length)})</span>
                           </div>
                           <ul className="space-y-2 text-xs">
                             {items.map((criterion, idx) => (
@@ -2522,9 +2790,7 @@ export default function AssignmentWorkspace({
                     {/* Bottom Helper Hint */}
                     <div className="text-[11px] text-zinc-400 font-mono bg-zinc-900/40 p-2.5 rounded border border-zinc-800/60 flex items-center gap-2 mt-auto">
                       <span>⚡</span>
-                      <span>
-                        Verifică codul fiecărui fișier cu butonul <strong className="text-zinc-300">&quot;Check [fișier]&quot;</strong> din editor, sau apasă butonul mare verde de jos când proiectul este gata.
-                      </span>
+                      <span>{wt.bottomTip}</span>
                     </div>
                   </div>
                 );
@@ -2551,7 +2817,7 @@ export default function AssignmentWorkspace({
               )}
 
               {/* State 3: Rendered Results ("Green Wall") */}
-              {validationResult && !isValidating && !isValidatingFile && (
+              {activeRightTab === 'results' && validationResult && !isValidating && !isValidatingFile && (
                 <div className="flex flex-col gap-5">
                   {/* Overall Status Banner */}
                   <div
@@ -2687,7 +2953,7 @@ export default function AssignmentWorkspace({
                               <svg className="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 24 24">
                                 <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                               </svg>
-                              <span>🐙 Sync to GitHub</span>
+                              <span>🐙 {wt.syncToGitHub}</span>
                             </>
                           )}
                         </button>
