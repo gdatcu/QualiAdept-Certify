@@ -78,6 +78,13 @@ export function getModuleFiles(moduleNum: number, validationType: string): Proje
       { name: 'style.css', language: 'css', icon: '🎨' },
     ];
   }
+  if (moduleNum === 7) {
+    return [
+      { name: 'index.html', language: 'html', icon: '🌐' },
+      { name: 'style.css', language: 'css', icon: '🎨' },
+      { name: 'app.ts', language: 'typescript', icon: '🔷' },
+    ];
+  }
   return [
     { name: 'index.html', language: 'html', icon: '🌐' },
     { name: 'style.css', language: 'css', icon: '🎨' },
@@ -577,6 +584,95 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
         title_en: 'Senior Bonus: Prevent duplicate tasks',
         detail: 'Blochează trimiterea unui task dacă textul există deja în lista afișată.',
         detail_en: 'Prevent adding a task if identical text already exists in current task list.',
+      },
+    ],
+  },
+  7: {
+    businessTask:
+      'Refactorizarea aplicației "Task Tracker" prin adăugarea primului strat de tipizare statică TypeScript. Înaintea începerii scrierii testelor automate de Playwright din Sesiunea 9, Lead Architect-ul și echipa de QA au decis migrarea codebase-ului către TypeScript pentru a garanta stabilitatea Enterprise. Sarcina ta este să transformi scriptul de logică într-un modul TypeScript securizat (app.ts), introducând tipuri explicite pentru toate datele manipulate și respectând politica Zero Any.',
+    businessTask_en:
+      'Refactor the "Task Tracker" application with static TypeScript typing. Before writing automated Playwright tests in Session 9, the Lead Architect and QA team decided to migrate the codebase to TypeScript for Enterprise stability. Your task is to turn the script into a secured TypeScript module (app.ts), introducing explicit types for all data and enforcing the Zero Any policy.',
+    notes:
+      'Vei scrie codul în fișierul app.ts (care preia și extinde logica din fostul app.js). În index.html, acesta va fi conectat prin <script src="app.ts"></script> (platforma compilează automat TypeScript pentru execuția Live Preview!).',
+    notes_en:
+      'You will write the code in app.ts (which extends the previous app.js logic). In index.html, link it via <script src="app.ts"></script> (the platform automatically transpiles TypeScript for Live Preview!).',
+    criteria: [
+      {
+        file: 'index.html',
+        title: 'Conectare script app.ts',
+        title_en: 'Connect script app.ts',
+        detail: 'Fișierul app.ts este conectat în index.html prin <script src="app.ts"></script>.',
+        detail_en: 'File app.ts is linked in index.html via <script src="app.ts"></script>.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Tipizare primitivă apiUrl: string',
+        title_en: 'Primitive typing apiUrl: string',
+        detail: 'Variabila apiUrl conține adnotarea explicită : string.',
+        detail_en: 'Variable apiUrl includes explicit : string annotation.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Tipizare primitivă maxTasksLimit: number',
+        title_en: 'Primitive typing maxTasksLimit: number',
+        detail: 'Variabila maxTasksLimit conține adnotarea explicită : number.',
+        detail_en: 'Variable maxTasksLimit includes explicit : number annotation.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Tipizare primitivă isAppReady: boolean',
+        title_en: 'Primitive typing isAppReady: boolean',
+        detail: 'Variabila isAppReady conține adnotarea explicită : boolean.',
+        detail_en: 'Variable isAppReady includes explicit : boolean annotation.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Union Type TaskStatus',
+        title_en: 'Union Type TaskStatus',
+        detail: 'Type Alias TaskStatus acceptă strict \'todo\' | \'in-progress\' | \'completed\'.',
+        detail_en: 'Type Alias TaskStatus strictly allows \'todo\' | \'in-progress\' | \'completed\'.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Model de date tipizat TaskItem',
+        title_en: 'Typed data model TaskItem',
+        detail: 'Type Alias TaskItem descrie proprietățile id, title, status, completed și opțional priority?.',
+        detail_en: 'Type Alias TaskItem specifies id, title, status, completed and optional priority?.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Colecție tipizată listaTaskuri: TaskItem[]',
+        title_en: 'Typed collection listaTaskuri: TaskItem[]',
+        detail: 'Array-ul principal listaTaskuri este declarat explicit ca TaskItem[] (sau Array<TaskItem>).',
+        detail_en: 'Main array listaTaskuri is explicitly declared as TaskItem[] (or Array<TaskItem>).',
+      },
+      {
+        file: 'app.ts',
+        title: 'Semnătură funcție proceseazaTaskNou',
+        title_en: 'Function signature proceseazaTaskNou',
+        detail: 'Funcția proceseazaTaskNou primește (taskObj: TaskItem) și returnează explicit : boolean.',
+        detail_en: 'Function proceseazaTaskNou accepts (taskObj: TaskItem) and returns explicit : boolean.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Semnătură funcție afiseazaTask',
+        title_en: 'Function signature afiseazaTask',
+        detail: 'Funcția afiseazaTask primește (id: number) și returnează explicit : void.',
+        detail_en: 'Function afiseazaTask accepts (id: number) and returns explicit : void.',
+      },
+      {
+        file: 'app.ts',
+        title: 'Funcție asincronă & Type Assertion',
+        title_en: 'Async function & Type Assertion',
+        detail: 'Funcția asincronă returnează : Promise<void> și asertează răspunsul cu as TaskItem[].',
+        detail_en: 'Async function returns : Promise<void> and asserts server data with as TaskItem[].',
+      },
+      {
+        file: 'app.ts',
+        title: 'Zero Any Policy (fără tipul any)',
+        title_en: 'Zero Any Policy (no any type)',
+        detail: 'Regulă strictă QA: Este strict interzisă utilizarea lui any. Toate aparițiile lui any vor fi penalizate.',
+        detail_en: 'Strict QA rule: any type is forbidden. Any occurrence of any will fail validation.',
       },
     ],
   },
@@ -1339,6 +1435,64 @@ const initChaosMode = () => {
 initChaosMode();
 `;
 
+const STARTER_TS_S7 = `/**
+ * ==============================================================
+ * Sesiunea 7: Trecerea la TypeScript (Task Tracker Refactoring)
+ * ==============================================================
+ * Obiectiv: Migrează scriptul aplicației din JavaScript în TypeScript.
+ * Adaugă adnotări de tipuri explicite, elimină orice apariție a lui 'any'
+ * și securizează modelele de date înainte de testele automate Playwright!
+ */
+
+// 1. Tipizarea Primitivelor & Variabilelor de Configurare
+// Cerință: Declară explicit tipurile: apiUrl: string, maxTasksLimit: number, isAppReady: boolean
+const apiUrl: string = 'https://jsonplaceholder.typicode.com/todos';
+const maxTasksLimit: number = 5;
+let isAppReady: boolean = false;
+
+// 2. Tipul de Uniune (Union Type) pentru Statusul Task-ului
+// Cerință: Definește un Type Alias numit TaskStatus ('todo' | 'in-progress' | 'completed')
+// TODO: Definește type TaskStatus
+
+
+// 3. Modelul de Date Tipizat (Type Alias TaskItem)
+// Cerință: id: number, title: string, status: TaskStatus, completed: boolean, priority?: 'low' | 'medium' | 'high'
+// TODO: Definește type TaskItem
+
+
+// Declară array-ul principal tipizat explicit ca TaskItem[] (sau Array<TaskItem>)
+// let listaTaskuri: TaskItem[] = [];
+
+
+// 4. Semnăturile Funcțiilor & Eliminarea lui any (Zero Any Policy)
+// Cerință: proceseazaTaskNou primește (taskObj: TaskItem) și returnează explicit : boolean
+// TODO: Implementează proceseazaTaskNou
+
+
+// Cerință: afiseazaTask primește (id: number) și returnează explicit : void
+// TODO: Implementează afiseazaTask
+
+
+// 5. Funcție Asincronă Tipizată (Fetch API & Promise)
+// Cerință: async (): Promise<void> și asertare date primite cu as TaskItem[]
+// const incarcaTaskuriInitiale = async (): Promise<void> => {
+//   ...
+// };
+`;
+
+export function transpileTsForPreview(code: string): string {
+  if (!code) return '';
+  let clean = code;
+  clean = clean.replace(/^\s*(import|export)\s+.*?;?\s*$/gm, '');
+  clean = clean.replace(/type\s+[A-Za-z0-9_]+\s*=\s*\{[\s\S]*?\};?/g, '');
+  clean = clean.replace(/type\s+[A-Za-z0-9_]+\s*=\s*[^;]+;/g, '');
+  clean = clean.replace(/interface\s+[A-Za-z0-9_]+[\s\S]*?\}/g, '');
+  clean = clean.replace(/\s+as\s+[A-Za-z0-9_<>[\]]+/g, '');
+  clean = clean.replace(/\)\s*:\s*[A-Za-z0-9_<>[\]| &]+\s*(=>|\{)/g, ') $1');
+  clean = clean.replace(/:\s*(?:string|number|boolean|void|any|unknown|never|symbol|bigint|object|[A-Z][A-Za-z0-9_<>]*)(?:\[\])?\s*(?=[=,\)\n;]|$)/g, ' ');
+  return clean;
+}
+
 const STARTER_PLAYWRIGHT = `import { test, expect } from '@playwright/test';
 
 test('QualiAdept Task Tracker E2E Test', async ({ page }) => {
@@ -1388,6 +1542,8 @@ export function parseInitialFiles(
             : moduleNum === 5
               ? STARTER_JS_S5
               : STARTER_JS_S6;
+    } else if (f.name === 'app.ts') {
+      initial['app.ts'] = STARTER_TS_S7;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }
@@ -1434,6 +1590,13 @@ export function parseInitialFiles(
               inheritedHtml = inheritedHtml.replace('id="active-tasks-list"', 'id="task-list"');
             }
           }
+          if (moduleNum === 7) {
+            if (inheritedHtml.includes('<script src="app.js"></script>')) {
+              inheritedHtml = inheritedHtml.replace('<script src="app.js"></script>', '<script src="app.ts"></script>');
+            } else if (!inheritedHtml.includes('app.ts') && inheritedHtml.includes('</body>')) {
+              inheritedHtml = inheritedHtml.replace('</body>', '  <script src="app.ts"></script>\n</body>');
+            }
+          }
           initial['index.html'] = inheritedHtml;
         }
 
@@ -1459,6 +1622,14 @@ export function parseInitialFiles(
             initial['app.js'] = `${prevJs.trim()}\n\n${STARTER_JS_S4}`;
           } else {
             initial['app.js'] = prevJs;
+          }
+        }
+
+        if (moduleNum === 7) {
+          if (parsedPrev.files['app.ts'] && parsedPrev.files['app.ts'].trim().length > 0) {
+            initial['app.ts'] = parsedPrev.files['app.ts'];
+          } else {
+            initial['app.ts'] = STARTER_TS_S7;
           }
         }
       }
@@ -2014,6 +2185,10 @@ export default function AssignmentWorkspace({
   const activeCode = files[activeFile] || '';
 
   // Generate complete HTML document for Live Preview sandbox
+  const previewScript = files['app.ts']
+    ? transpileTsForPreview(files['app.ts'])
+    : (files['app.js'] || '');
+
   const livePreviewHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -2032,7 +2207,7 @@ export default function AssignmentWorkspace({
       .replace(/<\/body>/i, '')}
   <script>
     try {
-      ${files['app.js'] || ''}
+      ${previewScript}
     } catch (err) {
       console.error('QualiAdept sandbox runtime error:', err);
     }

@@ -4,6 +4,7 @@ import {
   parseInitialFiles,
   getAssignmentCurriculumTask,
   CURRICULUM_TASKS,
+  transpileTsForPreview,
 } from '@/app/[locale]/assignment/[id]/AssignmentWorkspace';
 
 describe('Workspace Multi-File Configuration Tests', () => {
@@ -33,6 +34,13 @@ describe('Workspace Multi-File Configuration Tests', () => {
     expect(files).toHaveLength(3);
     expect(files.map((f) => f.name)).toEqual(['index.html', 'style.css', 'app.js']);
     expect(files.find((f) => f.name === 'app.js')?.language).toBe('javascript');
+  });
+
+  it('returns HTML, CSS, and TS (app.ts) files for Module 7 TypeScript Basics', () => {
+    const files = getModuleFiles(7, 'STATIC');
+    expect(files).toHaveLength(3);
+    expect(files.map((f) => f.name)).toEqual(['index.html', 'style.css', 'app.ts']);
+    expect(files.find((f) => f.name === 'app.ts')?.language).toBe('typescript');
   });
 
   it('returns e2e.spec.ts for DYNAMIC validation modules', () => {
@@ -318,6 +326,50 @@ describe('Workspace Multi-File Configuration Tests', () => {
       expect(task.criteria[0].file).toBe('custom.ts');
       expect(task.criteria[0].title).toBe('Custom rule check');
       expect(task.criteria[0].detail).toBe('Expected custom logic');
+    });
+
+    it('returns exact Business Task and 11 acceptance criteria for Module 7 TypeScript', () => {
+      const task = getAssignmentCurriculumTask({
+        id: 'mod7',
+        title: 'Session 7',
+        description: 'Default desc',
+        module: 7,
+        validationType: 'STATIC',
+      });
+
+      expect(task.businessTask).toContain('TypeScript');
+      expect(task.criteria).toHaveLength(11);
+      const tsCriteria = task.criteria.filter((c) => c.file === 'app.ts');
+      const htmlCriteria = task.criteria.filter((c) => c.file === 'index.html');
+      expect(tsCriteria).toHaveLength(10);
+      expect(htmlCriteria).toHaveLength(1);
+      expect(task.criteria.some((c) => c.title.includes('Zero Any Policy'))).toBe(true);
+      expect(task.criteria.some((c) => c.title.includes('TaskStatus'))).toBe(true);
+      expect(task.criteria.some((c) => c.title.includes('TaskItem'))).toBe(true);
+    });
+  });
+
+  describe('TypeScript Preview Transpiler', () => {
+    it('strips TypeScript type annotations cleanly for preview iframe execution', () => {
+      const tsCode = `
+const apiUrl: string = 'https://jsonplaceholder.typicode.com/todos';
+const maxTasksLimit: number = 5;
+type TaskStatus = 'todo' | 'in-progress' | 'completed';
+type TaskItem = { id: number; title: string; };
+let listaTaskuri: TaskItem[] = [];
+const afiseazaTask = (id: number): void => {
+  console.log('Task ' + id);
+};
+`;
+      const transpiled = transpileTsForPreview(tsCode);
+      expect(transpiled).not.toContain(': string');
+      expect(transpiled).not.toContain(': number');
+      expect(transpiled).not.toContain(': void');
+      expect(transpiled).not.toContain('TaskItem[]');
+      expect(transpiled).not.toContain('type TaskStatus');
+      expect(transpiled).not.toContain('type TaskItem');
+      expect(transpiled).toContain('apiUrl =');
+      expect(transpiled).toContain('listaTaskuri = [];');
     });
   });
 });

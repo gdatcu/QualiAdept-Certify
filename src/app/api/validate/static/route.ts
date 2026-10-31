@@ -29,6 +29,7 @@ export function parseSubmissionFiles(body: any): {
   htmlCode: string;
   cssCode: string;
   jsCode: string;
+  tsCode: string;
 } {
   let files: Record<string, string> = {};
   let rawPayload = '';
@@ -73,8 +74,9 @@ export function parseSubmissionFiles(body: any): {
     '';
   const cssCode = files['style.css'] || files['styles.css'] || files['index.css'] || '';
   const jsCode = files['app.js'] || files['script.js'] || files['index.js'] || '';
+  const tsCode = files['app.ts'] || files['index.ts'] || files['main.ts'] || '';
 
-  return { rawPayload, files, htmlCode, cssCode, jsCode };
+  return { rawPayload, files, htmlCode, cssCode, jsCode, tsCode };
 }
 
 export function stripCodeComments(code: string, fileName?: string): string {
@@ -103,7 +105,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { rawPayload, files, htmlCode, cssCode, jsCode } = parseSubmissionFiles(body);
+    const { rawPayload, files, htmlCode, cssCode, jsCode, tsCode } = parseSubmissionFiles(body);
     const locale = (body.locale || req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || 'ro').toLowerCase();
     const isEn = locale === 'en';
 
@@ -240,14 +242,14 @@ export async function POST(req: NextRequest) {
               : r.message;
 
             // Target file code resolution
-            const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : 'index.html');
+            const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'ts' ? 'app.ts' : r.target === 'js' ? 'app.js' : 'index.html');
 
             if (targetFileFilter && targetFileName !== targetFileFilter) {
               continue;
             }
 
             const targetCode = targetFileName
-              ? (files[targetFileName] || (targetFileName === 'style.css' ? cssCode : targetFileName === 'app.js' ? jsCode : ''))
+              ? (files[targetFileName] || (targetFileName === 'style.css' ? cssCode : targetFileName === 'app.ts' ? tsCode : targetFileName === 'app.js' ? jsCode : ''))
               : htmlCode;
 
             if (checkType === 'regex' || r.type === 'regex') {
@@ -265,6 +267,17 @@ export async function POST(req: NextRequest) {
               msg = passed
                 ? passMsg
                 : (failMsg || (isEn ? `Code does not match required structure.` : `Codul nu respectă cerința necesară.`));
+            } else if (checkType === 'regexInverted' || checkType === 'notRegex') {
+              const pattern = r.pattern || r.value || '';
+              const regex = new RegExp(pattern, 'i');
+              const cleanTargetCode = stripCodeComments(targetCode, targetFileName);
+
+              // Inverted check: passes if the prohibited pattern is NOT found
+              passed = !regex.test(cleanTargetCode);
+              checkName = checkName || r.check || (isEn ? `Negative pattern check` : `Verificare excludere tipuri`);
+              msg = passed
+                ? passMsg
+                : (failMsg || (isEn ? `Prohibited pattern detected in code.` : `Codul conține elemente interzise.`));
             } else if (checkType === 'hasClass') {
               const expectedClass = r.expected || r.value;
               const matches = $(selector);
