@@ -1487,7 +1487,7 @@ export function transpileTsForPreview(code: string): string {
   clean = clean.replace(/type\s+[A-Za-z0-9_]+\s*=\s*\{[\s\S]*?\};?/g, '');
   clean = clean.replace(/type\s+[A-Za-z0-9_]+\s*=\s*[^;]+;/g, '');
   clean = clean.replace(/interface\s+[A-Za-z0-9_]+[\s\S]*?\}/g, '');
-  clean = clean.replace(/\s+as\s+[A-Za-z0-9_<>[\]]+/g, '');
+  clean = clean.replace(/\s+as\s+[A-Za-z0-9_<>[\]| &]+(?=[;,\)\n=]|$)|\bas\b\s+[^;,\)\n]+/g, '');
   clean = clean.replace(/\)\s*:\s*[A-Za-z0-9_<>[\]| &]+\s*(=>|\{)/g, ') $1');
   clean = clean.replace(/:\s*(?:string|number|boolean|void|any|unknown|never|symbol|bigint|object|[A-Z][A-Za-z0-9_<>]*)(?:\[\])?\s*(?=[=,\)\n;]|$)/g, ' ');
   return clean;
@@ -2205,6 +2205,15 @@ export default function AssignmentWorkspace({
     ? transpileTsForPreview(files['app.ts'])
     : (files['app.js'] || '');
 
+  const cleanedHtml = (files['index.html'] || files['sandbox.html'] || '')
+    .replace(/<!DOCTYPE.*?>/i, '')
+    .replace(/<html.*?>/i, '')
+    .replace(/<\/html>/i, '')
+    .replace(/<head[\s\S]*?<\/head>/i, '')
+    .replace(/<body.*?>/i, '')
+    .replace(/<\/body>/i, '')
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
   const livePreviewHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -2214,13 +2223,7 @@ export default function AssignmentWorkspace({
   </style>
 </head>
 <body>
-  ${(files['index.html'] || files['sandbox.html'] || '')
-      .replace(/<!DOCTYPE.*?>/i, '')
-      .replace(/<html.*?>/i, '')
-      .replace(/<\/html>/i, '')
-      .replace(/<head[\s\S]*?<\/head>/i, '')
-      .replace(/<body.*?>/i, '')
-      .replace(/<\/body>/i, '')}
+  ${cleanedHtml}
   <script>
     try {
       ${previewScript}

@@ -357,6 +357,7 @@ const maxTasksLimit: number = 5;
 type TaskStatus = 'todo' | 'in-progress' | 'completed';
 type TaskItem = { id: number; title: string; };
 let listaTaskuri: TaskItem[] = [];
+const form = document.querySelector('#form') as HTMLFormElement | null;
 const afiseazaTask = (id: number): void => {
   console.log('Task ' + id);
 };
@@ -368,8 +369,11 @@ const afiseazaTask = (id: number): void => {
       expect(transpiled).not.toContain('TaskItem[]');
       expect(transpiled).not.toContain('type TaskStatus');
       expect(transpiled).not.toContain('type TaskItem');
+      expect(transpiled).not.toContain('| null');
+      expect(transpiled).not.toContain('as HTMLFormElement');
       expect(transpiled).toContain('apiUrl =');
       expect(transpiled).toContain('listaTaskuri = [];');
+      expect(transpiled).toContain("const form = document.querySelector('#form');");
     });
   });
 });
