@@ -473,5 +473,116 @@ describe('Module 7 (TypeScript Transition) - API Validation Suite', () => {
     expect(data.feedback[1].check).toBe('[app.ts] Primitive type apiUrl: string');
     expect(data.feedback[10].check).toBe('[app.ts] Zero Any Policy (no any type)');
   });
+
+  it('TC-09: Complete DOM-interactive TypeScript code passes all 11 criteria with 100% score', async () => {
+    const fullDomAppTs = `
+      const apiUrl: string = 'https://jsonplaceholder.typicode.com/todos';
+      const maxTasksLimit: number = 5;
+      let isAppReady: boolean = false;
+
+      type TaskStatus = 'todo' | 'in-progress' | 'completed';
+
+      type TaskItem = {
+          id: number;
+          title: string;
+          status: TaskStatus;
+          completed: boolean;
+          priority?: 'low' | 'medium' | 'high';
+      };
+
+      let listaTaskuri: TaskItem[] = [];
+
+      const form = document.querySelector('#add-task-form') as HTMLFormElement | null;
+      const inputNode = document.querySelector('#task-name') as HTMLInputElement | null;
+      const submitBtn = document.querySelector('#submit-task-btn') as HTMLButtonElement | null;
+      const taskList = document.querySelector('#task-list') as HTMLUListElement | null;
+      const spinner = document.querySelector('#loading-spinner') as HTMLElement | null;
+
+      if (inputNode && submitBtn) {
+          inputNode.addEventListener('input', () => {
+              if (inputNode.value.trim().length > 0) {
+                  submitBtn.removeAttribute('disabled');
+              } else {
+                  submitBtn.setAttribute('disabled', 'true');
+              }
+          });
+      }
+
+      const deseneazaTaskInDOM = (task: TaskItem): void => {
+          if (!taskList) return;
+          const li = document.createElement('li');
+          li.className = 'task-item';
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = task.title;
+          const deleteBtn = document.createElement('button');
+          deleteBtn.setAttribute('data-testid', \`delete-btn-\${task.id}\`);
+          deleteBtn.textContent = 'Șterge';
+          li.appendChild(titleSpan);
+          li.appendChild(deleteBtn);
+          taskList.appendChild(li);
+      };
+
+      const proceseazaTaskNou = (taskObj: TaskItem): boolean => {
+          if (!taskObj.title) return false;
+          listaTaskuri.push(taskObj);
+          deseneazaTaskInDOM(taskObj);
+          return true;
+      };
+
+      const afiseazaTask = (id: number): void => {
+          const taskGasit = listaTaskuri.find(task => task.id === id);
+          if (taskGasit) console.log(taskGasit.title);
+      };
+
+      if (form && inputNode && submitBtn) {
+          form.addEventListener('submit', (e: Event) => {
+              e.preventDefault();
+              proceseazaTaskNou({
+                  id: Date.now(),
+                  title: inputNode.value.trim(),
+                  status: 'todo',
+                  completed: false,
+                  priority: 'medium'
+              });
+              inputNode.value = '';
+              submitBtn.setAttribute('disabled', 'true');
+          });
+      }
+
+      const incarcaTaskuriInitiale = async (): Promise<void> => {
+          try {
+              const res = await fetch(\`\${apiUrl}?_limit=\${maxTasksLimit}\`);
+              const dateServer = await res.json() as TaskItem[];
+              listaTaskuri = dateServer;
+              isAppReady = true;
+              if (spinner) spinner.style.display = 'none';
+              listaTaskuri.forEach(t => deseneazaTaskInDOM(t));
+          } catch (e) {
+              console.error(e);
+          }
+      };
+
+      incarcaTaskuriInitiale();
+    `;
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: '00000000-0000-0000-0000-000000000007',
+        files: {
+          'index.html': validIndexHtml,
+          'app.ts': fullDomAppTs,
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    expect(data.feedback).toHaveLength(11);
+    expect(data.feedback.every((f: any) => f.passed === true)).toBe(true);
+  });
 });
 

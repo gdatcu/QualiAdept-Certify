@@ -1686,7 +1686,15 @@ export function parseInitialFiles(
         ) {
           merged['app.js'] = initial['app.js'];
         }
-        return merged;
+        // Ensure only files belonging to the current module are preserved (prevents legacy app.js leaking into module 7)
+        const allowedFileNames = new Set(defaultFiles.map((f) => f.name));
+        const filteredMerged: Record<string, string> = {};
+        for (const [k, v] of Object.entries(merged)) {
+          if (allowedFileNames.has(k)) {
+            filteredMerged[k] = typeof v === 'string' ? v : String(v);
+          }
+        }
+        return filteredMerged;
       }
     } catch {
       // Raw string source (legacy single file)
@@ -1704,7 +1712,15 @@ export function parseInitialFiles(
     }
   }
 
-  return initial;
+  // Ensure only files belonging to the current module are preserved
+  const allowedFileNames = new Set(defaultFiles.map((f) => f.name));
+  const filteredInitial: Record<string, string> = {};
+  for (const [k, v] of Object.entries(initial)) {
+    if (allowedFileNames.has(k)) {
+      filteredInitial[k] = typeof v === 'string' ? v : String(v);
+    }
+  }
+  return filteredInitial;
 }
 
 export default function AssignmentWorkspace({
