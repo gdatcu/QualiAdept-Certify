@@ -1446,9 +1446,9 @@ const STARTER_TS_S7 = `/**
 
 // 1. Tipizarea Primitivelor & Variabilelor de Configurare
 // Cerință: Declară explicit tipurile: apiUrl: string, maxTasksLimit: number, isAppReady: boolean
-const apiUrl: string = 'https://jsonplaceholder.typicode.com/todos';
-const maxTasksLimit: number = 5;
-let isAppReady: boolean = false;
+const apiUrl = 'https://jsonplaceholder.typicode.com/todos';
+const maxTasksLimit = 5;
+let isAppReady = false;
 
 // 2. Tipul de Uniune (Union Type) pentru Statusul Task-ului
 // Cerință: Definește un Type Alias numit TaskStatus ('todo' | 'in-progress' | 'completed')
@@ -2941,7 +2941,7 @@ export default function AssignmentWorkspace({
                       {Object.entries(grouped).map(([file, items]) => (
                         <div key={file} className="bg-zinc-900/60 border border-zinc-800/90 rounded-lg p-3 flex flex-col gap-2">
                           <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800 text-xs font-mono font-bold text-zinc-300">
-                            <span>{file.endsWith('.css') ? '🎨' : file.endsWith('.js') ? '📜' : '🌐'}</span>
+                            <span>{file.endsWith('.css') ? '🎨' : file.endsWith('.ts') ? '🔷' : file.endsWith('.js') ? '📜' : '🌐'}</span>
                             <span className="text-zinc-100">{file}</span>
                             <span className="text-[10px] text-zinc-400 font-normal">({wt.requirementsCount(items.length)})</span>
                           </div>
@@ -3192,9 +3192,11 @@ export default function AssignmentWorkspace({
                             const isAllPass = passedCount === items.length;
                             const fileIcon = fileName.endsWith('.css')
                               ? '🎨'
-                              : fileName.endsWith('.js') || fileName.endsWith('.ts')
-                                ? '📜'
-                                : '🌐';
+                              : fileName.endsWith('.ts')
+                                ? '🔷'
+                                : fileName.endsWith('.js')
+                                  ? '📜'
+                                  : '🌐';
 
                             return (
                               <div
