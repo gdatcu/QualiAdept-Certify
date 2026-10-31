@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     // Retrieve authenticated user session
     const session = await getAuthSession();
-    
+
     // Determine userId from session (or fallback to body.userId for legacy API testing)
     let candidateUserId = session?.user?.id;
     if (!candidateUserId && body.userId && typeof body.userId === 'string') {
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
             if (checkType === 'regex' || r.type === 'regex') {
               const pattern = r.pattern || r.value || '';
               const regex = new RegExp(pattern, 'i');
-              
+
               // Strip comments so instructional comments do not produce false positive passes
               const cleanTargetCode = stripCodeComments(targetCode, targetFileName);
               const cleanCssCode = stripCodeComments(cssCode, 'style.css');
