@@ -623,7 +623,7 @@ const curriculum: CurriculumItem[] = [
     title: 'Sesiunea 7: Trecerea la TypeScript (Refactorizare Task Tracker)',
     validationType: 'STATIC',
     isPublished: true,
-    unlockDate: new Date('2026-11-05T00:00:00Z'),
+    unlockDate: new Date('2026-10-30T00:00:00Z'),
     description:
       'Refactorizarea aplicației "Task Tracker" prin adăugarea primului strat de tipizare statică TypeScript: securizarea variabilelor de configurare, modele de date (Type Aliases & Union Types), funcții tipizate, Fetch API asincron tipizat și eliminarea strictă a lui any (Zero Any Policy).',
     validationRules: JSON.stringify([
