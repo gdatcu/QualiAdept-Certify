@@ -636,4 +636,133 @@ describe('Module 06 (Task Tracker Capstone) Static Validation Integration Tests'
     expect(data.feedback[5].passed).toBe(false);
     expect(data.feedback[5].check).toBe('[app.js] Aducere 5 task-uri inițiale (GET) și ascundere spinner');
   });
+
+  it('TC-13: Full User Submission from Screenshots (Images 2 & 3) achieves 100% score (11/11 Passed)', async () => {
+    const studentFullJs = `
+      const form = document.querySelector("#add-task-form");
+      const inputTask = document.querySelector("#task-name");
+      const submitBtn = document.querySelector("#submit-task-btn");
+      const errorMsg = document.querySelector("#error-msg");
+      const spinner = document.querySelector("#loading-spinner");
+
+      // Screenshot 2: incarcaTaskuriInitiale
+      const incarcaTaskuriInitiale = async () => {
+        try {
+          const response = await fetch("https://jsonplaceholder.typicode.com/todos?_limit=5");
+          if (!response.ok) {
+            throw new Error("Eroare la incarcarea task-urilor initiale");
+          }
+          const data = await response.json();
+          spinner.style.display = "none";
+
+          const listaTaskuri = document.querySelector("#active-tasks-list");
+          data.forEach((task) => {
+            const id = task.id;
+            const liNou = document.createElement("li");
+            const taskTitle = document.createElement("span");
+            taskTitle.classList.add("task-title");
+            taskTitle.textContent = task.title;
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Sterge";
+            deleteButton.setAttribute("data-testid", \`delete-btn-\${id}\`);
+            liNou.appendChild(taskTitle);
+            liNou.appendChild(deleteButton);
+            listaTaskuri.appendChild(liNou);
+          });
+        } catch (error) {
+          console.error("Eroare la incarcarea task-urilor initiale:", error);
+        }
+      };
+      incarcaTaskuriInitiale();
+
+      // Screenshot 3: form submit
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          const inputText = inputTask.value;
+          const response = await fetch("https://jsonplaceholder.typicode.com/todos", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              title: inputText,
+              completed: false,
+              userId: 1
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error("Eroare la salvarea task-ului pe server");
+          }
+
+          if (response.status === 201) {
+            console.log("Task adaugat cu succes pe server!");
+
+            const newTask = await response.json();
+            console.log("Task-ul adaugat:", newTask);
+            const activeList = document.querySelector("#active-tasks-list");
+            const li = document.createElement("li");
+            const taskTitle = document.createElement("span");
+            taskTitle.classList.add("task-title");
+            taskTitle.textContent = newTask.title;
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Sterge";
+            deleteButton.setAttribute("data-testid", \`delete-btn-\${newTask.id}\`);
+            li.appendChild(taskTitle);
+            li.appendChild(deleteButton);
+            activeList.appendChild(li);
+
+            inputTask.value = "";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      // Toggle completed on .task-title & delete on network
+      document.querySelector("#active-tasks-list").addEventListener("click", async (e) => {
+        if (e.target.classList.contains("task-title")) {
+          e.target.classList.toggle("completed");
+        }
+        if (e.target.tagName === "BUTTON") {
+          const id = e.target.getAttribute("data-testid").replace("delete-btn-", "");
+          const res = await fetch(\`https://jsonplaceholder.typicode.com/todos/\${id}\`, {
+            method: "DELETE"
+          });
+          if (res.ok) {
+            e.target.closest("li").remove();
+          }
+        }
+      });
+
+      // Chaos Mode Pop-up
+      const popup = document.createElement("div");
+      popup.innerHTML = '<button data-testid="close-promo-btn">Close</button>';
+      popup.querySelector("button").addEventListener("click", () => popup.remove());
+      document.body.appendChild(popup);
+    `;
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: '00000000-0000-0000-0000-000000000006',
+        files: {
+          'index.html': validIndexHtml,
+          'style.css': validStyleCss,
+          'app.js': studentFullJs,
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(data.status).toBe('pass');
+    expect(data.score).toBe(100);
+    expect(data.feedback.every((f: any) => f.passed)).toBe(true);
+    // Specifically verify delete button assertion passed
+    expect(data.feedback[7].passed).toBe(true);
+    expect(data.feedback[7].check).toBe('[app.js] Buton de ștergere dinamic cu data-testid="delete-btn-ID"');
+  });
 });
