@@ -97,7 +97,7 @@ const module6Rules = JSON.stringify([
     name_en: '[app.js] Initial 5 tasks retrieval (GET) and spinner hide',
     check: 'regex',
     pattern:
-      '(?=[\\s\\S]*?fetch\\s*\\([\\s\\S]*?(?:_limit=5|todos))(?=[\\s\\S]*?\\.json\\s*\\()(?=[\\s\\S]*?(?:display\\s*=\\s*[\'"]none[\'"]|\\.remove\\s*\\(\\s*\\)|classList\\.add\\s*\\([\'"][^\'"]*hidden))',
+      '(?=[\\s\\S]*?fetch\\s*\\([\\s\\S]*?(?:_limit=5|todos))(?=[\\s\\S]*?\\.json\\s*\\()(?=[\\s\\S]*?(?:spinner|loading)[\\s\\S]{0,100}?(?:style\\.display\\s*=\\s*[\'"]none[\'"]|\\.remove\\s*\\(\\s*\\)|classList\\.(?:add|toggle)\\s*\\([\'"][^\'"]*(?:hidden|d-none)[\'"]\\)|hidden\\s*=\\s*true))',
     message:
       'Cerința Task 1 eșuată: Aplicația trebuie să aducă primele 5 task-uri prin fetch și să ascundă indicatorul de latență (spinner).',
     message_en: 'Task 1 failed: App must fetch first 5 tasks and hide the loading spinner.',
@@ -122,7 +122,7 @@ const module6Rules = JSON.stringify([
     name_en: '[app.js] Dynamic delete button with data-testid="delete-btn-ID"',
     check: 'regex',
     pattern:
-      'data-testid\\s*=\\s*[\'"`]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\})[\'"`]',
+      '(?:data-testid\\s*=\\s*[\'"`]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\})[\'"`]|setAttribute\\s*\\(\\s*[\'"`]data-testid[\'"`]\\s*,\\s*[`\'"]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\}|[^`\'"]+)[`\'"]\\s*\\)|dataset\\.testid\\s*=\\s*[`\'"]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\}|[^`\'"]+)[`\'"])',
     message:
       'Cerința QA eșuată: Butoanele de ștergere generate dinamic trebuie să aibă atributul data-testid="delete-btn-${id}".',
     message_en:
@@ -581,5 +581,59 @@ describe('Module 06 (Task Tracker Capstone) Static Validation Integration Tests'
     expect(data.feedback[0].check).toBe('[index.html] Text input with data-testid="input-task-name"');
     expect(data.feedback[0].message).toContain('Input field correctly contains');
     expect(data.feedback[4].check).toBe('[style.css] Completed task styling (.completed with line-through)');
+  });
+
+  it('TC-11: setAttribute("data-testid", `delete-btn-${id}`) passes dynamic delete button assertion', async () => {
+    // Replace template string delete button with setAttribute
+    const imperativeDeleteJs = validAppJs.replace(
+      '<button class="btn-delete" data-testid="delete-btn-${id}">Șterge</button>',
+      '<button class="btn-delete">Șterge</button>'
+    ).replace(
+      'taskList.appendChild(li);',
+      'const btn = li.querySelector(".btn-delete");\n    btn.setAttribute("data-testid", `delete-btn-${id}`);\n    taskList.appendChild(li);'
+    );
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: '00000000-0000-0000-0000-000000000006',
+        files: {
+          'index.html': validIndexHtml,
+          'style.css': validStyleCss,
+          'app.js': imperativeDeleteJs,
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(data.status).toBe('pass');
+    expect(data.feedback[7].passed).toBe(true);
+    expect(data.feedback[7].check).toBe('[app.js] Buton de ștergere dinamic cu data-testid="delete-btn-ID"');
+  });
+
+  it('TC-12: Omitting spinner hide fails GET assertion even if task item has randTask.remove()', async () => {
+    // Remove spinner hide line completely
+    const noSpinnerJs = validAppJs.replace("spinner.style.display = 'none';", '// no spinner hide here');
+
+    const req = new NextRequest('http://localhost:3000/api/validate/static', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: '00000000-0000-0000-0000-000000000006',
+        files: {
+          'index.html': validIndexHtml,
+          'style.css': validStyleCss,
+          'app.js': noSpinnerJs,
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(data.status).toBe('fail');
+    expect(data.feedback[5].passed).toBe(false);
+    expect(data.feedback[5].check).toBe('[app.js] Aducere 5 task-uri inițiale (GET) și ascundere spinner');
   });
 });

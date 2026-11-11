@@ -540,7 +540,7 @@ const curriculum: CurriculumItem[] = [
         name_en: '[app.js] Initial 5 tasks retrieval (GET) and spinner hide',
         check: 'regex',
         pattern:
-          '(?=[\\s\\S]*?fetch\\s*\\([\\s\\S]*?(?:_limit=5|todos))(?=[\\s\\S]*?\\.json\\s*\\()(?=[\\s\\S]*?(?:display\\s*=\\s*[\'"]none[\'"]|\\.remove\\s*\\(\\s*\\)|classList\\.add\\s*\\([\'"][^\'"]*hidden))',
+          '(?=[\\s\\S]*?fetch\\s*\\([\\s\\S]*?(?:_limit=5|todos))(?=[\\s\\S]*?\\.json\\s*\\()(?=[\\s\\S]*?(?:spinner|loading)[\\s\\S]{0,100}?(?:style\\.display\\s*=\\s*[\'"]none[\'"]|\\.remove\\s*\\(\\s*\\)|classList\\.(?:add|toggle)\\s*\\([\'"][^\'"]*(?:hidden|d-none)[\'"]\\)|hidden\\s*=\\s*true))',
         message:
           'Cerința Task 1 eșuată: Aplicația trebuie să aducă primele 5 task-uri prin fetch și să ascundă indicatorul de latență (spinner).',
         message_en: 'Task 1 failed: App must fetch first 5 tasks and hide the loading spinner.',
@@ -565,7 +565,7 @@ const curriculum: CurriculumItem[] = [
         name_en: '[app.js] Dynamic delete button with data-testid="delete-btn-ID"',
         check: 'regex',
         pattern:
-          'data-testid\\s*=\\s*[\'"`]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\})[\'"`]',
+          '(?:data-testid\\s*=\\s*[\'"`]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\})[\'"`]|setAttribute\\s*\\(\\s*[\'"`]data-testid[\'"`]\\s*,\\s*[`\'"]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\}|[^`\'"]+)[`\'"]\\s*\\)|dataset\\.testid\\s*=\\s*[`\'"]delete-btn-(?:\\$\\{[a-zA-Z0-9_$.]+\\}|[a-zA-Z0-9_$]+|\\$\\{task\\.id\\}|[^`\'"]+)[`\'"])',
         message:
           'Cerința QA eșuată: Butoanele de ștergere generate dinamic trebuie să aibă atributul data-testid="delete-btn-${id}".',
         message_en:
