@@ -3,6 +3,7 @@ import {
   getModuleFiles,
   parseInitialFiles,
   getAssignmentCurriculumTask,
+  getNextModuleBannerMessage,
   CURRICULUM_TASKS,
   transpileTsForPreview,
 } from '@/app/[locale]/assignment/[id]/AssignmentWorkspace';
@@ -465,6 +466,67 @@ const afiseazaTask = (id: number): void => {
       expect(transpiled).toContain('apiUrl =');
       expect(transpiled).toContain('listaTaskuri = [];');
       expect(transpiled).toContain("const form = document.querySelector('#form');");
+    });
+  });
+
+  describe('Smart Next-Module Unlock Banner (BUG-02)', () => {
+    const fixedNow = new Date('2026-11-22T12:00:00Z');
+
+    it('shows scheduled unlock date for students when next module has future unlockDate', () => {
+      const msgRo = getNextModuleBannerMessage(
+        { module: 10, isPublished: true, unlockDate: '2026-11-26T00:00:00Z' },
+        false,
+        'ro',
+        fixedNow
+      );
+      expect(msgRo).toContain('Modulul 10');
+      expect(msgRo).toContain('se va debloca automat');
+      expect(msgRo).toContain('2026');
+
+      const msgEn = getNextModuleBannerMessage(
+        { module: 10, isPublished: true, unlockDate: '2026-11-26T00:00:00Z' },
+        false,
+        'en',
+        fixedNow
+      );
+      expect(msgEn).toContain('Module 10');
+      expect(msgEn).toContain('will automatically unlock');
+    });
+
+    it('informs Trainers that next module is accessible immediately while noting student unlock date', () => {
+      const msgRo = getNextModuleBannerMessage(
+        { module: 10, isPublished: true, unlockDate: '2026-11-26T00:00:00Z' },
+        true,
+        'ro',
+        fixedNow
+      );
+      expect(msgRo).toContain('Modulul 10 este accesibil acum');
+      expect(msgRo).toContain('acces Trainer');
+    });
+
+    it('shows unlocked now message when next module unlockDate has passed', () => {
+      const msgEn = getNextModuleBannerMessage(
+        { module: 9, isPublished: true, unlockDate: '2026-11-19T00:00:00Z' },
+        false,
+        'en',
+        fixedNow
+      );
+      expect(msgEn).toBe('Module 09 is now unlocked on your Dashboard.');
+    });
+
+    it('shows coming soon for students when next module is unpublished', () => {
+      const msgRo = getNextModuleBannerMessage(
+        { module: 11, isPublished: false, unlockDate: null },
+        false,
+        'ro',
+        fixedNow
+      );
+      expect(msgRo).toContain('va fi disponibil în curând');
+    });
+
+    it('shows final curriculum completion message when nextModule is null', () => {
+      const msgEn = getNextModuleBannerMessage(null, false, 'en', fixedNow);
+      expect(msgEn).toContain('final module');
     });
   });
 });

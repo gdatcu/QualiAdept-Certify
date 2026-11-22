@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import DOMPurify from 'isomorphic-dompurify';
 import dynamic from 'next/dynamic';
 
@@ -52,10 +52,68 @@ export interface SubmissionRecord {
   submittedAt: string;
 }
 
+export interface NextModuleInfo {
+  module: number;
+  isPublished: boolean;
+  unlockDate: string | null;
+}
+
 export interface AssignmentWorkspaceProps {
   assignment: AssignmentData;
   initialSubmissions?: SubmissionRecord[];
   previousPassedPayload?: string | null;
+  nextModule?: NextModuleInfo | null;
+}
+
+export function getNextModuleBannerMessage(
+  nextModule: NextModuleInfo | null | undefined,
+  isTrainer: boolean,
+  locale: string = 'ro',
+  now: Date = new Date()
+): string {
+  const isRo = locale === 'ro';
+  const dateLocale = isRo ? 'ro-RO' : 'en-GB';
+
+  if (nextModule === null) {
+    return isRo
+      ? 'Ai finalizat ultimul modul din programă! Verifică Dashboard-ul pentru progresul și certificatul tău.'
+      : 'You completed the final module in the curriculum! Check your Dashboard for your progress and certificate.';
+  }
+
+  if (!nextModule) {
+    return isRo
+      ? 'Revino în Dashboard pentru a continua traseul tău de învățare.'
+      : 'Return to your Dashboard to continue your learning path.';
+  }
+
+  const nextLabel = nextModule.module < 10 ? `0${nextModule.module}` : `${nextModule.module}`;
+
+  if (!isTrainer && !nextModule.isPublished) {
+    return isRo
+      ? `Modulul ${nextLabel} este în pregătire și va fi disponibil în curând.`
+      : `Module ${nextLabel} is being prepared and will be available soon.`;
+  }
+
+  const hasFutureUnlock = Boolean(nextModule.unlockDate && new Date(nextModule.unlockDate) > now);
+  if (hasFutureUnlock && nextModule.unlockDate) {
+    const formattedDate = new Date(nextModule.unlockDate).toLocaleDateString(dateLocale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    if (isTrainer) {
+      return isRo
+        ? `Modulul ${nextLabel} este accesibil acum în Dashboard (acces Trainer; pentru cursanți se deblochează pe ${formattedDate}).`
+        : `Module ${nextLabel} is accessible now on your Dashboard (Trainer access; unlocks for students on ${formattedDate}).`;
+    }
+    return isRo
+      ? `Modulul ${nextLabel} se va debloca automat pe ${formattedDate}.`
+      : `Module ${nextLabel} will automatically unlock on ${formattedDate}.`;
+  }
+
+  return isRo
+    ? `Modulul ${nextLabel} este acum deblocat în Dashboard.`
+    : `Module ${nextLabel} is now unlocked on your Dashboard.`;
 }
 
 export interface ProjectFile {
@@ -1968,6 +2026,7 @@ export default function AssignmentWorkspace({
   assignment,
   initialSubmissions = [],
   previousPassedPayload = null,
+  nextModule,
 }: AssignmentWorkspaceProps) {
   const { data: session, status: authStatus } = useSession();
   const locale = useLocale();
@@ -3372,10 +3431,10 @@ export default function AssignmentWorkspace({
                     <div className="bg-emerald-950/60 border border-emerald-500/40 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div>
                         <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                          <span>🎉 Module Passed!</span>
+                          <span>{locale === 'ro' ? '🎉 Modul Promovat!' : '🎉 Module Passed!'}</span>
                         </div>
                         <p className="text-[11px] text-emerald-400/90 mt-0.5">
-                          Next module in curriculum is now unlocked on your Dashboard.
+                          {getNextModuleBannerMessage(nextModule, isTrainer, locale)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 self-end sm:self-auto">

@@ -61,6 +61,7 @@ export default async function StudentDashboard({ params, searchParams }: PagePro
       ? prisma.user.findUnique({
           where: { id: userId },
           select: {
+            role: true,
             linkedinUrl: true,
             githubUrl: true,
             publicEmail: true,
@@ -70,6 +71,8 @@ export default async function StudentDashboard({ params, searchParams }: PagePro
         })
       : Promise.resolve(null),
   ]);
+
+  const isTrainer = session?.user?.role === 'TRAINER' || userRecord?.role === 'TRAINER';
 
   // Deduplicate assignments by module integer if test entries exist
   const uniqueAssignmentsMap = new Map<number, (typeof rawAssignments)[0]>();
@@ -102,28 +105,40 @@ export default async function StudentDashboard({ params, searchParams }: PagePro
     const isTimeUnlocked =
       !assignment.unlockDate || new Date(assignment.unlockDate) <= now;
 
+    const studentLockReason: 'PREV_NOT_PASSED' | 'NOT_PUBLISHED' | 'FUTURE_UNLOCK' | null =
+      !isPublished
+        ? 'NOT_PUBLISHED'
+        : !isTimeUnlocked
+          ? 'FUTURE_UNLOCK'
+          : !isPrevPassed
+            ? 'PREV_NOT_PASSED'
+            : null;
+
     let status: 'COMPLETED' | 'UNLOCKED' | 'LOCKED' = 'LOCKED';
     let lockReason: 'PREV_NOT_PASSED' | 'NOT_PUBLISHED' | 'FUTURE_UNLOCK' = 'PREV_NOT_PASSED';
+    let isTrainerBypass = false;
 
     if (isPassed) {
       status = 'COMPLETED';
     } else if (isPrevPassed && isPublished && isTimeUnlocked) {
       status = 'UNLOCKED';
+    } else if (isTrainer) {
+      // Trainers bypass prerequisite, publish, and drip-content unlockDate locks
+      status = 'UNLOCKED';
+      isTrainerBypass = true;
+      if (studentLockReason) {
+        lockReason = studentLockReason;
+      }
     } else {
       status = 'LOCKED';
-      if (!isPublished) {
-        lockReason = 'NOT_PUBLISHED';
-      } else if (!isTimeUnlocked) {
-        lockReason = 'FUTURE_UNLOCK';
-      } else {
-        lockReason = 'PREV_NOT_PASSED';
-      }
+      lockReason = studentLockReason || 'PREV_NOT_PASSED';
     }
 
     return {
       ...assignment,
       status,
       lockReason,
+      isTrainerBypass,
     };
   });
 
@@ -335,10 +350,19 @@ export default async function StudentDashboard({ params, searchParams }: PagePro
                     </div>
 
                     {/* Validation Engine Type Tag */}
-                    <div className="mb-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/50 text-purple-300 border border-purple-800/50 uppercase tracking-wider">
                         {assignment.validationType} {tDash('inspection')}
                       </span>
+                      {assignment.isTrainerBypass && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-700/50">
+                          ⚡ Trainer{assignment.lockReason === 'FUTURE_UNLOCK' && assignment.unlockDate
+                            ? ` • ${new Date(assignment.unlockDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}`
+                            : assignment.lockReason === 'NOT_PUBLISHED'
+                              ? ' • Draft'
+                              : ''}
+                        </span>
+                      )}
                     </div>
 
                     {/* Title & Description */}

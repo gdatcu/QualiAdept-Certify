@@ -113,6 +113,19 @@ export default async function AssignmentPage({ params }: PageProps) {
     (s) => s.assignment.module === assignment.module - 1
   );
 
+  // Fetch next curriculum module metadata for accurate unlock banner messaging
+  const nextAssignmentRecord = await prisma.assignment.findFirst({
+    where: {
+      module: assignment.module + 1,
+      isActive: true,
+    },
+    select: {
+      module: true,
+      isPublished: true,
+      unlockDate: true,
+    },
+  });
+
   const tAssignments = await getTranslations('Assignments');
   const localizedAssignment = getLocalizedAssignment(assignment, (key) => tAssignments(key as any));
 
@@ -137,6 +150,17 @@ export default async function AssignmentPage({ params }: PageProps) {
       }}
       initialSubmissions={initialSubmissions}
       previousPassedPayload={prevPassedSubmission?.codePayload || null}
+      nextModule={
+        nextAssignmentRecord
+          ? {
+              module: nextAssignmentRecord.module,
+              isPublished: nextAssignmentRecord.isPublished !== false,
+              unlockDate: nextAssignmentRecord.unlockDate
+                ? nextAssignmentRecord.unlockDate.toISOString()
+                : null,
+            }
+          : null
+      }
     />
   );
 }

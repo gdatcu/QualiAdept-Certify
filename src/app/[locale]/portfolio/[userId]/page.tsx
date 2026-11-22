@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { prisma } from '@/lib/prisma';
-import CodeBlock from '@/components/CodeBlock';
+import PortfolioCodeViewer from '@/components/PortfolioCodeViewer';
 import { getLocalizedAssignment } from '@/lib/curriculum-i18n';
 
 export const dynamic = 'force-dynamic';
@@ -384,9 +384,9 @@ export default async function PublicPortfolioPage({ params }: PageProps) {
                             </span>
                           </summary>
                           <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-950 overflow-x-auto max-w-full w-full">
-                            <CodeBlock
-                              code={item.codePayload}
-                              language={item.assignment.validationType === 'DYNAMIC' ? 'typescript' : 'html'}
+                            <PortfolioCodeViewer
+                              codePayload={item.codePayload}
+                              validationType={item.assignment.validationType}
                             />
                           </div>
                         </details>
