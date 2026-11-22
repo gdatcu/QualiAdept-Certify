@@ -2306,6 +2306,7 @@ export default function AssignmentWorkspace({
     repoUrl?: string;
     commitUrl?: string;
     filePath?: string;
+    syncedFiles?: string[];
     message?: string;
     error?: string;
   } | null>(null);
@@ -2619,6 +2620,8 @@ export default function AssignmentWorkspace({
     setSyncingTargetFile(targetFile || null);
 
     const payload = codeToSync || JSON.stringify({ files });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
 
     try {
       const res = await fetch('/api/github/sync', {
@@ -2629,33 +2632,62 @@ export default function AssignmentWorkspace({
           codePayload: payload,
           targetFile,
         }),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setGithubSyncResult({
           success: false,
-          error: data.code || 'SYNC_FAILED',
-          message: data.error || tSync('reauthRequired'),
+          error: data.code || (res.status === 504 ? 'SYNC_TIMEOUT' : 'SYNC_FAILED'),
+          message:
+            data.error ||
+            (res.status === 504
+              ? locale === 'ro'
+                ? 'Sincronizarea cu GitHub a depășit limita de timp. Te rugăm să reîncerci.'
+                : 'GitHub sync timed out. Please try again.'
+              : tSync('reauthRequired')),
         });
       } else {
+        const syncedFiles: string[] = Array.isArray(data.syncedFiles)
+          ? data.syncedFiles
+          : data.filePath
+            ? [data.filePath]
+            : [];
         setGithubSyncResult({
           success: true,
           repoUrl: data.repoUrl,
           commitUrl: data.commitUrl,
           filePath: data.filePath,
+          syncedFiles,
           message: targetFile
-            ? `✓ Fișierul ${targetFile} a fost sincronizat cu succes pe GitHub!`
-            : tSync('success'),
+            ? locale === 'ro'
+              ? `✓ Fișierul ${targetFile} a fost sincronizat cu succes pe GitHub!`
+              : `✓ File ${targetFile} was successfully synced to GitHub!`
+            : syncedFiles.length > 1
+              ? locale === 'ro'
+                ? `✓ Toate cele ${syncedFiles.length} fișiere au fost sincronizate într-un singur commit atomic pe GitHub!`
+                : `✓ All ${syncedFiles.length} files were synced in a single atomic GitHub commit!`
+              : tSync('success'),
         });
       }
     } catch (err: unknown) {
+      const isTimeout = err instanceof Error && err.name === 'AbortError';
       setGithubSyncResult({
         success: false,
-        error: 'NETWORK_ERROR',
-        message: err instanceof Error ? err.message : 'Network error syncing with GitHub.',
+        error: isTimeout ? 'SYNC_TIMEOUT' : 'NETWORK_ERROR',
+        message: isTimeout
+          ? locale === 'ro'
+            ? 'Sincronizarea cu GitHub a depășit limita de timp (12s). Te rugăm să reîncerci.'
+            : 'GitHub sync timed out after 12s. Please try again.'
+          : err instanceof Error
+            ? err.message
+            : locale === 'ro'
+              ? 'Eroare de rețea la sincronizarea cu GitHub.'
+              : 'Network error syncing with GitHub.',
       });
     } finally {
+      window.clearTimeout(timeoutId);
       setIsSyncingGitHub(false);
       setSyncingTargetFile(null);
     }
@@ -3180,8 +3212,36 @@ export default function AssignmentWorkspace({
               </div>
             </div>
 
+            {/* Live GitHub Sync Progress Card (BUG-10) */}
+            {isSyncingGitHub && (
+              <div className="p-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 text-xs font-mono flex items-center gap-3 transition-all animate-pulse">
+                <svg className="animate-spin h-5 w-5 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-cyan-200">
+                    {syncingTargetFile
+                      ? wt.syncingFile(syncingTargetFile)
+                      : locale === 'ro'
+                        ? 'Se creează commit-ul atomic pe GitHub...'
+                        : 'Creating atomic commit on GitHub...'}
+                  </div>
+                  <p className="text-[11px] text-cyan-300/80 mt-0.5">
+                    {syncingTargetFile
+                      ? locale === 'ro'
+                        ? `Sincronizare țintită pentru ${syncingTargetFile}...`
+                        : `Targeted sync for ${syncingTargetFile}...`
+                      : locale === 'ro'
+                        ? `Se împachetează ${Object.keys(files).length} ${Object.keys(files).length === 1 ? 'fișier' : 'fișiere'} într-un singur commit GitHub...`
+                        : `Bundling ${Object.keys(files).length} ${Object.keys(files).length === 1 ? 'file' : 'files'} into a single GitHub commit...`}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* GitHub Sync Status Card */}
-            {githubSyncResult && (
+            {!isSyncingGitHub && githubSyncResult && (
               <div
                 className={`p-4 rounded-xl border text-xs font-mono flex items-start gap-3 transition-all ${githubSyncResult.success
                     ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-200'
@@ -3193,14 +3253,30 @@ export default function AssignmentWorkspace({
                     <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                   </svg>
                 </div>
-                <div className="flex-1 space-y-1.5">
-                  <div className="font-semibold text-zinc-100 flex items-center justify-between">
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <div className="font-semibold text-zinc-100 flex flex-wrap items-center justify-between gap-2">
                     <span>{githubSyncResult.success ? 'GitHub Auto-Sync' : 'GitHub Sync Notice'}</span>
-                    {githubSyncResult.filePath && (
-                      <span className="text-[10px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
-                        {githubSyncResult.filePath}
-                      </span>
-                    )}
+                    {(() => {
+                      const filesBadgeList =
+                        githubSyncResult.syncedFiles && githubSyncResult.syncedFiles.length > 0
+                          ? githubSyncResult.syncedFiles
+                          : githubSyncResult.filePath
+                            ? [githubSyncResult.filePath]
+                            : [];
+                      if (filesBadgeList.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {filesBadgeList.map((fPath) => (
+                            <span
+                              key={fPath}
+                              className="text-[10px] text-zinc-300 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800"
+                            >
+                              {getWorkspaceFileIcon(fPath.split('/').pop() || fPath)} {fPath}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <p className="text-zinc-300 text-[11px] leading-relaxed">
                     {githubSyncResult.message}
@@ -3228,15 +3304,24 @@ export default function AssignmentWorkspace({
                         <span>↗</span>
                       </a>
                     )}
-                    {!githubSyncResult.success && (
-                      <button
-                        type="button"
-                        onClick={() => signIn('github')}
-                        className="px-3 py-1 bg-amber-900/80 hover:bg-amber-800 text-amber-100 rounded text-[11px] font-bold transition-colors cursor-pointer"
-                      >
-                        {tSync('reauthButton')}
-                      </button>
-                    )}
+                    {!githubSyncResult.success &&
+                      (githubSyncResult.error === 'SYNC_TIMEOUT' || githubSyncResult.error === 'NETWORK_ERROR' ? (
+                        <button
+                          type="button"
+                          onClick={() => triggerGitHubSync()}
+                          className="px-3 py-1 bg-cyan-900/80 hover:bg-cyan-800 text-cyan-100 rounded text-[11px] font-bold transition-colors cursor-pointer"
+                        >
+                          {locale === 'ro' ? '🔄 Reîncearcă Sincronizarea' : '🔄 Retry Sync'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => signIn('github')}
+                          className="px-3 py-1 bg-amber-900/80 hover:bg-amber-800 text-amber-100 rounded text-[11px] font-bold transition-colors cursor-pointer"
+                        >
+                          {tSync('reauthButton')}
+                        </button>
+                      ))}
                   </div>
                 </div>
               </div>

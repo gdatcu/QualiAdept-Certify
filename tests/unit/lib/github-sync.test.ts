@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { syncModuleCodeToGitHub, getModuleFilePath, resolveGitHubFilePath, REPO_NAME } from '@/lib/github-sync';
+import {
+  syncModuleCodeToGitHub,
+  getModuleFilePath,
+  resolveGitHubFilePath,
+  buildCommitMessage,
+  REPO_NAME,
+} from '@/lib/github-sync';
 import { prisma } from '@/lib/prisma';
 
 vi.mock('@/lib/prisma', () => ({
@@ -9,6 +15,130 @@ vi.mock('@/lib/prisma', () => ({
     },
   },
 }));
+
+interface MockGitHubOptions {
+  owner?: string;
+  repoExists?: boolean;
+  defaultBranch?: string;
+  existingTreePaths?: string[];
+  commitSha?: string;
+  emptyRepo?: boolean;
+}
+
+function createAtomicGitHubFetchMock(options: MockGitHubOptions = {}) {
+  const {
+    owner = 'student_gh',
+    repoExists = true,
+    defaultBranch = 'main',
+    existingTreePaths = [],
+    commitSha = 'atomic_sha_999',
+    emptyRepo = false,
+  } = options;
+
+  let repoCreated = repoExists;
+  let treePayloads: Array<{ base_tree: string; tree: Array<{ path: string; content: string }> }> = [];
+  let commitPayloads: Array<{ message: string; tree: string; parents: string[] }> = [];
+  let refPatches: Array<{ sha: string; force: boolean }> = [];
+  let contentsPuts: Array<{ path: string; message: string }> = [];
+
+  const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
+    const method = opts?.method || 'GET';
+
+    if (url === 'https://api.github.com/user' && method === 'GET') {
+      return new Response(JSON.stringify({ login: owner }), { status: 200 });
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}` && method === 'GET') {
+      if (!repoCreated) {
+        return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
+      }
+      return new Response(JSON.stringify({ name: REPO_NAME, default_branch: defaultBranch }), { status: 200 });
+    }
+
+    if (url === 'https://api.github.com/user/repos' && method === 'POST') {
+      repoCreated = true;
+      return new Response(
+        JSON.stringify({ name: REPO_NAME, full_name: `${owner}/${REPO_NAME}`, default_branch: defaultBranch }),
+        { status: 201 }
+      );
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/ref/heads/${defaultBranch}` && method === 'GET') {
+      if (emptyRepo) {
+        return new Response(JSON.stringify({ message: 'Git Repository is empty.' }), { status: 409 });
+      }
+      return new Response(JSON.stringify({ object: { sha: 'base_commit_sha_1' } }), { status: 200 });
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/commits/base_commit_sha_1` && method === 'GET') {
+      return new Response(JSON.stringify({ sha: 'base_commit_sha_1', tree: { sha: 'base_tree_sha_1' } }), { status: 200 });
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/trees/base_tree_sha_1?recursive=1` && method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          tree: existingTreePaths.map((path) => ({ path, type: 'blob', sha: `blob_${path}` })),
+        }),
+        { status: 200 }
+      );
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/trees` && method === 'POST') {
+      const body = JSON.parse(String(opts?.body || '{}'));
+      treePayloads.push(body);
+      return new Response(JSON.stringify({ sha: 'new_tree_sha_2' }), { status: 201 });
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/commits` && method === 'POST') {
+      const body = JSON.parse(String(opts?.body || '{}'));
+      commitPayloads.push(body);
+      return new Response(
+        JSON.stringify({
+          sha: commitSha,
+          html_url: `https://github.com/${owner}/${REPO_NAME}/commit/${commitSha}`,
+        }),
+        { status: 201 }
+      );
+    }
+
+    if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/refs/heads/${defaultBranch}` && method === 'PATCH') {
+      const body = JSON.parse(String(opts?.body || '{}'));
+      refPatches.push(body);
+      return new Response(JSON.stringify({ object: { sha: body.sha } }), { status: 200 });
+    }
+
+    if (url.includes(`/contents/`) && method === 'PUT') {
+      const matched = url.match(/\/contents\/(.*)$/);
+      const body = JSON.parse(String(opts?.body || '{}'));
+      if (matched) contentsPuts.push({ path: matched[1], message: body.message });
+      return new Response(
+        JSON.stringify({
+          commit: {
+            sha: 'bootstrap_sha_1',
+            html_url: `https://github.com/${owner}/${REPO_NAME}/commit/bootstrap_sha_1`,
+          },
+        }),
+        { status: 201 }
+      );
+    }
+
+    return new Response(JSON.stringify({ error: `Unhandled ${method} ${url}` }), { status: 500 });
+  });
+
+  return {
+    fetchMock,
+    getTreePayloads: () => treePayloads,
+    getCommitPayloads: () => commitPayloads,
+    getRefPatches: () => refPatches,
+    getContentsPuts: () => contentsPuts,
+    reset: () => {
+      treePayloads = [];
+      commitPayloads = [];
+      refPatches = [];
+      contentsPuts = [];
+    },
+  };
+}
 
 describe('github-sync Unit Tests', () => {
   const originalFetch = globalThis.fetch;
@@ -22,7 +152,7 @@ describe('github-sync Unit Tests', () => {
     vi.restoreAllMocks();
   });
 
-  describe('getModuleFilePath', () => {
+  describe('getModuleFilePath & resolveGitHubFilePath', () => {
     it('maps module 0 to sandbox.html', () => {
       expect(getModuleFilePath(0)).toBe('sandbox.html');
     });
@@ -61,7 +191,46 @@ describe('github-sync Unit Tests', () => {
     });
   });
 
-  describe('syncModuleCodeToGitHub', () => {
+  describe('buildCommitMessage (BUG-09)', () => {
+    it('uses add verb when all synced files are new', () => {
+      expect(
+        buildCommitMessage({
+          moduleNum: 8,
+          assignmentTitle: 'Sesiunea 8: POM',
+          addedFiles: ['pom.ts'],
+          updatedFiles: [],
+        })
+      ).toBe('feat(session-8): add pom.ts for Sesiunea 8: POM (Verified 100% by QualiAdept)');
+    });
+
+    it('uses update verb when all synced files already exist', () => {
+      expect(
+        buildCommitMessage({
+          moduleNum: 9,
+          assignmentTitle: 'Sesiunea 9: Playwright',
+          addedFiles: [],
+          updatedFiles: ['playwright.config.ts', 'tests/task-tracker.spec.ts'],
+        })
+      ).toBe(
+        'feat(session-9): update playwright.config.ts, tests/task-tracker.spec.ts for Sesiunea 9: Playwright (Verified 100% by QualiAdept)'
+      );
+    });
+
+    it('combines add and update accurately when syncing mixed new and existing files', () => {
+      expect(
+        buildCommitMessage({
+          moduleNum: 9,
+          assignmentTitle: 'Sesiunea 9: Playwright',
+          addedFiles: ['tests/task-tracker.spec.ts'],
+          updatedFiles: ['playwright.config.ts'],
+        })
+      ).toBe(
+        'feat(session-9): add tests/task-tracker.spec.ts and update playwright.config.ts for Sesiunea 9: Playwright (Verified 100% by QualiAdept)'
+      );
+    });
+  });
+
+  describe('syncModuleCodeToGitHub (Atomic Git Data API)', () => {
     it('returns error if userId or codePayload are missing', async () => {
       const res = await syncModuleCodeToGitHub({
         userId: '',
@@ -86,64 +255,44 @@ describe('github-sync Unit Tests', () => {
       expect(res.error).toBe('NO_TOKEN');
     });
 
-    it('creates repository if missing and commits file successfully', async () => {
+    it('creates repository if missing and commits new file with add verb in atomic commit', async () => {
       vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
         access_token: 'gho_dummy_token',
-      } as any);
+      } as never);
 
-      // Mock GitHub API responses:
-      // 1. GET /user -> { login: 'student_gh' }
-      // 2. GET /repos/student_gh/qualiadept-task-tracker -> 404 (Not Found)
-      // 3. POST /user/repos -> 201 (Created)
-      // 4. GET /repos/student_gh/qualiadept-task-tracker/contents/index.html -> 404 (New file)
-      // 5. PUT /repos/student_gh/qualiadept-task-tracker/contents/index.html -> 201 (Committed)
-      const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
-        if (url === 'https://api.github.com/user') {
-          return new Response(JSON.stringify({ login: 'student_gh' }), { status: 200 });
-        }
-        if (url === `https://api.github.com/repos/student_gh/${REPO_NAME}` && (!opts || !opts.method || opts.method === 'GET')) {
-          return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
-        }
-        if (url === 'https://api.github.com/user/repos' && opts?.method === 'POST') {
-          return new Response(JSON.stringify({ name: REPO_NAME, full_name: `student_gh/${REPO_NAME}` }), { status: 201 });
-        }
-        if (url.includes(`/contents/index.html`) && opts?.method === 'GET') {
-          return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
-        }
-        if (url.includes(`/contents/index.html`) && opts?.method === 'PUT') {
-          return new Response(
-            JSON.stringify({
-              commit: { html_url: `https://github.com/student_gh/${REPO_NAME}/commit/abc123` },
-              content: { html_url: `https://github.com/student_gh/${REPO_NAME}/blob/main/index.html` },
-            }),
-            { status: 201 }
-          );
-        }
-        return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 500 });
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: false,
+        existingTreePaths: ['README.md'],
+        commitSha: 'abc123',
       });
-
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = mock.fetchMock;
 
       const res = await syncModuleCodeToGitHub({
         userId: 'u-123',
         moduleNum: 1,
         assignmentTitle: 'Sesiunea 1: HTML DOM',
         codePayload: '<h1>Hello World</h1>',
+        repoInitRetryDelayMs: 5,
       });
 
       expect(res.success).toBe(true);
       expect(res.repoUrl).toBe(`https://github.com/student_gh/${REPO_NAME}`);
       expect(res.commitUrl).toBe(`https://github.com/student_gh/${REPO_NAME}/commit/abc123`);
       expect(res.filePath).toBe('index.html');
-      expect(fetchMock).toHaveBeenCalled();
+      expect(res.syncedFiles).toEqual(['index.html']);
+      expect(mock.getCommitPayloads()).toHaveLength(1);
+      expect(mock.getCommitPayloads()[0].message).toContain('add index.html');
+      expect(mock.getRefPatches()).toEqual([{ sha: 'abc123', force: false }]);
     });
 
     it('handles expired / unauthorized token (401/403) gracefully', async () => {
       vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
         access_token: 'gho_expired_token',
-      } as any);
+      } as never);
 
-      globalThis.fetch = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Bad credentials' }), { status: 401 }));
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'Bad credentials' }), { status: 401 })
+      );
 
       const res = await syncModuleCodeToGitHub({
         userId: 'u-123',
@@ -155,37 +304,17 @@ describe('github-sync Unit Tests', () => {
       expect(res.error).toBe('TOKEN_UNAUTHORIZED');
     });
 
-    it('syncs multiple files (index.html + style.css) in a single submission', async () => {
+    it('syncs multiple files (index.html + style.css) in ONE single atomic commit (BUG-08)', async () => {
       vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
         access_token: 'gho_mf_token',
-      } as any);
+      } as never);
 
-      const committedFiles: string[] = [];
-      const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
-        if (url === 'https://api.github.com/user') {
-          return new Response(JSON.stringify({ login: 'student_gh' }), { status: 200 });
-        }
-        if (url === `https://api.github.com/repos/student_gh/${REPO_NAME}` && (!opts || !opts.method || opts.method === 'GET')) {
-          return new Response(JSON.stringify({ name: REPO_NAME }), { status: 200 });
-        }
-        if (url.includes(`/contents/`) && opts?.method === 'GET') {
-          return new Response(JSON.stringify({ sha: 'existing-sha' }), { status: 200 });
-        }
-        if (url.includes(`/contents/`) && opts?.method === 'PUT') {
-          const matched = url.match(/\/contents\/(.*)$/);
-          if (matched) committedFiles.push(matched[1]);
-          return new Response(
-            JSON.stringify({
-              commit: { html_url: `https://github.com/student_gh/${REPO_NAME}/commit/mf123` },
-              content: { html_url: `https://github.com/student_gh/${REPO_NAME}/blob/main/${matched ? matched[1] : ''}` },
-            }),
-            { status: 200 }
-          );
-        }
-        return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 500 });
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        existingTreePaths: ['index.html', 'style.css'],
+        commitSha: 'mf123',
       });
-
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = mock.fetchMock;
 
       const multiFilePayload = JSON.stringify({
         files: {
@@ -202,40 +331,27 @@ describe('github-sync Unit Tests', () => {
       });
 
       expect(res.success).toBe(true);
-      expect(committedFiles).toEqual(['index.html', 'style.css']);
+      expect(res.syncedFiles).toEqual(['index.html', 'style.css']);
+      expect(res.commitUrl).toBe(`https://github.com/student_gh/${REPO_NAME}/commit/mf123`);
+      // Exactly 1 tree, 1 commit, 1 ref update for both files
+      expect(mock.getTreePayloads()).toHaveLength(1);
+      expect(mock.getTreePayloads()[0].tree.map((t) => t.path)).toEqual(['index.html', 'style.css']);
+      expect(mock.getCommitPayloads()).toHaveLength(1);
+      expect(mock.getCommitPayloads()[0].message).toContain('update index.html, style.css');
+      expect(mock.getRefPatches()).toHaveLength(1);
     });
 
     it('syncs ONLY the specified targetFile when targetFile is provided', async () => {
       vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
         access_token: 'gho_target_token',
-      } as any);
+      } as never);
 
-      const committedFiles: string[] = [];
-      const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
-        if (url === 'https://api.github.com/user') {
-          return new Response(JSON.stringify({ login: 'student_gh' }), { status: 200 });
-        }
-        if (url === `https://api.github.com/repos/student_gh/${REPO_NAME}` && (!opts || !opts.method || opts.method === 'GET')) {
-          return new Response(JSON.stringify({ name: REPO_NAME }), { status: 200 });
-        }
-        if (url.includes(`/contents/`) && opts?.method === 'GET') {
-          return new Response(JSON.stringify({ sha: 'existing-sha' }), { status: 200 });
-        }
-        if (url.includes(`/contents/`) && opts?.method === 'PUT') {
-          const matched = url.match(/\/contents\/(.*)$/);
-          if (matched) committedFiles.push(matched[1]);
-          return new Response(
-            JSON.stringify({
-              commit: { html_url: `https://github.com/student_gh/${REPO_NAME}/commit/target123` },
-              content: { html_url: `https://github.com/student_gh/${REPO_NAME}/blob/main/${matched ? matched[1] : ''}` },
-            }),
-            { status: 200 }
-          );
-        }
-        return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 500 });
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        existingTreePaths: ['index.html', 'style.css'],
+        commitSha: 'target123',
       });
-
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = mock.fetchMock;
 
       const multiFilePayload = JSON.stringify({
         files: {
@@ -253,41 +369,23 @@ describe('github-sync Unit Tests', () => {
       });
 
       expect(res.success).toBe(true);
-      expect(committedFiles).toEqual(['style.css']);
+      expect(res.syncedFiles).toEqual(['style.css']);
       expect(res.filePath).toBe('style.css');
+      expect(mock.getTreePayloads()[0].tree.map((t) => t.path)).toEqual(['style.css']);
     });
 
-    it('syncs Module 9 files to playwright.config.ts and tests/task-tracker.spec.ts', async () => {
+    it('syncs Module 9 files atomically to playwright.config.ts and tests/task-tracker.spec.ts with mixed add/update message (BUG-08 & BUG-09)', async () => {
       vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
         access_token: 'gho_m9_token',
-      } as any);
+      } as never);
 
-      const committedFiles: string[] = [];
-      const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
-        if (url === 'https://api.github.com/user') {
-          return new Response(JSON.stringify({ login: 'student_gh' }), { status: 200 });
-        }
-        if (url === `https://api.github.com/repos/student_gh/${REPO_NAME}` && (!opts || !opts.method || opts.method === 'GET')) {
-          return new Response(JSON.stringify({ name: REPO_NAME }), { status: 200 });
-        }
-        if (url.includes(`/contents/`) && opts?.method === 'GET') {
-          return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
-        }
-        if (url.includes(`/contents/`) && opts?.method === 'PUT') {
-          const matched = url.match(/\/contents\/(.*)$/);
-          if (matched) committedFiles.push(matched[1]);
-          return new Response(
-            JSON.stringify({
-              commit: { html_url: `https://github.com/student_gh/${REPO_NAME}/commit/m9123` },
-              content: { html_url: `https://github.com/student_gh/${REPO_NAME}/blob/main/${matched ? matched[1] : ''}` },
-            }),
-            { status: 201 }
-          );
-        }
-        return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 500 });
+      // playwright.config.ts already exists, tests/task-tracker.spec.ts is brand new
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        existingTreePaths: ['README.md', 'playwright.config.ts'],
+        commitSha: 'm9atomic',
       });
-
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = mock.fetchMock;
 
       const res = await syncModuleCodeToGitHub({
         userId: 'u-123',
@@ -302,7 +400,69 @@ describe('github-sync Unit Tests', () => {
       });
 
       expect(res.success).toBe(true);
-      expect(committedFiles).toEqual(['playwright.config.ts', 'tests/task-tracker.spec.ts']);
+      expect(res.syncedFiles).toEqual(['playwright.config.ts', 'tests/task-tracker.spec.ts']);
+      expect(res.commitUrl).toBe(`https://github.com/student_gh/${REPO_NAME}/commit/m9atomic`);
+      expect(mock.getTreePayloads()).toHaveLength(1);
+      expect(mock.getTreePayloads()[0].tree.map((t) => t.path)).toEqual([
+        'playwright.config.ts',
+        'tests/task-tracker.spec.ts',
+      ]);
+      expect(mock.getCommitPayloads()).toHaveLength(1);
+      expect(mock.getCommitPayloads()[0].message).toContain(
+        'add tests/task-tracker.spec.ts and update playwright.config.ts'
+      );
+    });
+
+    it('returns SYNC_TIMEOUT gracefully when GitHub API exceeds deadline (BUG-10)', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_slow_token',
+      } as never);
+
+      globalThis.fetch = vi.fn().mockImplementation(
+        (_url: string, opts?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            opts?.signal?.addEventListener('abort', () => {
+              const abortErr = new Error('The operation was aborted.');
+              abortErr.name = 'AbortError';
+              reject(abortErr);
+            });
+          })
+      );
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 9,
+        codePayload: 'export default {};',
+        timeoutMs: 30,
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toBe('SYNC_TIMEOUT');
+      expect(res.message).toContain('timeout');
+    });
+
+    it('bootstraps empty repository with Contents API when HEAD ref returns 409', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_empty_repo',
+      } as never);
+
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        emptyRepo: true,
+      });
+      globalThis.fetch = mock.fetchMock;
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 8,
+        assignmentTitle: 'Sesiunea 8: POM',
+        codePayload: JSON.stringify({ files: { 'pom.ts': 'interface Produs {}' } }),
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.syncedFiles).toEqual(['pom.ts']);
+      expect(mock.getContentsPuts()).toHaveLength(1);
+      expect(mock.getContentsPuts()[0].message).toContain('add pom.ts');
     });
   });
 });

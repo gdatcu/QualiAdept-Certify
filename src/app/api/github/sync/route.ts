@@ -70,12 +70,13 @@ export async function POST(req: Request) {
     });
 
     if (!syncResult.success) {
+      const status = syncResult.error === 'SYNC_TIMEOUT' ? 504 : 400;
       return NextResponse.json(
         {
           error: syncResult.message || 'Eroare la sincronizarea pe GitHub.',
           code: syncResult.error,
         },
-        { status: 400 }
+        { status }
       );
     }
 
@@ -85,6 +86,8 @@ export async function POST(req: Request) {
         repoUrl: syncResult.repoUrl,
         commitUrl: syncResult.commitUrl,
         filePath: syncResult.filePath,
+        syncedFiles: syncResult.syncedFiles,
+        commitMessage: syncResult.commitMessage,
       },
       { status: 200 }
     );
