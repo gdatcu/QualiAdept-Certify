@@ -4,6 +4,10 @@ import {
   parseInitialFiles,
   getAssignmentCurriculumTask,
   getNextModuleBannerMessage,
+  getWorkspaceFileIcon,
+  stripFilePrefix,
+  localizeFeedbackItems,
+  getWorkspaceTranslations,
   CURRICULUM_TASKS,
   transpileTsForPreview,
 } from '@/app/[locale]/assignment/[id]/AssignmentWorkspace';
@@ -527,6 +531,130 @@ const afiseazaTask = (id: number): void => {
     it('shows final curriculum completion message when nextModule is null', () => {
       const msgEn = getNextModuleBannerMessage(null, false, 'en', fixedNow);
       expect(msgEn).toContain('final module');
+    });
+  });
+
+  describe('Workspace i18n, Dynamic Feedback Localization & UI Consistency (BUG-05, BUG-06, BUG-07, BUG-11, BUG-12)', () => {
+    it('returns clean RO and EN translations with zero broken {wt.*} placeholders (BUG-05 & BUG-07)', () => {
+      for (const loc of ['ro', 'en'] as const) {
+        const wt = getWorkspaceTranslations(loc);
+        for (const [key, value] of Object.entries(wt)) {
+          if (typeof value === 'string') {
+            expect(value, `Broken placeholder in wt.${key} (${loc})`).not.toContain('{wt.');
+          }
+        }
+        expect(wt.tsOopEngine.length).toBeGreaterThan(5);
+      }
+
+      expect(getWorkspaceTranslations('ro').partialNoticeSuffix).toContain('Trimite Proiectul spre Validare');
+      expect(getWorkspaceTranslations('en').partialNoticeSuffix).toContain('Submit Project for Validation');
+    });
+
+    it('dynamically re-localizes feedback items across RO <-> EN using ruleIndex and diagnosticIndex (BUG-06)', () => {
+      const rulesJson = JSON.stringify([
+        {
+          file: 'pom.ts',
+          name: '[pom.ts] 1. Interfața de date Produs (id, nume, pret, inStoc)',
+          name_en: '[pom.ts] 1. Data interface Produs (id, nume, pret, inStoc)',
+          message: 'Cerința 1 eșuată',
+          message_en: 'Requirement 1 failed',
+          successMessage: 'Interfața Produs este definită corect.',
+          successMessage_en: 'Interface Produs is properly defined.',
+        },
+        {
+          file: 'pom.ts',
+          name: '[pom.ts] 7. Clasa HomePage extends BasePage (#search-bar privat + valideazaIncarcarea)',
+          name_en: '[pom.ts] 7. HomePage extends BasePage (private #search-bar + valideazaIncarcarea)',
+          message: 'Cerința 7 eșuată',
+          message_en: 'Requirement 7 failed',
+          successMessage: 'HomePage OK',
+          successMessage_en: 'HomePage OK EN',
+          diagnostics: [
+            {
+              pattern: 'public',
+              message: 'Selectorul #search-bar din HomePage este declarat public — trebuie declarat private.',
+              message_en: 'Selector #search-bar in HomePage is declared public — it must be declared private.',
+            },
+          ],
+        },
+      ]);
+
+      // Submitted while on EN locale, now viewing on RO locale
+      const enFeedback = [
+        {
+          check: '[pom.ts] 1. Data interface Produs (id, nume, pret, inStoc)',
+          passed: true,
+          message: 'Interface Produs is properly defined.',
+          file: 'pom.ts',
+          ruleIndex: 0,
+        },
+        {
+          check: '[pom.ts] 7. HomePage extends BasePage (private #search-bar + valideazaIncarcarea)',
+          passed: false,
+          message: 'Selector #search-bar in HomePage is declared public — it must be declared private.',
+          file: 'pom.ts',
+          ruleIndex: 1,
+          diagnosticIndex: 0,
+        },
+      ];
+
+      const localizedToRo = localizeFeedbackItems(enFeedback, rulesJson, 'ro');
+      expect(localizedToRo[0].check).toBe('[pom.ts] 1. Interfața de date Produs (id, nume, pret, inStoc)');
+      expect(localizedToRo[0].message).toBe('Interfața Produs este definită corect.');
+      expect(localizedToRo[1].check).toBe(
+        '[pom.ts] 7. Clasa HomePage extends BasePage (#search-bar privat + valideazaIncarcarea)'
+      );
+      expect(localizedToRo[1].message).toBe(
+        'Selectorul #search-bar din HomePage este declarat public — trebuie declarat private.'
+      );
+
+      // Legacy submission (no ruleIndex / no diagnosticIndex) switched from RO -> EN
+      const legacyRoFeedback = [
+        {
+          check: '[pom.ts] 1. Interfața de date Produs (id, nume, pret, inStoc)',
+          passed: true,
+          message: 'Interfața Produs este definită corect.',
+          file: 'pom.ts',
+        },
+        {
+          check: '[pom.ts] 7. Clasa HomePage extends BasePage (#search-bar privat + valideazaIncarcarea)',
+          passed: false,
+          message: 'Selectorul #search-bar din HomePage este declarat public — trebuie declarat private.',
+          file: 'pom.ts',
+        },
+      ];
+
+      const localizedToEn = localizeFeedbackItems(legacyRoFeedback, rulesJson, 'en');
+      expect(localizedToEn[0].check).toBe('[pom.ts] 1. Data interface Produs (id, nume, pret, inStoc)');
+      expect(localizedToEn[0].message).toBe('Interface Produs is properly defined.');
+      expect(localizedToEn[1].message).toBe(
+        'Selector #search-bar in HomePage is declared public — it must be declared private.'
+      );
+    });
+
+    it('returns consistent semantic file icons across editor, guide, and results (BUG-11)', () => {
+      expect(getWorkspaceFileIcon('playwright.config.ts')).toBe('⚙️');
+      expect(getWorkspaceFileIcon('task-tracker.spec.ts')).toBe('🎭');
+      expect(getWorkspaceFileIcon('pom.ts')).toBe('🔷');
+      expect(getWorkspaceFileIcon('style.css')).toBe('🎨');
+      expect(getWorkspaceFileIcon('app.js')).toBe('📜');
+      expect(getWorkspaceFileIcon('index.html')).toBe('🌐');
+    });
+
+    it('strips [fileName] prefix cleanly and keeps M08/M09 criteria titles aligned (BUG-12)', () => {
+      expect(stripFilePrefix('[pom.ts] 4. Constructor protejat în BasePage (protected page)', 'pom.ts')).toBe(
+        '4. Constructor protejat în BasePage (protected page)'
+      );
+      expect(stripFilePrefix('[playwright.config.ts] 1. Export defineConfig (TypeScript Config)')).toBe(
+        '1. Export defineConfig (TypeScript Config)'
+      );
+
+      expect(CURRICULUM_TASKS[8].criteria).toHaveLength(9);
+      expect(CURRICULUM_TASKS[8].criteria[3].title).toBe('4. Constructor protejat în BasePage (protected page)');
+      expect(CURRICULUM_TASKS[9].criteria).toHaveLength(11);
+      expect(CURRICULUM_TASKS[9].criteria[0].title).toBe(
+        '1. Importă defineConfig și devices din @playwright/test'
+      );
     });
   });
 });

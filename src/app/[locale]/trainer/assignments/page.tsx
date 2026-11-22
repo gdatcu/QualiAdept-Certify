@@ -127,7 +127,7 @@ export default async function TrainerAssignmentsPage() {
                   {assignments.map((assignment) => (
                     <tr key={assignment.id} className="hover:bg-zinc-800/40 transition-colors">
                       <td className="py-4 px-4 font-bold text-emerald-400 text-sm whitespace-nowrap">
-                        Module 0{assignment.module}
+                        Module {String(assignment.module).padStart(2, '0')}
                       </td>
                       <td className="py-4 px-4 max-w-md">
                         <div className="font-bold text-zinc-100 text-sm font-sans mb-0.5">

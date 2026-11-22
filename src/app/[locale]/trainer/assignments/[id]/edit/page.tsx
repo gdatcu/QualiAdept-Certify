@@ -51,7 +51,7 @@ export default async function EditAssignmentPage({ params }: PageProps) {
                 ✏️
               </div>
               <span className="font-semibold text-zinc-100 tracking-wide text-sm hidden sm:inline">
-                Edit Assessment Module 0{assignment.module}
+                Edit Assessment Module {String(assignment.module).padStart(2, '0')}
               </span>
             </div>
           </div>
@@ -76,7 +76,7 @@ export default async function EditAssignmentPage({ params }: PageProps) {
             <span className="text-xs font-mono text-zinc-400">Module ID: {assignment.id.substring(0, 12)}...</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-50 tracking-tight">
-            Edit Module 0{assignment.module}: {assignment.title}
+            Edit Module {String(assignment.module).padStart(2, '0')}: {assignment.title}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
             Modify module numbering, title, validation engine, or description requirements. Changes apply immediately across all student workspaces.

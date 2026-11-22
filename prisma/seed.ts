@@ -769,6 +769,13 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 1 failed: Define interface Produs with id: number, nume: string, pret: number, and inStoc: boolean.',
         successMessage: 'Interfața Produs este definită corect cu toate cele 4 câmpuri tipizate.',
         successMessage_en: 'Interface Produs is properly defined with all 4 typed properties.',
+        diagnostics: [
+          {
+            pattern: String.raw`interface\s+Produs\s*\{`,
+            message: 'Interfața Produs există, dar îi lipsesc unul sau mai multe câmpuri tipizate obligatorii (id: number, nume: string, pret: number, inStoc: boolean).',
+            message_en: 'Interface Produs exists, but is missing one or more required typed fields (id: number, nume: string, pret: number, inStoc: boolean).',
+          },
+        ],
       },
       {
         file: 'pom.ts',
@@ -780,6 +787,13 @@ const curriculum: CurriculumItem[] = [
         message_en: "Requirement 2 failed: Create utility type ProdusTest = Omit<Produs, 'id'>;.",
         successMessage: "Tipul utilitar ProdusTest = Omit<Produs, 'id'> este definit corect.",
         successMessage_en: "Utility type ProdusTest = Omit<Produs, 'id'> is properly defined.",
+        diagnostics: [
+          {
+            pattern: String.raw`type\s+ProdusTest\s*=`,
+            message: "Tipul ProdusTest este definit manual fără Omit — înlocuiește-l cu type ProdusTest = Omit<Produs, 'id'>;.",
+            message_en: "Type ProdusTest is defined manually without Omit — replace it with type ProdusTest = Omit<Produs, 'id'>;.",
+          },
+        ],
       },
       {
         file: 'pom.ts',
@@ -791,17 +805,31 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 3 failed: Declare the parent class using abstract class BasePage.',
         successMessage: 'Clasa abstractă BasePage este declarată corect.',
         successMessage_en: 'Abstract class BasePage is properly declared.',
+        diagnostics: [
+          {
+            pattern: String.raw`\bclass\s+BasePage\b`,
+            message: 'Clasa BasePage există, dar lipsește cuvântul cheie abstract (folosește abstract class BasePage).',
+            message_en: 'Class BasePage exists, but is missing the abstract keyword (use abstract class BasePage).',
+          },
+        ],
       },
       {
         file: 'pom.ts',
-        name: '[pom.ts] 4. Constructor cu proprietatea protected page în BasePage',
-        name_en: '[pom.ts] 4. Constructor with protected page in BasePage',
+        name: '[pom.ts] 4. Constructor protejat în BasePage (protected page)',
+        name_en: '[pom.ts] 4. Protected constructor in BasePage (protected page)',
         check: 'regex',
         pattern: String.raw`\babstract\s+class\s+BasePage\b[\s\S]*?(?:constructor\s*\([^)]*\bprotected\s+page\s*:\s*[A-Za-z0-9_<>| &]+|protected\s+page\s*:\s*[A-Za-z0-9_<>| &]+[\s\S]*?constructor\s*\()`,
         message: 'Cerința 4 eșuată: Adaugă în BasePage un constructor care primește și protejează obiectul page (ex: constructor(protected page: any) {}).',
         message_en: 'Requirement 4 failed: Add a constructor in BasePage that accepts and protects page (e.g. constructor(protected page: any) {}).',
         successMessage: 'Proprietatea protected page este încapsulată corect în constructorul BasePage.',
         successMessage_en: 'protected page property is properly encapsulated in BasePage constructor.',
+        diagnostics: [
+          {
+            pattern: String.raw`\babstract\s+class\s+BasePage\b[\s\S]*?constructor\s*\([^)]*\b(?:public|private)\s+page\b`,
+            message: 'Proprietatea page din BasePage nu folosește modificatorul protected — folosește constructor(protected page: any) {}.',
+            message_en: 'Property page in BasePage does not use the protected modifier — use constructor(protected page: any) {}.',
+          },
+        ],
       },
       {
         file: 'pom.ts',
@@ -824,6 +852,13 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 6 failed: Declare abstract contract abstract valideazaIncarcarea(): void; in BasePage.',
         successMessage: 'Metoda abstractă valideazaIncarcarea(): void impune corect contractul în BasePage.',
         successMessage_en: 'Abstract method valideazaIncarcarea(): void properly enforces the contract in BasePage.',
+        diagnostics: [
+          {
+            pattern: String.raw`\babstract\s+class\s+BasePage\b(?:(?!\bclass\s+)[\s\S])*?\bvalideazaIncarcarea\s*\(`,
+            message: 'Metoda valideazaIncarcarea() din BasePage trebuie declarată ca abstract valideazaIncarcarea(): void;.',
+            message_en: 'Method valideazaIncarcarea() in BasePage must be declared as abstract valideazaIncarcarea(): void;.',
+          },
+        ],
       },
       {
         file: 'pom.ts',
@@ -835,6 +870,28 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 7 failed: Create class HomePage extends BasePage with a private selector for #search-bar and the valideazaIncarcarea() implementation.',
         successMessage: 'Clasa HomePage extinde BasePage, încapsulează #search-bar și implementează valideazaIncarcarea().',
         successMessage_en: 'HomePage extends BasePage, encapsulates #search-bar, and implements valideazaIncarcarea().',
+        diagnostics: [
+          {
+            pattern: String.raw`\bclass\s+HomePage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\bpublic\s+(?:readonly\s+)?\w+(?:\s*:\s*string)?\s*=\s*['"\x60][^'"\x60]*#search-bar`,
+            message: 'Selectorul #search-bar din HomePage este declarat public — trebuie declarat private (Încapsulare).',
+            message_en: 'Selector #search-bar in HomePage is declared public — it must be declared private (Encapsulation).',
+          },
+          {
+            pattern: String.raw`\bclass\s+HomePage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\bprivate\s+(?:readonly\s+)?\w+(?:\s*:\s*string)?\s*=\s*['"\x60][^'"\x60]*#search-bar`,
+            message: 'Clasa HomePage are selectorul privat #search-bar, dar lipsește implementarea metodei valideazaIncarcarea().',
+            message_en: 'HomePage has private selector #search-bar, but is missing the valideazaIncarcarea() implementation.',
+          },
+          {
+            pattern: String.raw`\bclass\s+HomePage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?#search-bar`,
+            message: 'Selectorul #search-bar din HomePage trebuie declarat explicit cu modificatorul private.',
+            message_en: 'Selector #search-bar in HomePage must be explicitly declared with the private modifier.',
+          },
+          {
+            pattern: String.raw`\bclass\s+HomePage\b`,
+            message: 'Clasa HomePage există, dar trebuie să moștenească BasePage (class HomePage extends BasePage) și să includă #search-bar privat.',
+            message_en: 'Class HomePage exists, but must inherit from BasePage (class HomePage extends BasePage) and include private #search-bar.',
+          },
+        ],
       },
       {
         file: 'pom.ts',
@@ -846,6 +903,28 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 8 failed: Create class ProductPage extends BasePage with a private selector for .add-to-cart-btn and the valideazaIncarcarea() implementation.',
         successMessage: 'Clasa ProductPage extinde BasePage, încapsulează .add-to-cart-btn și implementează valideazaIncarcarea().',
         successMessage_en: 'ProductPage extends BasePage, encapsulates .add-to-cart-btn, and implements valideazaIncarcarea().',
+        diagnostics: [
+          {
+            pattern: String.raw`\bclass\s+ProductPage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\bpublic\s+(?:readonly\s+)?\w+(?:\s*:\s*string)?\s*=\s*['"\x60][^'"\x60]*\.add-to-cart-btn`,
+            message: 'Selectorul .add-to-cart-btn din ProductPage este declarat public — trebuie declarat private (Încapsulare).',
+            message_en: 'Selector .add-to-cart-btn in ProductPage is declared public — it must be declared private (Encapsulation).',
+          },
+          {
+            pattern: String.raw`\bclass\s+ProductPage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\bprivate\s+(?:readonly\s+)?\w+(?:\s*:\s*string)?\s*=\s*['"\x60][^'"\x60]*\.add-to-cart-btn`,
+            message: 'Clasa ProductPage are selectorul privat .add-to-cart-btn, dar lipsește implementarea metodei valideazaIncarcarea().',
+            message_en: 'ProductPage has private selector .add-to-cart-btn, but is missing the valideazaIncarcarea() implementation.',
+          },
+          {
+            pattern: String.raw`\bclass\s+ProductPage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\.add-to-cart-btn`,
+            message: 'Selectorul .add-to-cart-btn din ProductPage trebuie declarat explicit cu modificatorul private.',
+            message_en: 'Selector .add-to-cart-btn in ProductPage must be explicitly declared with the private modifier.',
+          },
+          {
+            pattern: String.raw`\bclass\s+ProductPage\b`,
+            message: 'Clasa ProductPage există, dar trebuie să moștenească BasePage (class ProductPage extends BasePage) și să includă .add-to-cart-btn privat.',
+            message_en: 'Class ProductPage exists, but must inherit from BasePage (class ProductPage extends BasePage) and include private .add-to-cart-btn.',
+          },
+        ],
       },
       {
         file: 'pom.ts',
@@ -857,6 +936,18 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 9 failed: Add public method adaugaInCos(produs: ProdusTest) in ProductPage that logs produs.nume via console.log.',
         successMessage: 'Metoda adaugaInCos(produs: ProdusTest) folosește contractul ProdusTest și loghează numele produsului.',
         successMessage_en: 'Method adaugaInCos(produs: ProdusTest) enforces the ProdusTest contract and logs the product name.',
+        diagnostics: [
+          {
+            pattern: String.raw`\bclass\s+ProductPage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\badaugaInCos\s*\(\s*\w+\s*:\s*Produs\b(?!Test)`,
+            message: 'Metoda adaugaInCos primește tipul Produs în loc de tipul utilitar ProdusTest (Omit<Produs, \'id\'>).',
+            message_en: 'Method adaugaInCos accepts Produs instead of utility type ProdusTest (Omit<Produs, \'id\'>).',
+          },
+          {
+            pattern: String.raw`\bclass\s+ProductPage\s+extends\s+BasePage\s*\{(?:(?!\bclass\s+)[\s\S])*?\badaugaInCos\s*\(\s*\w+\s*:\s*ProdusTest\s*\)`,
+            message: 'Metoda adaugaInCos(produs: ProdusTest) există, dar trebuie să afișeze produs.nume în consolă folosind console.log(...).',
+            message_en: 'Method adaugaInCos(produs: ProdusTest) exists, but must log produs.nume using console.log(...).',
+          },
+        ],
       },
     ]),
   },

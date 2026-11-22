@@ -9,6 +9,8 @@ export interface FeedbackItem {
   passed: boolean;
   message: string;
   file?: string;
+  ruleIndex?: number;
+  diagnosticIndex?: number;
 }
 
 export interface ValidationResponse {
@@ -226,8 +228,10 @@ export async function POST(req: NextRequest) {
       try {
         const rules = JSON.parse(targetAssignment.validationRules);
         if (Array.isArray(rules)) {
-          for (const r of rules) {
+          for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
+            const r = rules[ruleIndex];
             let passed = false;
+            let diagnosticIndex: number | undefined;
             const checkType = r.check || r.type || 'exists';
             const selector = r.selector || r.tag || r.value;
             let checkName = (isEn && r.name_en) ? r.name_en : (r.name || r.title || '');
@@ -264,9 +268,28 @@ export async function POST(req: NextRequest) {
               // Test against clean code without comments
               passed = regex.test(cleanTargetCode) || (targetFileName === undefined && (regex.test(cleanCssCode) || regex.test(cleanJsCode)));
               checkName = checkName || r.check || (isEn ? `Pattern check` : `Verificare conformitate cod`);
+
+              let specificDiagMsg: string | undefined;
+              if (!passed && Array.isArray(r.diagnostics)) {
+                for (let dIdx = 0; dIdx < r.diagnostics.length; dIdx++) {
+                  const diag = r.diagnostics[dIdx];
+                  if (diag && typeof diag.pattern === 'string') {
+                    try {
+                      if (new RegExp(diag.pattern, 'i').test(cleanTargetCode)) {
+                        diagnosticIndex = dIdx;
+                        specificDiagMsg = (isEn && diag.message_en) ? diag.message_en : diag.message;
+                        break;
+                      }
+                    } catch {
+                      // Ignore malformed diagnostic regex
+                    }
+                  }
+                }
+              }
+
               msg = passed
                 ? passMsg
-                : (failMsg || (isEn ? `Code does not match required structure.` : `Codul nu respectă cerința necesară.`));
+                : (specificDiagMsg || failMsg || (isEn ? `Code does not match required structure.` : `Codul nu respectă cerința necesară.`));
             } else if (checkType === 'regexInverted' || checkType === 'notRegex') {
               const pattern = r.pattern || r.value || '';
               const regex = new RegExp(pattern, 'i');
@@ -376,12 +399,17 @@ export async function POST(req: NextRequest) {
             }
 
             if (checkName) {
-              checks.push({
+              const feedbackEntry: FeedbackItem = {
                 check: checkName,
                 passed,
                 message: msg,
                 file: targetFileName || 'index.html',
-              });
+                ruleIndex,
+              };
+              if (diagnosticIndex !== undefined) {
+                feedbackEntry.diagnosticIndex = diagnosticIndex;
+              }
+              checks.push(feedbackEntry);
             }
           }
         }

@@ -17,11 +17,140 @@ const Editor = dynamic(() => import('@monaco-editor/react'), {
   ),
 });
 
-interface FeedbackItem {
+export interface FeedbackItem {
   check: string;
   passed: boolean;
   message: string;
   file?: string;
+  ruleIndex?: number;
+  diagnosticIndex?: number;
+}
+
+interface ParsedValidationRule {
+  file?: string;
+  target?: string;
+  name?: string;
+  name_en?: string;
+  title?: string;
+  message?: string;
+  message_en?: string;
+  successMessage?: string;
+  successMessage_en?: string;
+  diagnostics?: Array<{
+    pattern?: string;
+    message?: string;
+    message_en?: string;
+  }>;
+}
+
+export function getWorkspaceFileIcon(fileName: string): string {
+  if (fileName === 'playwright.config.ts') return '⚙️';
+  if (fileName.endsWith('.spec.ts')) return '🎭';
+  if (fileName.endsWith('.css')) return '🎨';
+  if (fileName.endsWith('.ts') || fileName.endsWith('.tsx')) return '🔷';
+  if (fileName.endsWith('.js') || fileName.endsWith('.jsx')) return '📜';
+  return '🌐';
+}
+
+export function stripFilePrefix(label: string, fileName?: string): string {
+  if (!label) return '';
+  if (fileName) {
+    const escaped = fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return label.replace(new RegExp(`^\\[${escaped}\\]\\s*`, 'i'), '').trim();
+  }
+  return label.replace(/^\[[^\]]+\]\s*/, '').trim();
+}
+
+/**
+ * Re-localizes saved FeedbackItems dynamically into the currently active UI locale
+ * using assignment.validationRules metadata (supports both new ruleIndex-tagged
+ * submissions and legacy submissions already stored in PostgreSQL).
+ */
+export function localizeFeedbackItems(
+  feedback: FeedbackItem[],
+  validationRulesJson: string | null | undefined,
+  locale: string = 'ro'
+): FeedbackItem[] {
+  if (!validationRulesJson || feedback.length === 0) return feedback;
+
+  let rules: ParsedValidationRule[] = [];
+  try {
+    const parsed = JSON.parse(validationRulesJson);
+    if (Array.isArray(parsed)) rules = parsed;
+  } catch {
+    return feedback;
+  }
+
+  if (rules.length === 0) return feedback;
+
+  const isEn = locale === 'en';
+  const defaultPassMsg = isEn ? 'Requirement validated successfully.' : 'Cerință validată cu succes.';
+
+  const resolveRuleFile = (r: ParsedValidationRule): string =>
+    r.file || (r.target === 'css' ? 'style.css' : r.target === 'ts' ? 'app.ts' : r.target === 'js' ? 'app.js' : 'index.html');
+
+  // Pre-group rules by file for legacy submissions that lack ruleIndex
+  const rulesByFile: Record<string, ParsedValidationRule[]> = {};
+  for (const r of rules) {
+    const f = resolveRuleFile(r);
+    if (!rulesByFile[f]) rulesByFile[f] = [];
+    rulesByFile[f].push(r);
+  }
+  const perFileCursor: Record<string, number> = {};
+
+  return feedback.map((item, idx) => {
+    let matchedRule: ParsedValidationRule | undefined;
+
+    if (typeof item.ruleIndex === 'number' && rules[item.ruleIndex]) {
+      matchedRule = rules[item.ruleIndex];
+    } else if (feedback.length === rules.length) {
+      matchedRule = rules[idx];
+    } else if (item.file && rulesByFile[item.file]) {
+      const pos = perFileCursor[item.file] || 0;
+      matchedRule = rulesByFile[item.file][pos];
+      perFileCursor[item.file] = pos + 1;
+    }
+
+    if (!matchedRule) return item;
+
+    const localizedCheck =
+      (isEn && matchedRule.name_en)
+        ? matchedRule.name_en
+        : (matchedRule.name || matchedRule.title || item.check);
+
+    let localizedMessage = item.message;
+    if (item.passed) {
+      localizedMessage =
+        (isEn && matchedRule.successMessage_en)
+          ? matchedRule.successMessage_en
+          : (matchedRule.successMessage || defaultPassMsg);
+    } else {
+      let diagMessage: string | undefined;
+      if (
+        typeof item.diagnosticIndex === 'number' &&
+        matchedRule.diagnostics?.[item.diagnosticIndex]
+      ) {
+        const diag = matchedRule.diagnostics[item.diagnosticIndex];
+        diagMessage = (isEn && diag.message_en) ? diag.message_en : diag.message;
+      } else if (Array.isArray(matchedRule.diagnostics)) {
+        const matchedDiag = matchedRule.diagnostics.find(
+          (d) => d.message === item.message || d.message_en === item.message
+        );
+        if (matchedDiag) {
+          diagMessage = (isEn && matchedDiag.message_en) ? matchedDiag.message_en : matchedDiag.message;
+        }
+      }
+      localizedMessage =
+        diagMessage ||
+        ((isEn && matchedRule.message_en) ? matchedRule.message_en : (matchedRule.message || item.message));
+    }
+
+    return {
+      ...item,
+      check: localizedCheck,
+      message: localizedMessage,
+    };
+  });
 }
 
 interface ValidationResponse {
@@ -799,14 +928,14 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
       },
       {
         file: 'pom.ts',
-        title: '7. HomePage extends BasePage (#search-bar privat + valideazaIncarcarea)',
+        title: '7. Clasa HomePage extends BasePage (#search-bar privat + valideazaIncarcarea)',
         title_en: '7. HomePage extends BasePage (private #search-bar + valideazaIncarcarea)',
         detail: 'Extinde BasePage, încapsulează selectorul privat #search-bar și implementează valideazaIncarcarea().',
         detail_en: 'Extend BasePage, encapsulate private #search-bar selector, and implement valideazaIncarcarea().',
       },
       {
         file: 'pom.ts',
-        title: '8. ProductPage extends BasePage (.add-to-cart-btn privat + valideazaIncarcarea)',
+        title: '8. Clasa ProductPage extends BasePage (.add-to-cart-btn privat + valideazaIncarcarea)',
         title_en: '8. ProductPage extends BasePage (private .add-to-cart-btn + valideazaIncarcarea)',
         detail: 'Extinde BasePage, încapsulează selectorul privat .add-to-cart-btn și implementează valideazaIncarcarea().',
         detail_en: 'Extend BasePage, encapsulate private .add-to-cart-btn selector, and implement valideazaIncarcarea().',
@@ -839,22 +968,22 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
       },
       {
         file: 'playwright.config.ts',
-        title: "2. Exportă implicit defineConfig({...}) și setează testDir: './tests'",
-        title_en: "2. Default export defineConfig({...}) and set testDir: './tests'",
+        title: "2. Exportă defineConfig și setează testDir: './tests'",
+        title_en: "2. Default export defineConfig with testDir: './tests'",
         detail: "Exportă configurația cu export default defineConfig({ testDir: './tests', ... }).",
         detail_en: "Export config via export default defineConfig({ testDir: './tests', ... }).",
       },
       {
         file: 'playwright.config.ts',
-        title: '3. Timeout de 30 de secunde și execuție paralelă (fullyParallel: true)',
-        title_en: '3. 30-second test timeout and fullyParallel: true',
+        title: '3. Timeout 30s și execuție paralelă (fullyParallel: true)',
+        title_en: '3. 30s test timeout and fullyParallel: true',
         detail: 'Setează explicit timeout: 30_000 (sau 30000 / 30 * 1000) și fullyParallel: true.',
         detail_en: 'Explicitly set timeout: 30_000 (or 30000 / 30 * 1000) and fullyParallel: true.',
       },
       {
         file: 'playwright.config.ts',
-        title: '4. Blocul use: baseURL, testIdAttribute și trace',
-        title_en: '4. use block: baseURL, testIdAttribute, and trace',
+        title: '4. Blocul use (baseURL, testIdAttribute, trace)',
+        title_en: '4. use block (baseURL, testIdAttribute, trace)',
         detail:
           "Setează baseURL: 'https://tasktracker.qualiadept.eu' (sau 'http://localhost:3000' / process.env.BASE_URL ?? '...'), testIdAttribute: 'data-testid' și trace: 'on-first-retry'.",
         detail_en:
@@ -862,8 +991,8 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
       },
       {
         file: 'playwright.config.ts',
-        title: "5. Proiectul de browser chromium cu devices['Desktop Chrome']",
-        title_en: "5. Browser project chromium using devices['Desktop Chrome']",
+        title: "5. Proiectul chromium cu devices['Desktop Chrome']",
+        title_en: "5. chromium project using devices['Desktop Chrome']",
         detail: "Configurează în projects cel puțin proiectul { name: 'chromium', use: { ...devices['Desktop Chrome'] } } (recomandat și firefox, webkit).",
         detail_en: "Configure at least { name: 'chromium', use: { ...devices['Desktop Chrome'] } } inside projects (firefox and webkit recommended too).",
       },
@@ -876,10 +1005,10 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
       },
       {
         file: 'task-tracker.spec.ts',
-        title: "7. Definește un test cu titlu descriptiv (nu 'test') și fixture-ul { page }",
-        title_en: "7. Define a test with a descriptive title (not 'test') and { page } fixture",
-        detail: "Folosește test('...', async ({ page }) => { ... }) cu un titlu descriptiv de cel puțin 8 caractere.",
-        detail_en: "Use test('...', async ({ page }) => { ... }) with a descriptive title of at least 8 characters.",
+        title: '7. Test cu titlu descriptiv și fixture-ul { page }',
+        title_en: '7. Descriptive test title and { page } fixture',
+        detail: "Folosește test('...', async ({ page }) => { ... }) cu un titlu descriptiv de cel puțin 8 caractere (nu 'test').",
+        detail_en: "Use test('...', async ({ page }) => { ... }) with a descriptive title of at least 8 characters (not 'test').",
       },
       {
         file: 'task-tracker.spec.ts',
@@ -890,22 +1019,22 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
       },
       {
         file: 'task-tracker.spec.ts',
-        title: '9. Completează input-task-name cu .fill() și apasă submit-task-btn cu .click()',
-        title_en: '9. Fill input-task-name with .fill() and click submit-task-btn with .click()',
+        title: '9. Interacțiune input-task-name (.fill) și submit-task-btn (.click)',
+        title_en: '9. Fill input-task-name and click submit-task-btn',
         detail: "Folosește page.getByTestId('input-task-name').fill(...) și page.getByTestId('submit-task-btn').click().",
         detail_en: "Use page.getByTestId('input-task-name').fill(...) and page.getByTestId('submit-task-btn').click().",
       },
       {
         file: 'task-tracker.spec.ts',
-        title: "10. Asertare web-first pe task-list cu .toContainText(...)",
-        title_en: "10. Web-first assertion on task-list with .toContainText(...)",
+        title: '10. Asertare web-first pe task-list (.toContainText)',
+        title_en: '10. Web-first assertion on task-list (.toContainText)',
         detail: "Verifică lista cu await expect(page.getByTestId('task-list')).toContainText(...).",
         detail_en: "Assert the list contains the new task via await expect(page.getByTestId('task-list')).toContainText(...).",
       },
       {
         file: 'task-tracker.spec.ts',
-        title: '11. Zero Hard-Wait Policy (fără waitForTimeout, { force: true } sau URL absolut)',
-        title_en: '11. Zero Hard-Wait Policy (no waitForTimeout, { force: true }, or absolute URL)',
+        title: '11. Zero Hard-Wait Policy (fără waitForTimeout, force: true, URL absolut)',
+        title_en: '11. Zero Hard-Wait Policy (no waitForTimeout, force: true, absolute URL)',
         detail: 'Regulă strictă QA: sunt interzise page.waitForTimeout(...), opțiunea { force: true } și URL-urile absolute în page.goto(...).',
         detail_en: 'Strict QA rule: page.waitForTimeout(...), { force: true }, and absolute URLs in page.goto(...) are forbidden.',
       },
@@ -942,10 +1071,13 @@ export function getAssignmentCurriculumTask(
       const rules = JSON.parse(assignment.validationRules);
       if (Array.isArray(rules)) {
         parsedCriteria = rules.map((r: Record<string, string | undefined>) => {
-          const file = r.file || (r.target === 'css' ? 'style.css' : r.target === 'js' ? 'app.js' : 'index.html');
-          const title = (isEn && r.name_en)
-            ? r.name_en
-            : (r.name || r.title || r.message || r.selector || 'Assertion Check');
+          const file = r.file || (r.target === 'css' ? 'style.css' : r.target === 'ts' ? 'app.ts' : r.target === 'js' ? 'app.js' : 'index.html');
+          const title = stripFilePrefix(
+            (isEn && r.name_en)
+              ? r.name_en
+              : (r.name || r.title || r.message || r.selector || 'Assertion Check'),
+            file
+          );
           const detail = (isEn && r.message_en)
             ? r.message_en
             : (r.message || (r.selector ? `Selector: ${r.selector}` : undefined));
@@ -978,64 +1110,113 @@ export function getAssignmentCurriculumTask(
 export const getWorkspaceTranslations = (locale: string) => {
   const isRo = locale === 'ro';
   return {
+    backToDashboard: isRo ? '← Dashboard' : '← Dashboard',
+    leaderboard: isRo ? 'Clasament' : 'Leaderboard',
+    godMode: isRo ? 'Panou God Mode' : 'God Mode Dashboard',
+    signOut: isRo ? 'Deconectare' : 'Sign Out',
+    signIn: isRo ? 'Autentificare' : 'Sign In',
+    signInWithGithub: isRo ? 'Autentificare cu GitHub' : 'Sign In with GitHub',
+    signInToSubmit: isRo ? 'Autentifică-te cu GitHub pentru a trimite' : 'Sign In with GitHub to Submit',
+    moduleBadge: (mod: number) => (isRo ? `Modulul ${mod < 10 ? `0${mod}` : mod}` : `Module ${mod < 10 ? `0${mod}` : mod}`),
     staticValidation: isRo ? 'Validare Statică' : 'STATIC Validation',
     dynamicValidation: isRo ? 'Validare Dinamică' : 'DYNAMIC Validation',
     moduleCompleted: isRo ? 'Modul Finalizat' : 'Module Completed',
     submissions: isRo ? 'Trimiteri' : 'Submissions',
-    attempts: isRo ? 'Încercări' : 'Attempts',
+    attemptsCount: (count: number) =>
+      isRo
+        ? `${count} ${count === 1 ? 'Încercare' : 'Încercări'}`
+        : `${count} ${count === 1 ? 'Attempt' : 'Attempts'}`,
+    attemptNumber: (num: number) => (isRo ? `Încercarea #${num}` : `Attempt #${num}`),
     role: isRo ? 'Rol' : 'Role',
     guest: isRo ? 'Vizitator' : 'Guest',
+    trainerRole: isRo ? 'INSTRUCTOR' : 'TRAINER',
+    studentRole: isRo ? 'CURSANT' : 'STUDENT',
     assignmentPassed: isRo ? 'Modul Promovat!' : 'Assignment Passed!',
     assignmentPassedDesc: isRo
       ? 'Editorul este blocat pentru a preveni modificările accidentale. Apasă "Editează / Retrimite Codul" pentru a-ți actualiza soluția.'
-      : 'The editor is read-only to prevent accidental overwrites. Click "Edit / Resubmit" to modify your solution.',
+      : 'The editor is read-only to prevent accidental overwrites. Click "Edit / Resubmit Code" to modify your solution.',
     editResubmit: isRo ? 'Editează / Retrimite Codul' : 'Edit / Resubmit Code',
     checkFile: (file: string) => (isRo ? `Verifică ${file}` : `Check ${file}`),
-    resetCode: isRo ? 'Resetează Codul' : '{wt.resetCode}',
-    livePreview: isRo ? 'Previzualizare Live' : '{wt.livePreview}',
-    editing: (file: string) => (isRo ? `Editare: ${file}` : `Editing: ${file}`),
-    projectFiles: (count: number) => (isRo ? `${count} fișiere în proiect` : `${count} project files`),
-    lines: (count: number) => (isRo ? `${count} linii` : `${count} lines`),
+    checkingFile: (file: string) => (isRo ? `Se verifică ${file}...` : `Checking ${file}...`),
+    resetCode: isRo ? 'Resetează Codul' : 'Reset Code',
+    livePreview: isRo ? 'Previzualizare Live' : 'Live Preview',
+    hidePreview: isRo ? 'Ascunde Preview' : 'Hide Preview',
+    editingLabel: isRo ? 'Editare:' : 'Editing:',
+    projectFiles: (count: number) =>
+      isRo
+        ? `${count} ${count === 1 ? 'fișier în proiect' : 'fișiere în proiect'}`
+        : `${count} ${count === 1 ? 'project file' : 'project files'}`,
+    lines: (count: number) =>
+      isRo
+        ? `${count} ${count === 1 ? 'linie' : 'linii'}`
+        : `${count} ${count === 1 ? 'line' : 'lines'}`,
+    activeLabel: isRo ? 'Activ:' : 'Active:',
+    totalFilesLabel: isRo ? 'Total Fișiere:' : 'Total Files:',
+    validatingProject: isRo ? '⚙️ Se validează proiectul...' : '⚙️ Validating Project...',
+    pleaseWait: (sec: number) => (isRo ? `⏳ Așteaptă ${sec}s` : `⏳ Please wait ${sec}s`),
     submitProject: isRo ? 'Trimite Proiectul spre Validare' : 'Submit Project for Validation',
     submitCode: isRo ? 'Trimite Codul' : 'Submit Code',
     syncToGitHub: isRo ? 'Sincronizează pe GitHub' : 'Sync to GitHub',
+    syncFileToGitHub: (file: string) => (isRo ? `Sincronizează ${file} pe GitHub` : `Sync ${file} to GitHub`),
+    syncFileShort: (file: string) => (isRo ? `Sync ${file}` : `Sync ${file}`),
+    syncing: isRo ? 'Se sincronizează...' : 'Syncing...',
+    syncingFile: (file: string) => (isRo ? `Se sincronizează ${file}...` : `Syncing ${file}...`),
     unlockEditor: isRo ? 'Deblochează Editorul' : 'Unlock Editor',
-    activeFooter: (file: string, count: number) =>
-      isRo ? `Activ: ${file}  Total Fișiere: ${count}` : `Active: ${file}  Total Files: ${count}`,
-    submissionHistory: isRo ? 'Istoric Trimiteri' : '{wt.submissionHistory}',
-    gitHistoryDesc: isRo ? 'Istoricul trimiterilor pentru acest modul' : '{wt.gitHistoryDesc}',
-    noSubmissions: isRo ? 'Nicio trimitere înregistrată încă pentru acest modul.' : '{wt.noSubmissions}',
+    submissionAlert: isRo ? 'Alertă Validare' : 'Submission Alert',
+    submissionHistory: isRo ? 'Istoric Trimiteri' : 'Submission History Log',
+    gitHistoryDesc: isRo ? 'Istoricul trimiterilor pentru acest modul' : 'Submission history for this module',
+    noSubmissions: isRo ? 'Nicio trimitere înregistrată încă pentru acest modul.' : 'No submissions recorded yet for this module.',
     activeCode: isRo ? 'Cod Activ' : 'Active Code',
-    viewCode: isRo ? 'Vizualizează Cod' : 'View Code',
+    loadCode: isRo ? 'Încarcă Cod' : 'Load Code',
     greenWallTitle: isRo ? 'Panou Evaluare & Criterii' : 'Green Wall Feedback',
     domAssertions: isRo ? 'Aserțiuni automate DOM & JS' : 'Automated DOM Assertions',
+    tsOopEngine: isRo ? 'Analiză statică TypeScript / OOP' : 'TypeScript / OOP Static Analysis',
     playwrightEngine: isRo ? 'Analiză motor Playwright' : 'Playwright Engine Analysis',
     tabCriteria: isRo ? 'Cerințe & Ghid' : 'Requirements & Guide',
     tabResults: isRo ? 'Rezultate Validare' : 'Validation Results',
     guideHeader: isRo ? 'Ghid de Rezolvare & Criterii de Validare' : 'Implementation Guide & Validation Criteria',
     guideSubhead: isRo
-      ? 'Implementează cerințele de mai jos, apoi apasă Submit pentru validare automată.'
+      ? 'Implementează cerințele de mai jos, apoi apasă Trimite pentru validare automată.'
       : 'Implement the requirements below, then click Submit for automated validation.',
     businessTask: isRo ? 'Sarcina ta de Business' : 'Your Business Task',
     note: isRo ? 'Notă:' : 'Note:',
     technicalCriteria: isRo ? 'Cerințe Tehnice (Acceptance Criteria)' : 'Technical Acceptance Criteria',
-    requirementsCount: (count: number) => (isRo ? `${count} cerințe` : `${count} requirements`),
+    requirementsCount: (count: number) =>
+      isRo
+        ? `${count} ${count === 1 ? 'cerință' : 'cerințe'}`
+        : `${count} ${count === 1 ? 'requirement' : 'requirements'}`,
     bottomTip: isRo
-      ? 'Verifică codul fiecărui fișier cu butonul "Check [fișier]" din editor, sau apasă butonul mare de jos când proiectul este gata.'
-      : 'Test individual files using the "Check [file]" button in the editor, or click the bottom submit button when your project is ready.',
+      ? 'Verifică codul fiecărui fișier cu butonul "Verifică [fișier]" din editor, sau apasă "Trimite Proiectul spre Validare" când proiectul este gata.'
+      : 'Test individual files using the "Check [file]" button in the editor, or click "Submit Project for Validation" when your project is ready.',
+    parsingTitle: isRo ? 'Se analizează și se evaluează codul' : 'Parsing AST & Evaluating',
+    checkingFileSub: (file: string) =>
+      isRo ? `Se rulează aserțiunile pentru ${file}...` : `Running targeted assertions for ${file}...`,
+    evaluatingSub: isRo ? 'Se rulează verificările automate...' : 'Running automated code inspectors...',
     statusPass: isRo ? 'STATUS: TRECUT' : 'STATUS: PASS',
     statusFail: isRo ? 'STATUS: PICAT' : 'STATUS: FAIL',
-    allChecksPassed: isRo ? 'Toate Aserțiunile au Trecut!' : '{wt.allChecksPassed}',
-    validationFailed: isRo ? 'Validare Eșuată' : '{wt.validationFailed}',
+    partialCheckBadge: (file: string) => (isRo ? `VERIFICARE PARȚIALĂ: ${file}` : `PARTIAL CHECK: ${file}`),
+    partialPassTitle: (file: string) =>
+      isRo ? `Toate verificările au trecut pentru ${file}!` : `All checks passed for ${file}!`,
+    partialFailTitle: (file: string) =>
+      isRo ? `Probleme găsite în ${file}` : `Issues found in ${file}`,
+    allChecksPassed: isRo ? 'Toate Aserțiunile au Trecut!' : 'All Checks Passed!',
+    validationFailed: isRo ? 'Validare Eșuată' : 'Validation Failed',
     score: isRo ? 'Scor' : 'Score',
-    modulePassedCongrats: isRo ? '🎉 Modul Promovat!' : '{wt.modulePassedCongrats}',
-    modulePassedDesc: isRo
-      ? 'Următorul modul din programă este acum deblocat în Dashboard.'
-      : '{wt.modulePassedDesc}',
-    dashboardBtn: isRo ? 'Către {wt.dashboardBtn}' : 'Dashboard →',
+    partialNoticePrefix: isRo ? 'Verificare parțială pentru' : 'Partial check for',
+    partialNoticeSuffix: isRo
+      ? 'Când ești gata, trimite întregul proiect cu butonul "Trimite Proiectul spre Validare".'
+      : 'When ready, submit the full project using "Submit Project for Validation".',
+    modulePassedCongrats: isRo ? '🎉 Modul Promovat!' : '🎉 Module Passed!',
+    dashboardBtn: isRo ? 'Dashboard →' : 'Dashboard →',
     assertionResults: isRo ? 'REZULTATE ASERȚIUNI' : 'ASSERTION RESULTS',
+    passedCountBadge: (passed: number, total: number) =>
+      isRo ? `${passed}/${total} Trecute` : `${passed}/${total} Passed`,
+    activeEditor: isRo ? '✓ Editor Activ' : '✓ Active Editor',
+    openFile: (file: string) => (isRo ? `Deschide ${file} →` : `Open ${file} →`),
     evaluatedAcross: (count: number) =>
-      isRo ? `Evaluate pe ${count} ${count === 1 ? 'fișier' : 'fișiere'}` : `Evaluated across ${count} ${count === 1 ? 'file' : 'files'}`,
+      isRo
+        ? `Evaluate pe ${count} ${count === 1 ? 'fișier' : 'fișiere'}`
+        : `Evaluated across ${count} ${count === 1 ? 'file' : 'files'}`,
     noResultsYetTitle: isRo ? 'Niciun rezultat încă' : 'No validation results yet',
     noResultsYetDesc: isRo
       ? 'Scrie codul în editorul din stânga și apasă "Trimite Proiectul spre Validare" pentru a rula testele.'
@@ -2546,6 +2727,13 @@ export default function AssignmentWorkspace({
 </html>`;
 
   const isTrainer = session?.user?.role === 'TRAINER';
+  const localizedFeedback = useMemo(
+    () =>
+      validationResult
+        ? localizeFeedbackItems(validationResult.feedback, assignment.validationRules, locale)
+        : [],
+    [validationResult, assignment.validationRules, locale]
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-500 selection:text-zinc-950 flex flex-col">
@@ -2554,7 +2742,7 @@ export default function AssignmentWorkspace({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-emerald-400 transition-colors mr-2">
-              <span>← Dashboard</span>
+              <span>{wt.backToDashboard}</span>
             </Link>
             <div className="h-6 w-px bg-zinc-800 hidden sm:block"></div>
             <Link href="/" className="flex items-center gap-2 group hover:opacity-90 transition-opacity">
@@ -2575,14 +2763,14 @@ export default function AssignmentWorkspace({
                   href="/leaderboard"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-amber-300 border border-amber-800/60 text-xs font-mono font-bold transition-all shadow-[0_0_12px_rgba(245,158,11,0.15)]"
                 >
-                  <span>🏆 Leaderboard</span>
+                  <span>🏆 {wt.leaderboard}</span>
                 </Link>
                 {isTrainer && (
                   <Link
                     href="/trainer"
                     className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-950 hover:bg-purple-900 text-purple-200 border border-purple-700 text-xs font-mono font-bold transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]"
                   >
-                    <span>⚡ God Mode Dashboard</span>
+                    <span>⚡ {wt.godMode}</span>
                   </Link>
                 )}
                 <div className="flex items-center gap-2.5 bg-zinc-900/80 px-3 py-1.5 rounded-full border border-zinc-800">
@@ -2603,7 +2791,7 @@ export default function AssignmentWorkspace({
                       {session.user.name || 'Student'}
                     </span>
                     <span className="text-[10px] text-zinc-400 font-mono leading-tight">
-                      {session.user.role || 'STUDENT'}
+                      {session.user.role === 'TRAINER' ? wt.trainerRole : wt.studentRole}
                     </span>
                   </div>
                 </div>
@@ -2612,7 +2800,7 @@ export default function AssignmentWorkspace({
                   onClick={() => signOut()}
                   className="text-xs text-zinc-400 hover:text-rose-400 font-mono px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800 hover:border-rose-900 transition-colors cursor-pointer"
                 >
-                  Sign Out
+                  {wt.signOut}
                 </button>
               </div>
             ) : (
@@ -2623,7 +2811,7 @@ export default function AssignmentWorkspace({
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                 </svg>
-                Sign In with GitHub
+                {wt.signInWithGithub}
               </button>
             )}
           </div>
@@ -2640,15 +2828,15 @@ export default function AssignmentWorkspace({
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-zinc-800 text-cyan-400 border border-zinc-700">
-                  Module {assignment.module}
+                  {wt.moduleBadge(assignment.module)}
                 </span>
                 <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/60 flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                  {assignment.validationType} Validation
+                  {assignment.validationType === 'DYNAMIC' ? wt.dynamicValidation : wt.staticValidation}
                 </span>
                 {isMostRecentPassed && (
                   <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-emerald-950/80 text-emerald-400 border border-emerald-800 flex items-center gap-1 font-semibold">
-                    ✓ Module Completed
+                    ✓ {wt.moduleCompleted}
                   </span>
                 )}
               </div>
@@ -2666,14 +2854,18 @@ export default function AssignmentWorkspace({
             {/* User Session Quick Card */}
             <div className="flex items-center gap-4 bg-zinc-950/70 p-3.5 rounded-xl border border-zinc-800/80 text-xs font-mono self-start md:self-auto">
               <div>
-                <span className="text-zinc-400 block text-[10px] uppercase tracking-wider">Submissions</span>
-                <span className="text-emerald-400 font-bold block">{submissions.length} Attempts</span>
+                <span className="text-zinc-400 block text-[10px] uppercase tracking-wider">{wt.submissions}</span>
+                <span className="text-emerald-400 font-bold block">{wt.attemptsCount(submissions.length)}</span>
               </div>
               <div className="h-8 w-px bg-zinc-800"></div>
               <div>
-                <span className="text-zinc-400 block text-[10px] uppercase tracking-wider">Role</span>
+                <span className="text-zinc-400 block text-[10px] uppercase tracking-wider">{wt.role}</span>
                 <span className="text-emerald-400 font-semibold uppercase block">
-                  {session?.user?.role || 'Guest'}
+                  {session?.user?.role === 'TRAINER'
+                    ? wt.trainerRole
+                    : session?.user?.role
+                      ? wt.studentRole
+                      : wt.guest}
                 </span>
               </div>
             </div>
@@ -2688,9 +2880,9 @@ export default function AssignmentWorkspace({
                 ✓
               </div>
               <div>
-                <h3 className="text-sm font-bold text-emerald-200">Assignment Passed!</h3>
+                <h3 className="text-sm font-bold text-emerald-200">{wt.assignmentPassed}</h3>
                 <p className="text-xs text-emerald-400/90 mt-0.5">
-                  The editor is read-only to prevent accidental overwrites. Click &quot;Edit / Resubmit&quot; to modify your solution.
+                  {wt.assignmentPassedDesc}
                 </p>
               </div>
             </div>
@@ -2699,7 +2891,7 @@ export default function AssignmentWorkspace({
               onClick={() => setIsUnlockedForEdit(true)}
               className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs font-mono transition-all shadow-md cursor-pointer whitespace-nowrap self-stretch sm:self-auto text-center"
             >
-              🔓 Edit / Resubmit Code
+              🔓 {wt.editResubmit}
             </button>
           </div>
         )}
@@ -2751,7 +2943,7 @@ export default function AssignmentWorkspace({
                     onClick={() => handleValidateFile(activeFile)}
                     disabled={isValidating || Boolean(isValidatingFile) || !isUnlockedForEdit}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/50 hover:border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={`Rulează verificarea rapidă pentru ${activeFile}`}
+                    title={wt.checkFile(activeFile)}
                   >
                     {isValidatingFile === activeFile ? (
                       <>
@@ -2759,11 +2951,11 @@ export default function AssignmentWorkspace({
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Checking {activeFile}...</span>
+                        <span>{wt.checkingFile(activeFile)}</span>
                       </>
                     ) : (
                       <>
-                        <span>⚡ Check {activeFile}</span>
+                        <span>⚡ {wt.checkFile(activeFile)}</span>
                       </>
                     )}
                   </button>
@@ -2793,11 +2985,15 @@ export default function AssignmentWorkspace({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
                     title={
                       assignment.module <= 7 && previousPassedPayload
-                        ? `Resetează și preia codul validat din Sesiunea ${assignment.module - 1}`
-                        : 'Resetează fișierele la codul inițial de pornire'
+                        ? (locale === 'ro'
+                            ? `Resetează și preia codul validat din Sesiunea ${assignment.module - 1}`
+                            : `Reset and inherit validated code from Session ${assignment.module - 1}`)
+                        : (locale === 'ro'
+                            ? 'Resetează fișierele la codul inițial de pornire'
+                            : 'Reset files to starter code')
                     }
                   >
-                    <span>🔄 Reset Code</span>
+                    <span>🔄 {wt.resetCode}</span>
                   </button>
 
                   {assignment.validationType !== 'DYNAMIC' && availableFiles.some((f) => f.name === 'index.html') && (
@@ -2810,7 +3006,7 @@ export default function AssignmentWorkspace({
                         }`}
                     >
                       <span className={`h-2 w-2 rounded-full ${showLivePreview ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
-                      <span>{showLivePreview ? 'Hide Preview' : '👁️ Live Preview'}</span>
+                      <span>{showLivePreview ? wt.hidePreview : `👁️ ${wt.livePreview}`}</span>
                     </button>
                   )}
                 </div>
@@ -2819,14 +3015,14 @@ export default function AssignmentWorkspace({
               {/* Active Tab Subheader Banner */}
               <div className="bg-zinc-950/60 px-4 py-1.5 border-b border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-400">
                 <div className="flex items-center gap-2">
-                  <span className="text-zinc-500">Editing:</span>
+                  <span className="text-zinc-500">{wt.editingLabel}</span>
                   <span className="text-emerald-400 font-bold">{activeFile}</span>
                   <span className="text-zinc-600">({currentFileObj.language})</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span>{availableFiles.length} project files</span>
+                  <span>{wt.projectFiles(availableFiles.length)}</span>
                   <span className="text-zinc-600">•</span>
-                  <span>{activeCode.split('\n').length} lines</span>
+                  <span>{wt.lines(activeCode.split('\n').length)}</span>
                 </div>
               </div>
 
@@ -2904,8 +3100,8 @@ export default function AssignmentWorkspace({
               {/* Editor Footer / Submit CTA Bar */}
               <div className="bg-zinc-950/90 px-4 py-3 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
-                  <span>Active: <strong className="text-zinc-200">{activeFile}</strong></span>
-                  <span>Total Files: <strong className="text-emerald-400">{Object.keys(files).length}</strong></span>
+                  <span>{wt.activeLabel} <strong className="text-zinc-200">{activeFile}</strong></span>
+                  <span>{wt.totalFilesLabel} <strong className="text-emerald-400">{Object.keys(files).length}</strong></span>
                 </div>
 
                 {session?.user ? (
@@ -2922,10 +3118,10 @@ export default function AssignmentWorkspace({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span>⚙️ Validating Project...</span>
+                          <span>{wt.validatingProject}</span>
                         </>
                       ) : cooldown > 0 ? (
-                        <span>⏳ Please wait {cooldown}s</span>
+                        <span>{wt.pleaseWait(cooldown)}</span>
                       ) : (
                         <>
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2968,7 +3164,7 @@ export default function AssignmentWorkspace({
                         onClick={() => setIsUnlockedForEdit(true)}
                         className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-emerald-300 border border-zinc-700 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <span>🔓 Unlock Editor</span>
+                        <span>🔓 {wt.unlockEditor}</span>
                       </button>
                     </div>
                   )
@@ -2978,7 +3174,7 @@ export default function AssignmentWorkspace({
                     onClick={() => signIn('github')}
                     className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-zinc-100 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Sign In with GitHub to Submit</span>
+                    <span>{wt.signInToSubmit}</span>
                   </button>
                 )}
               </div>
@@ -3053,7 +3249,7 @@ export default function AssignmentWorkspace({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-rose-100">Submission Alert</h4>
+                  <h4 className="font-semibold text-rose-100">{wt.submissionAlert}</h4>
                   <p className="text-xs text-rose-300 mt-1">{submitError}</p>
                 </div>
                 {(!session?.user || submitError.includes('expirat')) && (
@@ -3061,7 +3257,7 @@ export default function AssignmentWorkspace({
                     onClick={() => signIn('github')}
                     className="px-3 py-1 bg-rose-900 hover:bg-rose-800 text-rose-100 rounded text-xs font-mono transition-colors shrink-0"
                   >
-                    Sign In
+                    {wt.signIn}
                   </button>
                 )}
               </div>
@@ -3075,26 +3271,26 @@ export default function AssignmentWorkspace({
                     ⌥
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-100">Submission History Log</h3>
-                    <p className="text-[11px] text-zinc-400 font-mono">Git commit history for this module</p>
+                    <h3 className="text-sm font-bold text-zinc-100">{wt.submissionHistory}</h3>
+                    <p className="text-[11px] text-zinc-400 font-mono">{wt.gitHistoryDesc}</p>
                   </div>
                 </div>
 
                 <span className="text-xs font-mono text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800">
-                  {submissions.length} {submissions.length === 1 ? 'Attempt' : 'Attempts'}
+                  {wt.attemptsCount(submissions.length)}
                 </span>
               </div>
 
               {submissions.length === 0 ? (
                 <div className="p-6 text-center border border-dashed border-zinc-800 rounded-xl bg-zinc-950/40 text-xs text-zinc-500 font-mono">
-                  No submissions recorded yet for this module.
+                  {wt.noSubmissions}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {submissions.map((sub, idx) => {
                     const isSelected = selectedHistoryId === sub.id;
                     const isPass = sub.status === 'PASS';
-                    const dateFormatted = new Date(sub.submittedAt).toLocaleString(undefined, {
+                    const dateFormatted = new Date(sub.submittedAt).toLocaleString(locale === 'ro' ? 'ro-RO' : 'en-GB', {
                       dateStyle: 'medium',
                       timeStyle: 'short',
                     });
@@ -3118,7 +3314,7 @@ export default function AssignmentWorkspace({
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-zinc-200 truncate">
-                                Attempt #{submissions.length - idx}
+                                {wt.attemptNumber(submissions.length - idx)}
                               </span>
                               <span
                                 className={`text-[10px] px-2 py-0.5 rounded font-bold ${isPass
@@ -3146,7 +3342,7 @@ export default function AssignmentWorkspace({
                                 : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                               }`}
                           >
-                            {isSelected ? 'Active Code' : 'Load Code'}
+                            {isSelected ? wt.activeCode : wt.loadCode}
                           </button>
                         </div>
                       </div>
@@ -3168,7 +3364,11 @@ export default function AssignmentWorkspace({
                     {wt.greenWallTitle}
                   </h2>
                   <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                    {assignment.validationType === 'DYNAMIC' || assignment.module >= 9 ? wt.playwrightEngine : wt.domAssertions}
+                    {assignment.validationType === 'DYNAMIC' || assignment.module >= 9
+                      ? wt.playwrightEngine
+                      : assignment.module === 7 || assignment.module === 8
+                        ? wt.tsOopEngine
+                        : wt.domAssertions}
                   </p>
                 </div>
                 {validationResult && (
@@ -3222,6 +3422,31 @@ export default function AssignmentWorkspace({
                   return acc;
                 }, {} as Record<string, typeof curriculumInfo.criteria>);
 
+                // Group latest localized feedback by file to display live pass/fail markers (BUG-14)
+                const feedbackByFile = localizedFeedback.reduce((acc, item) => {
+                  let fileKey = item.file;
+                  if (!fileKey) {
+                    if (item.check.includes('[style.css]') || item.check.toLowerCase().includes('style.css')) {
+                      fileKey = 'style.css';
+                    } else if (item.check.includes('[app.js]') || item.check.toLowerCase().includes('app.js')) {
+                      fileKey = 'app.js';
+                    } else if (item.check.includes('[app.ts]')) {
+                      fileKey = 'app.ts';
+                    } else if (item.check.includes('[pom.ts]')) {
+                      fileKey = 'pom.ts';
+                    } else if (item.check.includes('[playwright.config.ts]')) {
+                      fileKey = 'playwright.config.ts';
+                    } else if (item.check.includes('[task-tracker.spec.ts]')) {
+                      fileKey = 'task-tracker.spec.ts';
+                    } else {
+                      fileKey = 'index.html';
+                    }
+                  }
+                  if (!acc[fileKey]) acc[fileKey] = [];
+                  acc[fileKey].push(item);
+                  return acc;
+                }, {} as Record<string, FeedbackItem[]>);
+
                 return (
                   <div className="flex-1 flex flex-col text-left p-4 sm:p-5 border border-zinc-800 rounded-xl bg-zinc-950/40 gap-4 overflow-y-auto max-h-[750px]">
                     {/* Header */}
@@ -3268,28 +3493,50 @@ export default function AssignmentWorkspace({
                         </span>
                       </div>
 
-                      {Object.entries(grouped).map(([file, items]) => (
-                        <div key={file} className="bg-zinc-900/60 border border-zinc-800/90 rounded-lg p-3 flex flex-col gap-2">
-                          <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800 text-xs font-mono font-bold text-zinc-300">
-                            <span>{file === 'playwright.config.ts' ? '⚙️' : file.endsWith('.spec.ts') ? '🎭' : file.endsWith('.css') ? '🎨' : file.endsWith('.ts') ? '🔷' : file.endsWith('.js') ? '📜' : '🌐'}</span>
-                            <span className="text-zinc-100">{file}</span>
-                            <span className="text-[10px] text-zinc-400 font-normal">({wt.requirementsCount(items.length)})</span>
+                      {Object.entries(grouped).map(([file, items]) => {
+                        const fileFeedback = feedbackByFile[file];
+                        return (
+                          <div key={file} className="bg-zinc-900/60 border border-zinc-800/90 rounded-lg p-3 flex flex-col gap-2">
+                            <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800 text-xs font-mono font-bold text-zinc-300">
+                              <span>{getWorkspaceFileIcon(file)}</span>
+                              <span className="text-zinc-100">{file}</span>
+                              <span className="text-[10px] text-zinc-400 font-normal">({wt.requirementsCount(items.length)})</span>
+                            </div>
+                            <ul className="space-y-2 text-xs">
+                              {items.map((criterion, idx) => {
+                                const normalizedTitle = stripFilePrefix(criterion.title, file).toLowerCase();
+                                const matchedFeedback =
+                                  fileFeedback?.find(
+                                    (f) => stripFilePrefix(f.check, file).toLowerCase() === normalizedTitle
+                                  ) ?? (fileFeedback && fileFeedback.length === items.length ? fileFeedback[idx] : undefined);
+
+                                const statusMarker = matchedFeedback
+                                  ? matchedFeedback.passed
+                                    ? { symbol: '✓', className: 'text-emerald-400 font-bold', titleClass: 'text-emerald-200', title: 'PASS' }
+                                    : { symbol: '✕', className: 'text-rose-400 font-bold', titleClass: 'text-rose-200', title: 'FAIL' }
+                                  : { symbol: '○', className: 'text-zinc-500', titleClass: 'text-zinc-200', title: undefined };
+
+                                return (
+                                  <li key={idx} className="flex items-start gap-2 text-zinc-300">
+                                    <span
+                                      className={`${statusMarker.className} font-mono text-sm leading-none mt-0.5`}
+                                      title={statusMarker.title}
+                                    >
+                                      {statusMarker.symbol}
+                                    </span>
+                                    <div className="flex-1 text-[11px] leading-snug">
+                                      <strong className={statusMarker.titleClass}>{criterion.title}</strong>
+                                      {criterion.detail && (
+                                        <div className="text-zinc-400 font-mono text-[10px] mt-0.5">{criterion.detail}</div>
+                                      )}
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
                           </div>
-                          <ul className="space-y-2 text-xs">
-                            {items.map((criterion, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-zinc-300">
-                                <span className="text-zinc-500 font-mono text-sm leading-none mt-0.5">○</span>
-                                <div className="flex-1 text-[11px] leading-snug">
-                                  <strong className="text-zinc-200">{criterion.title}</strong>
-                                  {criterion.detail && (
-                                    <div className="text-zinc-400 font-mono text-[10px] mt-0.5">{criterion.detail}</div>
-                                  )}
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Bottom Helper Hint */}
@@ -3311,18 +3558,46 @@ export default function AssignmentWorkspace({
                     </div>
                   </div>
                   <h3 className="text-sm font-semibold text-zinc-200">
-                    {isValidatingFile ? `Checking ${isValidatingFile}...` : 'Parsing AST & Evaluating'}
+                    {isValidatingFile ? wt.checkingFile(isValidatingFile) : wt.parsingTitle}
                   </h3>
                   <p className="text-xs text-zinc-400 mt-1 font-mono">
-                    {isValidatingFile
-                      ? `Running targeted assertions for ${isValidatingFile}...`
-                      : 'Running automated DOM inspectors...'}
+                    {isValidatingFile ? wt.checkingFileSub(isValidatingFile) : wt.evaluatingSub}
                   </p>
                 </div>
               )}
 
               {/* State 3: Rendered Results ("Green Wall") */}
-              {activeRightTab === 'results' && validationResult && !isValidating && !isValidatingFile && (
+              {activeRightTab === 'results' && validationResult && !isValidating && !isValidatingFile && (() => {
+                const groupedFeedback = localizedFeedback.reduce((acc, item) => {
+                  let fileKey = item.file;
+                  if (!fileKey) {
+                    if (item.check.includes('[style.css]') || item.check.toLowerCase().includes('style.css') || item.check.toLowerCase().includes('stilizare')) {
+                      fileKey = 'style.css';
+                    } else if (item.check.includes('[app.js]') || item.check.toLowerCase().includes('app.js') || item.check.toLowerCase().includes('javascript')) {
+                      fileKey = 'app.js';
+                    } else if (item.check.includes('[app.ts]')) {
+                      fileKey = 'app.ts';
+                    } else if (item.check.includes('[pom.ts]')) {
+                      fileKey = 'pom.ts';
+                    } else if (item.check.includes('[playwright.config.ts]')) {
+                      fileKey = 'playwright.config.ts';
+                    } else if (item.check.includes('[task-tracker.spec.ts]')) {
+                      fileKey = 'task-tracker.spec.ts';
+                    } else {
+                      fileKey = 'index.html';
+                    }
+                  }
+                  if (!acc[fileKey]) {
+                    acc[fileKey] = [];
+                  }
+                  acc[fileKey].push(item);
+                  return acc;
+                }, {} as Record<string, FeedbackItem[]>);
+
+                const totalPassed = localizedFeedback.filter((f) => f.passed).length;
+                const evaluatedFileCount = Object.keys(groupedFeedback).length;
+
+                return (
                 <div className="flex flex-col gap-5">
                   {/* Overall Status Banner */}
                   <div
@@ -3349,19 +3624,21 @@ export default function AssignmentWorkspace({
                                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                 }`}
                             >
-                              {validationResult.isPartial
-                                ? `PARTIAL CHECK: ${validationResult.targetFile}`
-                                : `Status: ${validationResult.status.toUpperCase()}`}
+                              {validationResult.isPartial && validationResult.targetFile
+                                ? wt.partialCheckBadge(validationResult.targetFile)
+                                : validationResult.status === 'pass'
+                                  ? wt.statusPass
+                                  : wt.statusFail}
                             </span>
                           </div>
                           <h3 className="text-xl font-bold text-zinc-50 mt-1">
-                            {validationResult.isPartial
+                            {validationResult.isPartial && validationResult.targetFile
                               ? validationResult.status === 'pass'
-                                ? `All checks passed for ${validationResult.targetFile}!`
-                                : `Issues found in ${validationResult.targetFile}`
+                                ? wt.partialPassTitle(validationResult.targetFile)
+                                : wt.partialFailTitle(validationResult.targetFile)
                               : validationResult.status === 'pass'
-                                ? 'All Checks Passed!'
-                                : 'Validation Failed'}
+                                ? wt.allChecksPassed
+                                : wt.validationFailed}
                           </h3>
                         </div>
                       </div>
@@ -3372,7 +3649,7 @@ export default function AssignmentWorkspace({
                           {validationResult.score}%
                         </span>
                         <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-mono">
-                          Score
+                          {wt.score}
                         </span>
                       </div>
                     </div>
@@ -3393,7 +3670,7 @@ export default function AssignmentWorkspace({
                       <div className="flex items-center gap-2">
                         <span className="text-base">⚡</span>
                         <span>
-                          Verificare parțială pentru <strong className="text-zinc-200">{validationResult.targetFile}</strong>. Când ești gata, trimite întregul proiect cu butonul &quot;Submit Project for Validation&quot;.
+                          {wt.partialNoticePrefix} <strong className="text-zinc-200">{validationResult.targetFile}</strong>. {wt.partialNoticeSuffix}
                         </span>
                       </div>
 
@@ -3403,7 +3680,7 @@ export default function AssignmentWorkspace({
                           onClick={() => triggerGitHubSync(undefined, validationResult.targetFile)}
                           disabled={isSyncingGitHub}
                           className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-cyan-300 border border-cyan-800/60 font-semibold text-xs transition-all font-mono flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 self-end sm:self-auto shadow-sm"
-                          title={`Sincronizează doar ${validationResult.targetFile} în repository-ul tău de GitHub`}
+                          title={wt.syncFileToGitHub(validationResult.targetFile)}
                         >
                           {isSyncingGitHub && syncingTargetFile === validationResult.targetFile ? (
                             <>
@@ -3411,14 +3688,14 @@ export default function AssignmentWorkspace({
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
-                              <span>Syncing {validationResult.targetFile}...</span>
+                              <span>{wt.syncingFile(validationResult.targetFile)}</span>
                             </>
                           ) : (
                             <>
                               <svg className="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 24 24">
                                 <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                               </svg>
-                              <span>🐙 Sync {validationResult.targetFile} to GitHub</span>
+                              <span>🐙 {wt.syncFileToGitHub(validationResult.targetFile)}</span>
                             </>
                           )}
                         </button>
@@ -3431,7 +3708,7 @@ export default function AssignmentWorkspace({
                     <div className="bg-emerald-950/60 border border-emerald-500/40 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div>
                         <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                          <span>{locale === 'ro' ? '🎉 Modul Promovat!' : '🎉 Module Passed!'}</span>
+                          <span>{wt.modulePassedCongrats}</span>
                         </div>
                         <p className="text-[11px] text-emerald-400/90 mt-0.5">
                           {getNextModuleBannerMessage(nextModule, isTrainer, locale)}
@@ -3443,7 +3720,7 @@ export default function AssignmentWorkspace({
                           onClick={() => triggerGitHubSync()}
                           disabled={isSyncingGitHub}
                           className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-cyan-300 border border-cyan-800/60 font-semibold text-xs transition-all font-mono flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                          title="Manually push your code to your personal GitHub repository"
+                          title={wt.syncToGitHub}
                         >
                           {isSyncingGitHub ? (
                             <>
@@ -3451,7 +3728,7 @@ export default function AssignmentWorkspace({
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
-                              <span>Syncing...</span>
+                              <span>{wt.syncing}</span>
                             </>
                           ) : (
                             <>
@@ -3466,7 +3743,7 @@ export default function AssignmentWorkspace({
                           href="/"
                           className="px-3 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-semibold text-xs hover:bg-emerald-400 transition-all font-mono shadow-md whitespace-nowrap"
                         >
-                          Dashboard →
+                          {wt.dashboardBtn}
                         </Link>
                       </div>
                     </div>
@@ -3476,163 +3753,123 @@ export default function AssignmentWorkspace({
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between px-1">
                       <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold">
-                        Assertion Results ({validationResult.feedback.filter((f) => f.passed).length}/
-                        {validationResult.feedback.length})
+                        {wt.assertionResults} ({totalPassed}/{localizedFeedback.length})
                       </h4>
                       <span className="text-[11px] font-mono text-zinc-500">
-                        Evaluated across {Object.keys(
-                          validationResult.feedback.reduce((acc, item) => {
-                            const k = item.file || (item.check.includes('style.css') ? 'style.css' : 'index.html');
-                            acc[k] = true;
-                            return acc;
-                          }, {} as Record<string, boolean>)
-                        ).length} {Object.keys(
-                          validationResult.feedback.reduce((acc, item) => {
-                            const k = item.file || (item.check.includes('style.css') ? 'style.css' : 'index.html');
-                            acc[k] = true;
-                            return acc;
-                          }, {} as Record<string, boolean>)
-                        ).length === 1 ? 'file' : 'files'}
+                        {wt.evaluatedAcross(evaluatedFileCount)}
                       </span>
                     </div>
 
-                    {(() => {
-                      const groupedFeedback = validationResult.feedback.reduce((acc, item) => {
-                        let fileKey = item.file;
-                        if (!fileKey) {
-                          if (item.check.includes('[style.css]') || item.check.toLowerCase().includes('style.css') || item.check.toLowerCase().includes('stilizare')) {
-                            fileKey = 'style.css';
-                          } else if (item.check.includes('[app.js]') || item.check.toLowerCase().includes('app.js') || item.check.toLowerCase().includes('javascript')) {
-                            fileKey = 'app.js';
-                          } else {
-                            fileKey = 'index.html';
-                          }
-                        }
-                        if (!acc[fileKey]) {
-                          acc[fileKey] = [];
-                        }
-                        acc[fileKey].push(item);
-                        return acc;
-                      }, {} as Record<string, FeedbackItem[]>);
+                    <div className="flex flex-col gap-4">
+                      {Object.entries(groupedFeedback).map(([fileName, items]) => {
+                        const passedCount = items.filter((f) => f.passed).length;
+                        const isAllPass = passedCount === items.length;
+                        const fileIcon = getWorkspaceFileIcon(fileName);
 
-                      return (
-                        <div className="flex flex-col gap-4">
-                          {Object.entries(groupedFeedback).map(([fileName, items]) => {
-                            const passedCount = items.filter((f) => f.passed).length;
-                            const isAllPass = passedCount === items.length;
-                            const fileIcon = fileName.endsWith('.css')
-                              ? '🎨'
-                              : fileName.endsWith('.ts')
-                                ? '🔷'
-                                : fileName.endsWith('.js')
-                                  ? '📜'
-                                  : '🌐';
-
-                            return (
-                              <div
-                                key={fileName}
-                                className="bg-zinc-950/70 border border-zinc-800/90 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-md"
-                              >
-                                <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-base">{fileIcon}</span>
-                                    <span className="font-mono text-xs font-bold text-zinc-200">{fileName}</span>
-                                    <span
-                                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${isAllPass
-                                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                          : 'bg-amber-950 text-amber-300 border border-amber-800'
-                                        }`}
-                                    >
-                                      {passedCount}/{items.length} Passed
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    {isAllPass && (
-                                      <button
-                                        type="button"
-                                        onClick={() => triggerGitHubSync(undefined, fileName)}
-                                        disabled={isSyncingGitHub}
-                                        className="text-[11px] font-mono px-2.5 py-1 rounded transition-all flex items-center gap-1 cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-cyan-300 border border-cyan-800/60 font-semibold disabled:opacity-50"
-                                        title={`Sincronizează ${fileName} pe GitHub`}
-                                      >
-                                        {isSyncingGitHub && syncingTargetFile === fileName ? (
-                                          <>
-                                            <svg className="animate-spin h-3 w-3 text-cyan-400" fill="none" viewBox="0 0 24 24">
-                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            <span>Syncing...</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <span>🐙 Sync {fileName}</span>
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
-
-                                    {availableFiles.some((f) => f.name === fileName) && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setActiveFile(fileName)}
-                                        className={`text-[11px] font-mono px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer ${activeFile === fileName
-                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
-                                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
-                                          }`}
-                                      >
-                                        <span>{activeFile === fileName ? '✓ Active Editor' : `Open ${fileName} →`}</span>
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  {items.map((item, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`p-3 rounded-lg border flex items-start gap-2.5 transition-all ${item.passed
-                                          ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-100'
-                                          : 'bg-rose-950/20 border-rose-800/40 text-rose-100'
-                                        }`}
-                                    >
-                                      <div
-                                        className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold ${item.passed
-                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                                            : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                                          }`}
-                                      >
-                                        {item.passed ? '✓' : '✕'}
-                                      </div>
-
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2">
-                                          <h5 className="text-xs font-semibold text-zinc-100 truncate">
-                                            {item.check.replace(/^\[.*?\]\s*/, '')}
-                                          </h5>
-                                          <span
-                                            className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded ${item.passed
-                                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                                : 'bg-rose-950 text-rose-300 border border-rose-800'
-                                              }`}
-                                          >
-                                            {item.passed ? 'PASS' : 'FAIL'}
-                                          </span>
-                                        </div>
-                                        <p className="text-[11px] mt-1 leading-relaxed text-zinc-300">{item.message}</p>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                        return (
+                          <div
+                            key={fileName}
+                            className="bg-zinc-950/70 border border-zinc-800/90 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-md"
+                          >
+                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{fileIcon}</span>
+                                <span className="font-mono text-xs font-bold text-zinc-200">{fileName}</span>
+                                <span
+                                  className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${isAllPass
+                                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                      : 'bg-amber-950 text-amber-300 border border-amber-800'
+                                    }`}
+                                >
+                                  {wt.passedCountBadge(passedCount, items.length)}
+                                </span>
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
+
+                              <div className="flex items-center gap-2">
+                                {isAllPass && (
+                                  <button
+                                    type="button"
+                                    onClick={() => triggerGitHubSync(undefined, fileName)}
+                                    disabled={isSyncingGitHub}
+                                    className="text-[11px] font-mono px-2.5 py-1 rounded transition-all flex items-center gap-1 cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-cyan-300 border border-cyan-800/60 font-semibold disabled:opacity-50"
+                                    title={wt.syncFileToGitHub(fileName)}
+                                  >
+                                    {isSyncingGitHub && syncingTargetFile === fileName ? (
+                                      <>
+                                        <svg className="animate-spin h-3 w-3 text-cyan-400" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>{wt.syncing}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span>🐙 {wt.syncFileShort(fileName)}</span>
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
+                                {availableFiles.some((f) => f.name === fileName) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveFile(fileName)}
+                                    className={`text-[11px] font-mono px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer ${activeFile === fileName
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                                        : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+                                      }`}
+                                  >
+                                    <span>{activeFile === fileName ? wt.activeEditor : wt.openFile(fileName)}</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              {items.map((item, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`p-3 rounded-lg border flex items-start gap-2.5 transition-all ${item.passed
+                                      ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-100'
+                                      : 'bg-rose-950/20 border-rose-800/40 text-rose-100'
+                                    }`}
+                                >
+                                  <div
+                                    className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold ${item.passed
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                                      }`}
+                                  >
+                                    {item.passed ? '✓' : '✕'}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h5 className="text-xs font-semibold text-zinc-100 leading-snug">
+                                        {stripFilePrefix(item.check, fileName)}
+                                      </h5>
+                                      <span
+                                        className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded shrink-0 ${item.passed
+                                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                            : 'bg-rose-950 text-rose-300 border border-rose-800'
+                                          }`}
+                                      >
+                                        {item.passed ? 'PASS' : 'FAIL'}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] mt-1 leading-relaxed text-zinc-300">{item.message}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </div>
