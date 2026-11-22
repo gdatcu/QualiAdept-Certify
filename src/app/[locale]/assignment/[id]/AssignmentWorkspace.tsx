@@ -85,6 +85,17 @@ export function getModuleFiles(moduleNum: number, validationType: string): Proje
       { name: 'app.ts', language: 'typescript', icon: '🔷' },
     ];
   }
+  if (moduleNum === 8) {
+    return [
+      { name: 'pom.ts', language: 'typescript', icon: '🔷' },
+    ];
+  }
+  if (moduleNum === 9) {
+    return [
+      { name: 'playwright.config.ts', language: 'typescript', icon: '⚙️' },
+      { name: 'task-tracker.spec.ts', language: 'typescript', icon: '🎭' },
+    ];
+  }
   return [
     { name: 'index.html', language: 'html', icon: '🌐' },
     { name: 'style.css', language: 'css', icon: '🎨' },
@@ -673,6 +684,172 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
         title_en: 'Zero Any Policy (no any type)',
         detail: 'Regulă strictă QA: Este strict interzisă utilizarea lui any. Toate aparițiile lui any vor fi penalizate.',
         detail_en: 'Strict QA rule: any type is forbidden. Any occurrence of any will fail validation.',
+      },
+    ],
+  },
+  8: {
+    businessTask:
+      'Proiect Arhitectural (QA-Commerce): Echipa ta începe un proiect nou de QA Automation cu Playwright pentru magazinul online "QA-Commerce". Ca Test Architect, scrie structura de interfețe, Tipuri Utilitare (Omit) și clase Page Object Model (BasePage, HomePage, ProductPage) în pom.ts, demonstrând cei 4 Piloni OOP (Abstractizare, Moștenire, Încapsulare, Polimorfism).',
+    businessTask_en:
+      'Architecture Project (QA-Commerce): Your team is kicking off a new Playwright QA Automation project for the "QA-Commerce" online store. As Test Architect, build the interfaces, Utility Types (Omit), and Page Object Model classes (BasePage, HomePage, ProductPage) in pom.ts, demonstrating the 4 Pillars of OOP (Abstraction, Inheritance, Encapsulation, Polymorphism).',
+    notes:
+      'Provocare Bonus (Mid-Senior, opțională): Adaugă în BasePage metoda generică extrageDateDinPagina<T>(selector: string, dateSimulate: T): T și apeleaz-o cu <Produs> pentru a simula page.evaluate() tipizat din Playwright.',
+    notes_en:
+      'Bonus Challenge (Mid-Senior, optional): Add generic method extrageDateDinPagina<T>(selector: string, dateSimulate: T): T in BasePage and call it with <Produs> to simulate typed Playwright page.evaluate().',
+    criteria: [
+      {
+        file: 'pom.ts',
+        title: '1. Interfața de date Produs (id, nume, pret, inStoc)',
+        title_en: '1. Data interface Produs (id, nume, pret, inStoc)',
+        detail: 'Definește interface Produs cu proprietățile id: number, nume: string, pret: number și inStoc: boolean.',
+        detail_en: 'Define interface Produs with id: number, nume: string, pret: number, and inStoc: boolean.',
+      },
+      {
+        file: 'pom.ts',
+        title: "2. Tipul Utilitar ProdusTest = Omit<Produs, 'id'>",
+        title_en: "2. Utility Type ProdusTest = Omit<Produs, 'id'>",
+        detail: "Folosește Omit<Produs, 'id'> pentru a elimina câmpul id din datele de test UI.",
+        detail_en: "Use Omit<Produs, 'id'> to omit the id field from UI test payloads.",
+      },
+      {
+        file: 'pom.ts',
+        title: '3. Clasa abstractă BasePage (Abstractizare)',
+        title_en: '3. Abstract class BasePage (Abstraction)',
+        detail: 'Declară clasa părinte ca abstract class BasePage.',
+        detail_en: 'Declare the base class as abstract class BasePage.',
+      },
+      {
+        file: 'pom.ts',
+        title: '4. Constructor protejat în BasePage (protected page)',
+        title_en: '4. Protected constructor in BasePage (protected page)',
+        detail: 'Primește și protejează obiectul page în constructor (ex: constructor(protected page: any) {} sau tip Mock Page).',
+        detail_en: 'Accept and protect page in the constructor (e.g. constructor(protected page: any) {} or Mock Page type).',
+      },
+      {
+        file: 'pom.ts',
+        title: '5. Metoda comună navigeazaLa(url: string): void',
+        title_en: '5. Common method navigeazaLa(url: string): void',
+        detail: 'Adaugă metoda publică comună navigeazaLa(url: string): void în BasePage.',
+        detail_en: 'Add shared public method navigeazaLa(url: string): void in BasePage.',
+      },
+      {
+        file: 'pom.ts',
+        title: '6. Metoda abstractă obligatorie valideazaIncarcarea(): void',
+        title_en: '6. Mandatory abstract method valideazaIncarcarea(): void',
+        detail: 'Declară abstract valideazaIncarcarea(): void; în BasePage pentru a impune contractul tuturor claselor copil.',
+        detail_en: 'Declare abstract valideazaIncarcarea(): void; in BasePage to enforce the contract across child pages.',
+      },
+      {
+        file: 'pom.ts',
+        title: '7. HomePage extends BasePage (#search-bar privat + valideazaIncarcarea)',
+        title_en: '7. HomePage extends BasePage (private #search-bar + valideazaIncarcarea)',
+        detail: 'Extinde BasePage, încapsulează selectorul privat #search-bar și implementează valideazaIncarcarea().',
+        detail_en: 'Extend BasePage, encapsulate private #search-bar selector, and implement valideazaIncarcarea().',
+      },
+      {
+        file: 'pom.ts',
+        title: '8. ProductPage extends BasePage (.add-to-cart-btn privat + valideazaIncarcarea)',
+        title_en: '8. ProductPage extends BasePage (private .add-to-cart-btn + valideazaIncarcarea)',
+        detail: 'Extinde BasePage, încapsulează selectorul privat .add-to-cart-btn și implementează valideazaIncarcarea().',
+        detail_en: 'Extend BasePage, encapsulate private .add-to-cart-btn selector, and implement valideazaIncarcarea().',
+      },
+      {
+        file: 'pom.ts',
+        title: '9. Metoda E2E adaugaInCos(produs: ProdusTest) în ProductPage',
+        title_en: '9. E2E method adaugaInCos(produs: ProdusTest) in ProductPage',
+        detail: 'Primește parametrul tipizat ProdusTest și printează produs.nume în consolă cu console.log.',
+        detail_en: 'Accept typed parameter ProdusTest and log produs.nume using console.log.',
+      },
+    ],
+  },
+  9: {
+    businessTask:
+      'Inițializarea oficială a framework-ului de automatizare Playwright pentru aplicația Task Tracker: configurează complet runner-ul în playwright.config.ts (țintind https://tasktracker.qualiadept.eu, cu atributul data-testid și trace-uri pentru debug) și curăță primul smoke test generat cu Playwright Codegen în task-tracker.spec.ts, respectând Zero Hard-Wait Policy.',
+    businessTask_en:
+      'Official Playwright automation framework initialization for Task Tracker: configure the runner in playwright.config.ts (targeting https://tasktracker.qualiadept.eu, with data-testid and failure traces) and clean up your first Codegen-generated smoke test in task-tracker.spec.ts following the Zero Hard-Wait Policy.',
+    notes:
+      'Lucrezi local în proiectul task-tracker-e2e și rulezi testul cu npx playwright test. Pe platformă ai două fișiere: playwright.config.ts (cu TODO-uri) și task-tracker.spec.ts (pornește cu cod brut Codegen pe care trebuie să-l cureți conform cerințelor 6–11).',
+    notes_en:
+      'Work locally in your task-tracker-e2e project and run npx playwright test. In this workspace you have two files: playwright.config.ts (with TODOs) and task-tracker.spec.ts (starts with raw Codegen output to clean up per criteria 6–11).',
+    criteria: [
+      {
+        file: 'playwright.config.ts',
+        title: '1. Importă defineConfig și devices din @playwright/test',
+        title_en: '1. Import defineConfig and devices from @playwright/test',
+        detail: "Importă ambele simboluri (defineConfig și devices) din '@playwright/test'.",
+        detail_en: "Import both defineConfig and devices from '@playwright/test'.",
+      },
+      {
+        file: 'playwright.config.ts',
+        title: "2. Exportă implicit defineConfig({...}) și setează testDir: './tests'",
+        title_en: "2. Default export defineConfig({...}) and set testDir: './tests'",
+        detail: "Exportă configurația cu export default defineConfig({ testDir: './tests', ... }).",
+        detail_en: "Export config via export default defineConfig({ testDir: './tests', ... }).",
+      },
+      {
+        file: 'playwright.config.ts',
+        title: '3. Timeout de 30 de secunde și execuție paralelă (fullyParallel: true)',
+        title_en: '3. 30-second test timeout and fullyParallel: true',
+        detail: 'Setează explicit timeout: 30_000 (sau 30000 / 30 * 1000) și fullyParallel: true.',
+        detail_en: 'Explicitly set timeout: 30_000 (or 30000 / 30 * 1000) and fullyParallel: true.',
+      },
+      {
+        file: 'playwright.config.ts',
+        title: '4. Blocul use: baseURL, testIdAttribute și trace',
+        title_en: '4. use block: baseURL, testIdAttribute, and trace',
+        detail:
+          "Setează baseURL: 'https://tasktracker.qualiadept.eu' (sau 'http://localhost:3000' / process.env.BASE_URL ?? '...'), testIdAttribute: 'data-testid' și trace: 'on-first-retry'.",
+        detail_en:
+          "Set baseURL: 'https://tasktracker.qualiadept.eu' (or 'http://localhost:3000' / process.env.BASE_URL ?? '...'), testIdAttribute: 'data-testid', and trace: 'on-first-retry'.",
+      },
+      {
+        file: 'playwright.config.ts',
+        title: "5. Proiectul de browser chromium cu devices['Desktop Chrome']",
+        title_en: "5. Browser project chromium using devices['Desktop Chrome']",
+        detail: "Configurează în projects cel puțin proiectul { name: 'chromium', use: { ...devices['Desktop Chrome'] } } (recomandat și firefox, webkit).",
+        detail_en: "Configure at least { name: 'chromium', use: { ...devices['Desktop Chrome'] } } inside projects (firefox and webkit recommended too).",
+      },
+      {
+        file: 'task-tracker.spec.ts',
+        title: '6. Importă test și expect din @playwright/test',
+        title_en: '6. Import test and expect from @playwright/test',
+        detail: "Importă runner-ul și asertările cu import { test, expect } from '@playwright/test';.",
+        detail_en: "Import runner and assertions via import { test, expect } from '@playwright/test';.",
+      },
+      {
+        file: 'task-tracker.spec.ts',
+        title: "7. Definește un test cu titlu descriptiv (nu 'test') și fixture-ul { page }",
+        title_en: "7. Define a test with a descriptive title (not 'test') and { page } fixture",
+        detail: "Folosește test('...', async ({ page }) => { ... }) cu un titlu descriptiv de cel puțin 8 caractere.",
+        detail_en: "Use test('...', async ({ page }) => { ... }) with a descriptive title of at least 8 characters.",
+      },
+      {
+        file: 'task-tracker.spec.ts',
+        title: "8. Navigare relativă cu await page.goto('/')",
+        title_en: "8. Relative navigation with await page.goto('/')",
+        detail: "Navighează relativ cu await page.goto('/'), bazându-te pe baseURL din playwright.config.ts.",
+        detail_en: "Navigate relatively via await page.goto('/'), relying on baseURL from playwright.config.ts.",
+      },
+      {
+        file: 'task-tracker.spec.ts',
+        title: '9. Completează input-task-name cu .fill() și apasă submit-task-btn cu .click()',
+        title_en: '9. Fill input-task-name with .fill() and click submit-task-btn with .click()',
+        detail: "Folosește page.getByTestId('input-task-name').fill(...) și page.getByTestId('submit-task-btn').click().",
+        detail_en: "Use page.getByTestId('input-task-name').fill(...) and page.getByTestId('submit-task-btn').click().",
+      },
+      {
+        file: 'task-tracker.spec.ts',
+        title: "10. Asertare web-first pe task-list cu .toContainText(...)",
+        title_en: "10. Web-first assertion on task-list with .toContainText(...)",
+        detail: "Verifică lista cu await expect(page.getByTestId('task-list')).toContainText(...).",
+        detail_en: "Assert the list contains the new task via await expect(page.getByTestId('task-list')).toContainText(...).",
+      },
+      {
+        file: 'task-tracker.spec.ts',
+        title: '11. Zero Hard-Wait Policy (fără waitForTimeout, { force: true } sau URL absolut)',
+        title_en: '11. Zero Hard-Wait Policy (no waitForTimeout, { force: true }, or absolute URL)',
+        detail: 'Regulă strictă QA: sunt interzise page.waitForTimeout(...), opțiunea { force: true } și URL-urile absolute în page.goto(...).',
+        detail_en: 'Strict QA rule: page.waitForTimeout(...), { force: true }, and absolute URLs in page.goto(...) are forbidden.',
       },
     ],
   },
@@ -1493,6 +1670,64 @@ export function transpileTsForPreview(code: string): string {
   return clean;
 }
 
+const STARTER_TS_S8 = `/**
+ * ==============================================================
+ * Sesiunea 8: Structuri Avansate în TS & OOP (Page Object Model)
+ * Proiect: QA-Commerce (E-Commerce POM Architecture)
+ * ==============================================================
+ * Cerințe Tehnice (Acceptance Criteria):
+ * 1. Interfața Produs (id: number, nume: string, pret: number, inStoc: boolean)
+ * 2. Tipul utilitar ProdusTest care elimină 'id' folosind Omit
+ * 3. Clasa abstractă BasePage cu:
+ *    - constructor(protected page: any)
+ *    - metoda comună public navigeazaLa(url: string): void
+ *    - metoda abstractă obligatorie valideazaIncarcarea(): void
+ * 4. Clasa HomePage extends BasePage:
+ *    - selector privat pentru bara de căutare (#search-bar)
+ *    - implementarea metodei valideazaIncarcarea()
+ * 5. Clasa ProductPage extends BasePage:
+ *    - selector privat pentru butonul Adaugă în coș (.add-to-cart-btn)
+ *    - implementarea metodei valideazaIncarcarea()
+ *    - metoda publică adaugaInCos(produs: ProdusTest) care loghează produs.nume
+ * Bonus (opțional): metoda generică extrageDateDinPagina<T>(selector: string, dateSimulate: T): T în BasePage
+ */
+
+// --- 1. MATRIȚELE DE DATE (Interface & Omit) ---
+
+
+// --- 2. CLASA DE BAZĂ (Abstractizare & Moștenire) ---
+
+
+// --- 3. CLASELE DE PAGINĂ (Încapsulare & Polimorfism) ---
+
+`;
+
+const STARTER_PW_CONFIG_S9 = `import { defineConfig } from '@playwright/test';
+
+/**
+ * TODO 1: importă și devices din @playwright/test
+ * TODO 2: setează testDir către folderul ./tests
+ * TODO 3: timeout de 30 de secunde pentru un test + fullyParallel
+ * TODO 4: blocul use: baseURL, testIdAttribute, trace
+ * TODO 5: proiectul chromium (Desktop Chrome)
+ */
+export default defineConfig({
+
+});`;
+
+const STARTER_PW_SPEC_S9 = `// 🎬 Cod brut înregistrat cu Playwright Codegen pe aplicația Task Tracker.
+// Misiunea ta: transformă-l într-un smoke test curat (cerințele 6–11 din material).
+import { test, expect } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.goto('https://tasktracker.qualiadept.eu/');
+  await page.waitForTimeout(3000);
+  await page.getByTestId('close-promo-btn').click();
+  await page.getByTestId('input-task-name').click();
+  await page.getByTestId('input-task-name').fill('Primul meu test');
+  await page.getByTestId('submit-task-btn').click({ force: true });
+});`;
+
 const STARTER_PLAYWRIGHT = `import { test, expect } from '@playwright/test';
 
 test('QualiAdept Task Tracker E2E Test', async ({ page }) => {
@@ -1544,13 +1779,19 @@ export function parseInitialFiles(
               : STARTER_JS_S6;
     } else if (f.name === 'app.ts') {
       initial['app.ts'] = STARTER_TS_S7;
+    } else if (f.name === 'pom.ts') {
+      initial['pom.ts'] = STARTER_TS_S8;
+    } else if (f.name === 'playwright.config.ts') {
+      initial['playwright.config.ts'] = STARTER_PW_CONFIG_S9;
+    } else if (f.name === 'task-tracker.spec.ts') {
+      initial['task-tracker.spec.ts'] = STARTER_PW_SPEC_S9;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }
   }
 
-  // 1.5 Progressive Inheritance: Inherit student's validated files from previous module
-  if (previousPassedPayload && previousPassedPayload.trim().length > 0) {
+  // 1.5 Progressive Inheritance: Inherit student's validated Task Tracker web app files (Modules 2–7 only)
+  if (moduleNum <= 7 && previousPassedPayload && previousPassedPayload.trim().length > 0) {
     try {
       const parsedPrev = JSON.parse(previousPassedPayload);
       if (parsedPrev && typeof parsedPrev.files === 'object' && !Array.isArray(parsedPrev.files)) {
@@ -1899,17 +2140,19 @@ export default function AssignmentWorkspace({
                       ? STARTER_HTML_S3
                       : STARTER_HTML_S6;
             }
-            // Auto-heal empty or rule-less style.css draft
+            // Auto-heal empty or rule-less style.css draft (Modules 3–7 web app)
             if (
               assignment.module >= 3 &&
+              assignment.module <= 7 &&
               merged['style.css'] &&
               !merged['style.css'].includes('{')
             ) {
               merged['style.css'] = assignment.module >= 6 ? STARTER_CSS_S6 : STARTER_CSS_S3;
             }
-            // Ensure script src="app.js" is present in Module >= 3 index.html
+            // Ensure script src="app.js" is present in Module 3–6 index.html (not Module 7 app.ts or Module 8+)
             if (
               assignment.module >= 3 &&
+              assignment.module <= 6 &&
               merged['index.html'] &&
               !merged['index.html'].includes('app.js')
             ) {
@@ -1918,8 +2161,17 @@ export default function AssignmentWorkspace({
                 '  <script src="app.js"></script>\n</body>'
               );
             }
-            filesRef.current = merged;
-            setFiles((prev) => ({ ...prev, ...merged }));
+            const allowedDraftNames = new Set(availableFiles.map((f) => f.name));
+            const filteredDraft: Record<string, string> = {};
+            for (const [k, v] of Object.entries(merged)) {
+              if (allowedDraftNames.has(k) && typeof v === 'string') {
+                filteredDraft[k] = v;
+              }
+            }
+            if (Object.keys(filteredDraft).length > 0) {
+              filesRef.current = { ...filesRef.current, ...filteredDraft };
+              setFiles((prev) => ({ ...prev, ...filteredDraft }));
+            }
             return;
           }
         } catch {
@@ -2481,7 +2733,7 @@ export default function AssignmentWorkspace({
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
                     title={
-                      previousPassedPayload
+                      assignment.module <= 7 && previousPassedPayload
                         ? `Resetează și preia codul validat din Sesiunea ${assignment.module - 1}`
                         : 'Resetează fișierele la codul inițial de pornire'
                     }
@@ -2489,7 +2741,7 @@ export default function AssignmentWorkspace({
                     <span>🔄 Reset Code</span>
                   </button>
 
-                  {assignment.validationType !== 'DYNAMIC' && (
+                  {assignment.validationType !== 'DYNAMIC' && availableFiles.some((f) => f.name === 'index.html') && (
                     <button
                       type="button"
                       onClick={() => setShowLivePreview((prev) => !prev)}
@@ -2555,7 +2807,7 @@ export default function AssignmentWorkspace({
               </div>
 
               {/* Sandboxed Live Preview Drawer */}
-              {showLivePreview && assignment.validationType !== 'DYNAMIC' && (
+              {showLivePreview && assignment.validationType !== 'DYNAMIC' && availableFiles.some((f) => f.name === 'index.html') && (
                 <div className="bg-zinc-950 border-b border-zinc-800 flex flex-col transition-all">
                   <div className="bg-zinc-900/90 px-4 py-2 border-b border-zinc-800 flex items-center justify-between text-xs font-mono">
                     <div className="flex items-center gap-2 text-zinc-300">
@@ -2857,7 +3109,7 @@ export default function AssignmentWorkspace({
                     {wt.greenWallTitle}
                   </h2>
                   <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                    {assignment.validationType === 'DYNAMIC' ? wt.playwrightEngine : wt.domAssertions}
+                    {assignment.validationType === 'DYNAMIC' || assignment.module >= 9 ? wt.playwrightEngine : wt.domAssertions}
                   </p>
                 </div>
                 {validationResult && (
@@ -2960,7 +3212,7 @@ export default function AssignmentWorkspace({
                       {Object.entries(grouped).map(([file, items]) => (
                         <div key={file} className="bg-zinc-900/60 border border-zinc-800/90 rounded-lg p-3 flex flex-col gap-2">
                           <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-800 text-xs font-mono font-bold text-zinc-300">
-                            <span>{file.endsWith('.css') ? '🎨' : file.endsWith('.ts') ? '🔷' : file.endsWith('.js') ? '📜' : '🌐'}</span>
+                            <span>{file === 'playwright.config.ts' ? '⚙️' : file.endsWith('.spec.ts') ? '🎭' : file.endsWith('.css') ? '🎨' : file.endsWith('.ts') ? '🔷' : file.endsWith('.js') ? '📜' : '🌐'}</span>
                             <span className="text-zinc-100">{file}</span>
                             <span className="text-[10px] text-zinc-400 font-normal">({wt.requirementsCount(items.length)})</span>
                           </div>

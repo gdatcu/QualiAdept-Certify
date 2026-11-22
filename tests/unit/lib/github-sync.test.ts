@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { syncModuleCodeToGitHub, getModuleFilePath, REPO_NAME } from '@/lib/github-sync';
+import { syncModuleCodeToGitHub, getModuleFilePath, resolveGitHubFilePath, REPO_NAME } from '@/lib/github-sync';
 import { prisma } from '@/lib/prisma';
 
 vi.mock('@/lib/prisma', () => ({
@@ -35,12 +35,29 @@ describe('github-sync Unit Tests', () => {
       expect(getModuleFilePath(2)).toBe('style.css');
     });
 
+    it('maps module 7 to app.ts', () => {
+      expect(getModuleFilePath(7)).toBe('app.ts');
+    });
+
+    it('maps module 8 to pom.ts', () => {
+      expect(getModuleFilePath(8)).toBe('pom.ts');
+    });
+
+    it('maps module 9 to tests/task-tracker.spec.ts', () => {
+      expect(getModuleFilePath(9)).toBe('tests/task-tracker.spec.ts');
+    });
+
     it('maps dynamic module to Playwright spec path', () => {
-      expect(getModuleFilePath(7, 'DYNAMIC')).toBe('tests/e2e/module-7.spec.ts');
+      expect(getModuleFilePath(10, 'DYNAMIC')).toBe('tests/e2e/module-10.spec.ts');
     });
 
     it('maps general module to app.js', () => {
       expect(getModuleFilePath(3)).toBe('app.js');
+    });
+
+    it('resolves Module 9 task-tracker.spec.ts under tests/ while keeping playwright.config.ts at root', () => {
+      expect(resolveGitHubFilePath('playwright.config.ts', 9)).toBe('playwright.config.ts');
+      expect(resolveGitHubFilePath('task-tracker.spec.ts', 9)).toBe('tests/task-tracker.spec.ts');
     });
   });
 
@@ -238,6 +255,54 @@ describe('github-sync Unit Tests', () => {
       expect(res.success).toBe(true);
       expect(committedFiles).toEqual(['style.css']);
       expect(res.filePath).toBe('style.css');
+    });
+
+    it('syncs Module 9 files to playwright.config.ts and tests/task-tracker.spec.ts', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_m9_token',
+      } as any);
+
+      const committedFiles: string[] = [];
+      const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === 'https://api.github.com/user') {
+          return new Response(JSON.stringify({ login: 'student_gh' }), { status: 200 });
+        }
+        if (url === `https://api.github.com/repos/student_gh/${REPO_NAME}` && (!opts || !opts.method || opts.method === 'GET')) {
+          return new Response(JSON.stringify({ name: REPO_NAME }), { status: 200 });
+        }
+        if (url.includes(`/contents/`) && opts?.method === 'GET') {
+          return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
+        }
+        if (url.includes(`/contents/`) && opts?.method === 'PUT') {
+          const matched = url.match(/\/contents\/(.*)$/);
+          if (matched) committedFiles.push(matched[1]);
+          return new Response(
+            JSON.stringify({
+              commit: { html_url: `https://github.com/student_gh/${REPO_NAME}/commit/m9123` },
+              content: { html_url: `https://github.com/student_gh/${REPO_NAME}/blob/main/${matched ? matched[1] : ''}` },
+            }),
+            { status: 201 }
+          );
+        }
+        return new Response(JSON.stringify({ error: 'Unhandled' }), { status: 500 });
+      });
+
+      globalThis.fetch = fetchMock;
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 9,
+        assignmentTitle: 'Sesiunea 9: Setup și Arhitectură Playwright (Codegen)',
+        codePayload: JSON.stringify({
+          files: {
+            'playwright.config.ts': 'export default {};',
+            'task-tracker.spec.ts': 'test("smoke", async () => {});',
+          },
+        }),
+      });
+
+      expect(res.success).toBe(true);
+      expect(committedFiles).toEqual(['playwright.config.ts', 'tests/task-tracker.spec.ts']);
     });
   });
 });

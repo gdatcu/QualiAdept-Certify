@@ -18,10 +18,25 @@ export function getModuleFilePath(moduleNum: number, validationType?: string): s
   if (moduleNum === 0) return 'sandbox.html';
   if (moduleNum === 1) return 'index.html';
   if (moduleNum === 2) return 'style.css';
+  if (moduleNum === 7) return 'app.ts';
+  if (moduleNum === 8) return 'pom.ts';
+  if (moduleNum === 9) return 'tests/task-tracker.spec.ts';
   if (validationType === 'DYNAMIC') {
     return `tests/e2e/module-${moduleNum}.spec.ts`;
   }
   return 'app.js';
+}
+
+/**
+ * Resolves a workspace file tab name into its target repository path in GitHub.
+ * E.g., for Module 9, `task-tracker.spec.ts` maps to `tests/task-tracker.spec.ts`
+ * to match `testDir: './tests'` in `playwright.config.ts`.
+ */
+export function resolveGitHubFilePath(fileName: string, moduleNum: number): string {
+  if (moduleNum === 9 && fileName === 'task-tracker.spec.ts') {
+    return 'tests/task-tracker.spec.ts';
+  }
+  return fileName;
 }
 
 /**
@@ -171,8 +186,10 @@ export async function syncModuleCodeToGitHub({
     let primaryCommitUrl: string | undefined;
     let primaryFilePath: string | undefined;
 
-    for (const [filePath, content] of Object.entries(filesToCommit)) {
+    for (const [rawFilePath, content] of Object.entries(filesToCommit)) {
       if (!content || typeof content !== 'string') continue;
+
+      const filePath = resolveGitHubFilePath(rawFilePath, moduleNum);
 
       // Check if file already exists in repository to get its SHA for update
       let existingSha: string | undefined;

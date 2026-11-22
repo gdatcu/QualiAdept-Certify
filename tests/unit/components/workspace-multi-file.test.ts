@@ -347,6 +347,97 @@ describe('Workspace Multi-File Configuration Tests', () => {
       expect(task.criteria.some((c) => c.title.includes('TaskStatus'))).toBe(true);
       expect(task.criteria.some((c) => c.title.includes('TaskItem'))).toBe(true);
     });
+
+    it('configures pom.ts for Module 8 without inheriting legacy Task Tracker HTML/CSS/TS files', () => {
+      const files = getModuleFiles(8, 'STATIC');
+      expect(files).toHaveLength(1);
+      expect(files[0].name).toBe('pom.ts');
+      expect(files[0].language).toBe('typescript');
+
+      const prevModule7Payload = JSON.stringify({
+        files: {
+          'index.html': '<html><body><script src="app.ts"></script></body></html>',
+          'style.css': '.navbar { display: flex; }',
+          'app.ts': 'const apiUrl: string = "https://example.com";',
+        },
+      });
+      const parsed = parseInitialFiles(null, 8, 'STATIC', null, prevModule7Payload);
+      expect(Object.keys(parsed)).toEqual(['pom.ts']);
+      expect(parsed['pom.ts']).toContain('QA-Commerce');
+      expect(parsed['index.html']).toBeUndefined();
+      expect(parsed['app.ts']).toBeUndefined();
+    });
+
+    it('returns exact Business Task and 9 acceptance criteria for Module 8 TS OOP POM', () => {
+      const taskRo = getAssignmentCurriculumTask({
+        id: 'mod8',
+        title: 'Session 8',
+        description: 'Default desc',
+        module: 8,
+        validationType: 'STATIC',
+      }, 'ro');
+
+      expect(taskRo.businessTask).toContain('QA-Commerce');
+      expect(taskRo.criteria).toHaveLength(9);
+      expect(taskRo.criteria.every((c) => c.file === 'pom.ts')).toBe(true);
+      expect(taskRo.criteria.some((c) => c.title.includes('Omit<Produs'))).toBe(true);
+      expect(taskRo.notes).toContain('extrageDateDinPagina<T>');
+
+      const taskEn = getAssignmentCurriculumTask({
+        id: 'mod8',
+        title: 'Session 8',
+        description: 'Default desc',
+        module: 8,
+        validationType: 'STATIC',
+      }, 'en');
+      expect(taskEn.businessTask).toContain('Page Object Model');
+      expect(taskEn.criteria).toHaveLength(9);
+    });
+
+    it('configures playwright.config.ts and task-tracker.spec.ts for Module 9 without inheriting legacy web app files', () => {
+      const files = getModuleFiles(9, 'STATIC');
+      expect(files).toHaveLength(2);
+      expect(files.map((f) => f.name)).toEqual(['playwright.config.ts', 'task-tracker.spec.ts']);
+      expect(files.every((f) => f.language === 'typescript')).toBe(true);
+
+      const prevModule8Payload = JSON.stringify({
+        files: {
+          'index.html': '<html><body>Legacy HTML</body></html>',
+          'pom.ts': 'abstract class BasePage {}',
+        },
+      });
+      const parsed = parseInitialFiles(null, 9, 'STATIC', null, prevModule8Payload);
+      expect(Object.keys(parsed)).toEqual(['playwright.config.ts', 'task-tracker.spec.ts']);
+      expect(parsed['playwright.config.ts']).toContain("import { defineConfig } from '@playwright/test'");
+      expect(parsed['task-tracker.spec.ts']).toContain("await page.waitForTimeout(3000)");
+      expect(parsed['index.html']).toBeUndefined();
+    });
+
+    it('returns exact Business Task and 11 acceptance criteria for Module 9 Playwright Setup & Codegen', () => {
+      const taskRo = getAssignmentCurriculumTask({
+        id: 'mod9',
+        title: 'Session 9',
+        description: 'Default desc',
+        module: 9,
+        validationType: 'STATIC',
+      }, 'ro');
+
+      expect(taskRo.businessTask).toContain('Playwright');
+      expect(taskRo.criteria).toHaveLength(11);
+      expect(taskRo.criteria.filter((c) => c.file === 'playwright.config.ts')).toHaveLength(5);
+      expect(taskRo.criteria.filter((c) => c.file === 'task-tracker.spec.ts')).toHaveLength(6);
+      expect(taskRo.criteria.some((c) => c.title.includes('Zero Hard-Wait Policy'))).toBe(true);
+
+      const taskEn = getAssignmentCurriculumTask({
+        id: 'mod9',
+        title: 'Session 9',
+        description: 'Default desc',
+        module: 9,
+        validationType: 'STATIC',
+      }, 'en');
+      expect(taskEn.businessTask).toContain('Official Playwright automation framework');
+      expect(taskEn.criteria).toHaveLength(11);
+    });
   });
 
   describe('TypeScript Preview Transpiler', () => {
