@@ -225,4 +225,42 @@ describe('/api/github/sync Route Integration Tests', () => {
     expect(json.code).toBe('SYNC_TIMEOUT');
     expect(json.error).toContain('timeout');
   });
+
+  it('returns HTTP 200 with upToDate: true when code has no changes (BUG-15)', async () => {
+    vi.mocked(getAuthSession).mockResolvedValueOnce({
+      user: { id: 'u-1' },
+    } as never);
+    vi.mocked(prisma.assignment.findUnique).mockResolvedValueOnce({
+      id: 'a-9',
+      title: 'Sesiunea 9: Playwright',
+      module: 9,
+      validationType: 'STATIC',
+    } as never);
+
+    vi.mocked(githubSync.syncModuleCodeToGitHub).mockResolvedValueOnce({
+      success: true,
+      upToDate: true,
+      repoUrl: 'https://github.com/student/qualiadept-task-tracker',
+      commitUrl: 'https://github.com/student/qualiadept-task-tracker/commit/head123',
+      filePath: 'playwright.config.ts',
+      syncedFiles: ['playwright.config.ts', 'tests/task-tracker.spec.ts'],
+      message: 'Codul este deja sincronizat pe GitHub — nicio modificare nouă.',
+    });
+
+    const req = new Request('http://localhost:3000/api/github/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        assignmentId: 'a-9',
+        codePayload: JSON.stringify({ files: { 'playwright.config.ts': 'export default {};' } }),
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.upToDate).toBe(true);
+    expect(json.message).toContain('deja sincronizat');
+  });
 });

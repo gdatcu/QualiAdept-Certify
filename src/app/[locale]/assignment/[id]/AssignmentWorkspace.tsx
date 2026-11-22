@@ -1158,7 +1158,7 @@ export const getWorkspaceTranslations = (locale: string) => {
     submitCode: isRo ? 'Trimite Codul' : 'Submit Code',
     syncToGitHub: isRo ? 'Sincronizează pe GitHub' : 'Sync to GitHub',
     syncFileToGitHub: (file: string) => (isRo ? `Sincronizează ${file} pe GitHub` : `Sync ${file} to GitHub`),
-    syncFileShort: (file: string) => (isRo ? `Sync ${file}` : `Sync ${file}`),
+    syncFileShort: (file: string) => (isRo ? `Sincronizează ${file}` : `Sync ${file}`),
     syncing: isRo ? 'Se sincronizează...' : 'Syncing...',
     syncingFile: (file: string) => (isRo ? `Se sincronizează ${file}...` : `Syncing ${file}...`),
     unlockEditor: isRo ? 'Deblochează Editorul' : 'Unlock Editor',
@@ -1169,6 +1169,7 @@ export const getWorkspaceTranslations = (locale: string) => {
     activeCode: isRo ? 'Cod Activ' : 'Active Code',
     loadCode: isRo ? 'Încarcă Cod' : 'Load Code',
     greenWallTitle: isRo ? 'Panou Evaluare & Criterii' : 'Green Wall Feedback',
+    responseOk: isRo ? 'Răspuns 200 OK' : 'Response 200 OK',
     domAssertions: isRo ? 'Aserțiuni automate DOM & JS' : 'Automated DOM Assertions',
     tsOopEngine: isRo ? 'Analiză statică TypeScript / OOP' : 'TypeScript / OOP Static Analysis',
     playwrightEngine: isRo ? 'Analiză motor Playwright' : 'Playwright Engine Analysis',
@@ -2303,6 +2304,7 @@ export default function AssignmentWorkspace({
   const [syncingTargetFile, setSyncingTargetFile] = useState<string | null>(null);
   const [githubSyncResult, setGithubSyncResult] = useState<{
     success: boolean;
+    upToDate?: boolean;
     repoUrl?: string;
     commitUrl?: string;
     filePath?: string;
@@ -2654,21 +2656,27 @@ export default function AssignmentWorkspace({
           : data.filePath
             ? [data.filePath]
             : [];
+        const isUpToDate = Boolean(data.upToDate);
         setGithubSyncResult({
           success: true,
+          upToDate: isUpToDate,
           repoUrl: data.repoUrl,
           commitUrl: data.commitUrl,
           filePath: data.filePath,
           syncedFiles,
-          message: targetFile
+          message: isUpToDate
             ? locale === 'ro'
-              ? `✓ Fișierul ${targetFile} a fost sincronizat cu succes pe GitHub!`
-              : `✓ File ${targetFile} was successfully synced to GitHub!`
-            : syncedFiles.length > 1
+              ? '✓ Codul este deja sincronizat pe GitHub — nicio modificare nouă (niciun commit creat).'
+              : '✓ Code is already up to date on GitHub — no changes detected (no new commit created).'
+            : targetFile
               ? locale === 'ro'
-                ? `✓ Toate cele ${syncedFiles.length} fișiere au fost sincronizate într-un singur commit atomic pe GitHub!`
-                : `✓ All ${syncedFiles.length} files were synced in a single atomic GitHub commit!`
-              : tSync('success'),
+                ? `✓ Fișierul ${targetFile} a fost sincronizat cu succes pe GitHub!`
+                : `✓ File ${targetFile} was successfully synced to GitHub!`
+              : syncedFiles.length > 1
+                ? locale === 'ro'
+                  ? `✓ Toate cele ${syncedFiles.length} fișiere au fost sincronizate într-un singur commit atomic pe GitHub!`
+                  : `✓ All ${syncedFiles.length} files were synced in a single atomic GitHub commit!`
+                : tSync('success'),
         });
       }
     } catch (err: unknown) {
@@ -3244,7 +3252,9 @@ export default function AssignmentWorkspace({
             {!isSyncingGitHub && githubSyncResult && (
               <div
                 className={`p-4 rounded-xl border text-xs font-mono flex items-start gap-3 transition-all ${githubSyncResult.success
-                    ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-200'
+                    ? githubSyncResult.upToDate
+                      ? 'bg-cyan-950/30 border-cyan-800/70 text-cyan-200'
+                      : 'bg-emerald-950/40 border-emerald-800/80 text-emerald-200'
                     : 'bg-amber-950/40 border-amber-800/80 text-amber-200'
                   }`}
               >
@@ -3255,7 +3265,14 @@ export default function AssignmentWorkspace({
                 </div>
                 <div className="flex-1 space-y-1.5 min-w-0">
                   <div className="font-semibold text-zinc-100 flex flex-wrap items-center justify-between gap-2">
-                    <span>{githubSyncResult.success ? 'GitHub Auto-Sync' : 'GitHub Sync Notice'}</span>
+                    <span className="flex items-center gap-2">
+                      <span>{githubSyncResult.success ? 'GitHub Auto-Sync' : 'GitHub Sync Notice'}</span>
+                      {githubSyncResult.upToDate && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/70 font-semibold">
+                          {locale === 'ro' ? 'Deja Sincronizat' : 'Up to Date'}
+                        </span>
+                      )}
+                    </span>
                     {(() => {
                       const filesBadgeList =
                         githubSyncResult.syncedFiles && githubSyncResult.syncedFiles.length > 0
@@ -3458,7 +3475,7 @@ export default function AssignmentWorkspace({
                 </div>
                 {validationResult && (
                   <span className="text-xs font-mono text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800">
-                    Response 200 OK
+                    {wt.responseOk}
                   </span>
                 )}
               </div>

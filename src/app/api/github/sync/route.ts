@@ -83,11 +83,13 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: true,
+        upToDate: Boolean(syncResult.upToDate),
         repoUrl: syncResult.repoUrl,
         commitUrl: syncResult.commitUrl,
         filePath: syncResult.filePath,
         syncedFiles: syncResult.syncedFiles,
         commitMessage: syncResult.commitMessage,
+        message: syncResult.message,
       },
       { status: 200 }
     );

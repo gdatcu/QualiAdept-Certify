@@ -298,9 +298,29 @@ export async function POST(req: NextRequest) {
               // Inverted check: passes if the prohibited pattern is NOT found
               passed = !regex.test(cleanTargetCode);
               checkName = checkName || r.check || (isEn ? `Negative pattern check` : `Verificare excludere tipuri`);
+
+              // Optional contextual diagnostics for inverted regex failures (e.g. M09 Rule 11)
+              let specificDiagMsg: string | undefined;
+              if (!passed && Array.isArray(r.diagnostics)) {
+                for (let dIdx = 0; dIdx < r.diagnostics.length; dIdx++) {
+                  const diag = r.diagnostics[dIdx];
+                  if (diag?.pattern) {
+                    try {
+                      if (new RegExp(diag.pattern, 'i').test(cleanTargetCode)) {
+                        specificDiagMsg = isEn && diag.message_en ? diag.message_en : diag.message;
+                        diagnosticIndex = dIdx;
+                        break;
+                      }
+                    } catch {
+                      // Ignore malformed diagnostic regex
+                    }
+                  }
+                }
+              }
+
               msg = passed
                 ? passMsg
-                : (failMsg || (isEn ? `Prohibited pattern detected in code.` : `Codul conține elemente interzise.`));
+                : (specificDiagMsg || failMsg || (isEn ? `Prohibited pattern detected in code.` : `Codul conține elemente interzise.`));
             } else if (checkType === 'hasClass') {
               const expectedClass = r.expected || r.value;
               const matches = $(selector);

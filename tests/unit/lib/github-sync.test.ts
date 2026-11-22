@@ -4,6 +4,7 @@ import {
   getModuleFilePath,
   resolveGitHubFilePath,
   buildCommitMessage,
+  computeGitBlobSha,
   REPO_NAME,
 } from '@/lib/github-sync';
 import { prisma } from '@/lib/prisma';
@@ -21,6 +22,9 @@ interface MockGitHubOptions {
   repoExists?: boolean;
   defaultBranch?: string;
   existingTreePaths?: string[];
+  existingTreeContents?: Record<string, string>;
+  truncatedTree?: boolean;
+  newTreeSha?: string;
   commitSha?: string;
   emptyRepo?: boolean;
 }
@@ -31,6 +35,9 @@ function createAtomicGitHubFetchMock(options: MockGitHubOptions = {}) {
     repoExists = true,
     defaultBranch = 'main',
     existingTreePaths = [],
+    existingTreeContents = {},
+    truncatedTree = false,
+    newTreeSha = 'new_tree_sha_2',
     commitSha = 'atomic_sha_999',
     emptyRepo = false,
   } = options;
@@ -75,9 +82,18 @@ function createAtomicGitHubFetchMock(options: MockGitHubOptions = {}) {
     }
 
     if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/trees/base_tree_sha_1?recursive=1` && method === 'GET') {
+      const treeNodes = [
+        ...existingTreePaths.map((path) => ({ path, type: 'blob', sha: `blob_${path}` })),
+        ...Object.entries(existingTreeContents).map(([path, content]) => ({
+          path,
+          type: 'blob',
+          sha: computeGitBlobSha(content),
+        })),
+      ];
       return new Response(
         JSON.stringify({
-          tree: existingTreePaths.map((path) => ({ path, type: 'blob', sha: `blob_${path}` })),
+          tree: treeNodes,
+          truncated: truncatedTree,
         }),
         { status: 200 }
       );
@@ -86,7 +102,7 @@ function createAtomicGitHubFetchMock(options: MockGitHubOptions = {}) {
     if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/trees` && method === 'POST') {
       const body = JSON.parse(String(opts?.body || '{}'));
       treePayloads.push(body);
-      return new Response(JSON.stringify({ sha: 'new_tree_sha_2' }), { status: 201 });
+      return new Response(JSON.stringify({ sha: newTreeSha }), { status: 201 });
     }
 
     if (url === `https://api.github.com/repos/${owner}/${REPO_NAME}/git/commits` && method === 'POST') {
@@ -463,6 +479,115 @@ describe('github-sync Unit Tests', () => {
       expect(res.syncedFiles).toEqual(['pom.ts']);
       expect(mock.getContentsPuts()).toHaveLength(1);
       expect(mock.getContentsPuts()[0].message).toContain('add pom.ts');
+    });
+
+    it('computes standard Git blob SHA-1 matching git hash-object (BUG-15)', () => {
+      // Standard Git SHA-1 for "hello\n" is ce013625030ba8dba906f756967f9e9ca394464a
+      expect(computeGitBlobSha('hello\n')).toBe('ce013625030ba8dba906f756967f9e9ca394464a');
+    });
+
+    it('Layer 1 idempotency: skips tree/commit/ref writes when all files match HEAD blob SHAs (BUG-15)', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_noop_token',
+      } as never);
+
+      const configCode = 'export default { testDir: "./tests" };';
+      const specCode = 'test("smoke", async () => {});';
+
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        existingTreeContents: {
+          'playwright.config.ts': configCode,
+          'tests/task-tracker.spec.ts': specCode,
+        },
+      });
+      globalThis.fetch = mock.fetchMock;
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 9,
+        assignmentTitle: 'Sesiunea 9: Playwright',
+        codePayload: JSON.stringify({
+          files: {
+            'playwright.config.ts': configCode,
+            'task-tracker.spec.ts': specCode,
+          },
+        }),
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.upToDate).toBe(true);
+      expect(res.commitUrl).toBe(`https://github.com/student_gh/${REPO_NAME}/commit/base_commit_sha_1`);
+      expect(res.syncedFiles).toEqual(['playwright.config.ts', 'tests/task-tracker.spec.ts']);
+      expect(mock.getTreePayloads()).toHaveLength(0);
+      expect(mock.getCommitPayloads()).toHaveLength(0);
+      expect(mock.getRefPatches()).toHaveLength(0);
+    });
+
+    it('Layer 2 idempotency: skips commit/ref writes when GitHub returns newTreeSha === baseTreeSha (BUG-15)', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_layer2_token',
+      } as never);
+
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        existingTreePaths: ['pom.ts'], // non-matching mock blob SHA forces POST /git/trees
+        truncatedTree: true,
+        newTreeSha: 'base_tree_sha_1', // GitHub returns identical tree SHA
+      });
+      globalThis.fetch = mock.fetchMock;
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 8,
+        assignmentTitle: 'Sesiunea 8: POM',
+        codePayload: JSON.stringify({ files: { 'pom.ts': 'interface Produs {}' } }),
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.upToDate).toBe(true);
+      expect(mock.getTreePayloads()).toHaveLength(1);
+      expect(mock.getCommitPayloads()).toHaveLength(0);
+      expect(mock.getRefPatches()).toHaveLength(0);
+    });
+
+    it('commits ONLY changed files when one file in a multi-file module matches HEAD (BUG-09 & BUG-15)', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValueOnce({
+        access_token: 'gho_partial_diff_token',
+      } as never);
+
+      const unchangedConfig = 'export default { testDir: "./tests" };';
+      const oldSpec = 'test("old", async () => {});';
+      const newSpec = 'test("updated smoke test", async () => {});';
+
+      const mock = createAtomicGitHubFetchMock({
+        repoExists: true,
+        existingTreeContents: {
+          'playwright.config.ts': unchangedConfig,
+          'tests/task-tracker.spec.ts': oldSpec,
+        },
+        commitSha: 'only_spec_sha',
+      });
+      globalThis.fetch = mock.fetchMock;
+
+      const res = await syncModuleCodeToGitHub({
+        userId: 'u-123',
+        moduleNum: 9,
+        assignmentTitle: 'Sesiunea 9: Playwright',
+        codePayload: JSON.stringify({
+          files: {
+            'playwright.config.ts': unchangedConfig,
+            'task-tracker.spec.ts': newSpec,
+          },
+        }),
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.upToDate).toBe(false);
+      expect(res.syncedFiles).toEqual(['tests/task-tracker.spec.ts']);
+      expect(mock.getTreePayloads()[0].tree.map((t) => t.path)).toEqual(['tests/task-tracker.spec.ts']);
+      expect(mock.getCommitPayloads()[0].message).toContain('update tests/task-tracker.spec.ts');
+      expect(mock.getCommitPayloads()[0].message).not.toContain('playwright.config.ts');
     });
   });
 });

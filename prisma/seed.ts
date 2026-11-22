@@ -971,6 +971,13 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 1 failed: Import both defineConfig and devices from @playwright/test.',
         successMessage: 'defineConfig și devices sunt importate corect din @playwright/test.',
         successMessage_en: 'defineConfig and devices are correctly imported from @playwright/test.',
+        diagnostics: [
+          {
+            pattern: String.raw`import\s*(type\s+)?\{[^}]*\bdefineConfig\b[^}]*\}\s*from\s*['"]@playwright\/test['"]`,
+            message: "Ai importat defineConfig, dar lipsește devices din '@playwright/test' (import { defineConfig, devices } from '@playwright/test').",
+            message_en: "You imported defineConfig, but devices is missing from '@playwright/test' (import { defineConfig, devices } from '@playwright/test').",
+          },
+        ],
       },
       {
         file: 'playwright.config.ts',
@@ -982,6 +989,13 @@ const curriculum: CurriculumItem[] = [
         message_en: "Requirement 2 failed: Default export defineConfig({...}) and set testDir: './tests'.",
         successMessage: "Exportul implicit defineConfig({...}) și testDir: './tests' sunt configurate corect.",
         successMessage_en: "Default export defineConfig({...}) and testDir: './tests' are properly configured.",
+        diagnostics: [
+          {
+            pattern: String.raw`export\s+default\s+defineConfig\s*\(`,
+            message: "Exportul implicit defineConfig({...}) există, dar lipsește proprietatea testDir: './tests'.",
+            message_en: "Default export defineConfig({...}) exists, but testDir: './tests' is missing.",
+          },
+        ],
       },
       {
         file: 'playwright.config.ts',
@@ -993,6 +1007,23 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 3 failed: Set test timeout to 30 seconds (30_000, 30000, or 30 * 1000) and fullyParallel: true.',
         successMessage: 'Timeout-ul de 30s și execuția paralelă (fullyParallel: true) sunt configurate corect.',
         successMessage_en: '30s test timeout and fullyParallel: true are properly configured.',
+        diagnostics: [
+          {
+            pattern: String.raw`\bfullyParallel\s*:\s*false\b`,
+            message: 'Proprietatea fullyParallel este setată pe false — schimb-o în fullyParallel: true pentru execuție paralelă.',
+            message_en: 'fullyParallel is set to false — change it to fullyParallel: true for parallel test execution.',
+          },
+          {
+            pattern: String.raw`(?:^|[\s,{])timeout\s*:\s*(?:30_?000|30\s*\*\s*1_?000)\b`,
+            message: 'Timeout-ul de 30s este configurat corect, dar lipsește fullyParallel: true.',
+            message_en: '30s timeout is properly configured, but fullyParallel: true is missing.',
+          },
+          {
+            pattern: String.raw`\bfullyParallel\s*:\s*true\b`,
+            message: 'fullyParallel: true este configurat, dar lipsește timeout: 30_000 (30 de secunde) la nivel de test.',
+            message_en: 'fullyParallel: true is configured, but test-level timeout: 30_000 (30 seconds) is missing.',
+          },
+        ],
       },
       {
         file: 'playwright.config.ts',
@@ -1006,6 +1037,23 @@ const curriculum: CurriculumItem[] = [
           "Requirement 4 failed: Inside the use block, set baseURL: 'https://tasktracker.qualiadept.eu' (or 'http://localhost:3000'), testIdAttribute: 'data-testid', and trace: 'on-first-retry'.",
         successMessage: "Blocul use conține baseURL, testIdAttribute: 'data-testid' și trace: 'on-first-retry'.",
         successMessage_en: "use block properly configures baseURL, testIdAttribute: 'data-testid', and trace: 'on-first-retry'.",
+        diagnostics: [
+          {
+            pattern: String.raw`\buse\s*:\s*\{[\s\S]*\bbaseURL\s*:\s*['"](?!https:\/\/tasktracker\.qualiadept\.eu|http:\/\/localhost:3000)`,
+            message: "baseURL din blocul use trebuie să fie 'https://tasktracker.qualiadept.eu' (sau 'http://localhost:3000').",
+            message_en: "baseURL inside the use block must point to 'https://tasktracker.qualiadept.eu' (or 'http://localhost:3000').",
+          },
+          {
+            pattern: String.raw`\buse\s*:\s*\{[\s\S]*\btestIdAttribute\s*:\s*['"](?!data-testid['"])`,
+            message: "testIdAttribute din blocul use trebuie setat exact la 'data-testid'.",
+            message_en: "testIdAttribute inside the use block must be set to 'data-testid'.",
+          },
+          {
+            pattern: String.raw`\buse\s*:\s*\{`,
+            message: "Blocul use există, dar îi lipsește una dintre proprietățile obligatorii: baseURL, testIdAttribute: 'data-testid' sau trace: 'on-first-retry'.",
+            message_en: "The use block exists, but is missing one or more required fields: baseURL, testIdAttribute: 'data-testid', or trace: 'on-first-retry'.",
+          },
+        ],
       },
       {
         file: 'playwright.config.ts',
@@ -1017,6 +1065,18 @@ const curriculum: CurriculumItem[] = [
         message_en: "Requirement 5 failed: Configure at least the chromium project inside projects using devices['Desktop Chrome'].",
         successMessage: "Proiectul chromium cu devices['Desktop Chrome'] este configurat corect.",
         successMessage_en: "chromium project with devices['Desktop Chrome'] is properly configured.",
+        diagnostics: [
+          {
+            pattern: String.raw`\bprojects\s*:\s*\[[\s\S]*name\s*:\s*['"]chromium['"]`,
+            message: "Proiectul chromium este definit în projects, dar lipsește profilul ...devices['Desktop Chrome'].",
+            message_en: "Project chromium is defined in projects, but ...devices['Desktop Chrome'] is missing.",
+          },
+          {
+            pattern: String.raw`\bprojects\s*:\s*\[`,
+            message: "Blocul projects există, dar lipsește proiectul name: 'chromium' cu devices['Desktop Chrome'].",
+            message_en: "The projects array exists, but name: 'chromium' with devices['Desktop Chrome'] is missing.",
+          },
+        ],
       },
       // ---------- task-tracker.spec.ts (Regulile 6–11) ----------
       {
@@ -1029,6 +1089,13 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 6 failed: Import test and expect from @playwright/test.',
         successMessage: 'test și expect sunt importate corect din @playwright/test.',
         successMessage_en: 'test and expect are correctly imported from @playwright/test.',
+        diagnostics: [
+          {
+            pattern: String.raw`import\s*\{[^}]*\btest\b[^}]*\}\s*from\s*['"]@playwright\/test['"]`,
+            message: "Ai importat test, dar lipsește expect din '@playwright/test' (import { test, expect } from '@playwright/test').",
+            message_en: "You imported test, but expect is missing from '@playwright/test' (import { test, expect } from '@playwright/test').",
+          },
+        ],
       },
       {
         file: 'task-tracker.spec.ts',
@@ -1040,6 +1107,18 @@ const curriculum: CurriculumItem[] = [
         message_en: "Requirement 7 failed: Define test('...', async ({ page }) => { ... }) with a descriptive title (at least 8 chars, not 'test').",
         successMessage: 'Testul are titlu descriptiv și folosește fixture-ul { page }.',
         successMessage_en: 'Test has a descriptive title and uses the { page } fixture.',
+        diagnostics: [
+          {
+            pattern: String.raw`\btest\(\s*['"\x60]test['"\x60]`,
+            message: "Titlul generic 'test' generat de Codegen trebuie înlocuit cu un titlu descriptiv (minim 8 caractere).",
+            message_en: "The generic 'test' title generated by Codegen must be replaced with a descriptive title (at least 8 characters).",
+          },
+          {
+            pattern: String.raw`\btest\(\s*(['"\x60])[^'"\x60]{1,7}\1`,
+            message: 'Titlul testului este prea scurt (sub 8 caractere) — descrie clar scenariul E2E testat.',
+            message_en: 'Test title is too short (under 8 characters) — clearly describe the E2E scenario being tested.',
+          },
+        ],
       },
       {
         file: 'task-tracker.spec.ts',
@@ -1051,6 +1130,18 @@ const curriculum: CurriculumItem[] = [
         message_en: "Requirement 8 failed: Navigate relatively using await page.goto('/') relying on baseURL from config.",
         successMessage: "Navigarea relativă await page.goto('/') este implementată corect.",
         successMessage_en: "Relative navigation await page.goto('/') is properly implemented.",
+        diagnostics: [
+          {
+            pattern: String.raw`page\.goto\(\s*['"\x60]https?:\/\/`,
+            message: "Ai folosit un URL absolut în page.goto(...) — înlocuiește-l cu navigare relativă await page.goto('/') care preia baseURL din playwright.config.ts.",
+            message_en: "An absolute URL was used in page.goto(...) — replace it with relative navigation await page.goto('/') using baseURL from playwright.config.ts.",
+          },
+          {
+            pattern: String.raw`page\.goto\(`,
+            message: "Apelul page.goto(...) există, dar trebuie scris exact ca await page.goto('/').",
+            message_en: "page.goto(...) call exists, but must be written as await page.goto('/').",
+          },
+        ],
       },
       {
         file: 'task-tracker.spec.ts',
@@ -1062,6 +1153,18 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 9 failed: Fill getByTestId(\'input-task-name\') with .fill(...) and click getByTestId(\'submit-task-btn\') with .click().',
         successMessage: 'Interacțiunile .fill() pe input-task-name și .click() pe submit-task-btn sunt implementate corect.',
         successMessage_en: 'Interactions .fill() on input-task-name and .click() on submit-task-btn are properly implemented.',
+        diagnostics: [
+          {
+            pattern: String.raw`getByTestId\(\s*['"]input-task-name['"]\s*\)[\s\S]*?\.fill\(`,
+            message: "Ai completat input-task-name cu .fill(...), dar lipsește click-ul pe getByTestId('submit-task-btn').click().",
+            message_en: "input-task-name is filled with .fill(...), but getByTestId('submit-task-btn').click() is missing.",
+          },
+          {
+            pattern: String.raw`getByTestId\(\s*['"]submit-task-btn['"]\s*\)[\s\S]*?\.click\(`,
+            message: "Click-ul pe submit-task-btn există, dar lipsește completarea câmpului getByTestId('input-task-name').fill(...) înaintea lui.",
+            message_en: "Click on submit-task-btn exists, but filling getByTestId('input-task-name').fill(...) before it is missing.",
+          },
+        ],
       },
       {
         file: 'task-tracker.spec.ts',
@@ -1073,6 +1176,18 @@ const curriculum: CurriculumItem[] = [
         message_en: "Requirement 10 failed: Verify with a web-first assertion that the list contains the new task: await expect(page.getByTestId('task-list')).toContainText(...).",
         successMessage: "Asertarea web-first .toContainText(...) pe task-list este implementată corect.",
         successMessage_en: "Web-first assertion .toContainText(...) on task-list is properly implemented.",
+        diagnostics: [
+          {
+            pattern: String.raw`getByTestId\(\s*['"]task-list['"]\s*\)`,
+            message: "Localizatorul task-list este referit, dar lipsește asertarea web-first await expect(...).toContainText(...).",
+            message_en: "Locator task-list is referenced, but the web-first assertion await expect(...).toContainText(...) is missing.",
+          },
+          {
+            pattern: String.raw`\bexpect\(`,
+            message: "Ai folosit expect(...), dar trebuie să verifici lista page.getByTestId('task-list') cu .toContainText(...).",
+            message_en: "expect(...) is present, but it must assert on page.getByTestId('task-list') using .toContainText(...).",
+          },
+        ],
       },
       {
         file: 'task-tracker.spec.ts',
@@ -1084,6 +1199,33 @@ const curriculum: CurriculumItem[] = [
         message_en: 'Requirement 11 failed (Zero Hard-Wait Policy): Remove waitForTimeout(), { force: true }, and absolute URLs in page.goto().',
         successMessage: 'Politica Zero Hard-Wait este respectată: niciun waitForTimeout(), { force: true } sau URL absolut în goto().',
         successMessage_en: 'Zero Hard-Wait Policy respected: no waitForTimeout(), { force: true }, or absolute URLs in goto().',
+        diagnostics: [
+          {
+            pattern: String.raw`(?=[\s\S]*\bwaitForTimeout\s*\()(?=[\s\S]*\bforce\s*:\s*true\b)`,
+            message: 'Zero Hard-Wait Policy încălcată: elimină atât page.waitForTimeout() cât și { force: true } din test.',
+            message_en: 'Zero Hard-Wait Policy violated: remove both page.waitForTimeout() and { force: true } from the test.',
+          },
+          {
+            pattern: String.raw`(?=[\s\S]*\.goto\(\s*['"\x60]https?:\/\/)(?=[\s\S]*\bforce\s*:\s*true\b)`,
+            message: "Zero Hard-Wait Policy încălcată: ai folosit URL absolut în page.goto() și { force: true } — folosește page.goto('/') și addLocatorHandler().",
+            message_en: "Zero Hard-Wait Policy violated: absolute URL in page.goto() and { force: true } detected — use page.goto('/') and addLocatorHandler().",
+          },
+          {
+            pattern: String.raw`\bwaitForTimeout\s*\(`,
+            message: 'Ai folosit waitForTimeout() (hard-wait interzis) — șterge-l; Playwright folosește auto-waiting și web-first assertions.',
+            message_en: 'waitForTimeout() detected (prohibited hard wait) — remove it; Playwright uses built-in auto-waiting and web-first assertions.',
+          },
+          {
+            pattern: String.raw`\bforce\s*:\s*true\b`,
+            message: 'Ai folosit { force: true } la click — elimină-l și tratează overlay-ul promoțional curat cu page.addLocatorHandler().',
+            message_en: '{ force: true } detected on click — remove it and handle the promo overlay cleanly with page.addLocatorHandler().',
+          },
+          {
+            pattern: String.raw`\.goto\(\s*['"\x60]https?:\/\/`,
+            message: "Ai folosit un URL absolut în page.goto(...) — folosește navigare relativă await page.goto('/') bazată pe baseURL.",
+            message_en: "Absolute URL detected in page.goto(...) — use relative navigation await page.goto('/') backed by baseURL.",
+          },
+        ],
       },
     ]),
   },

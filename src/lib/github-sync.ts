@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { prisma } from './prisma';
 
 export const REPO_NAME = 'qualiadept-task-tracker';
@@ -5,6 +6,7 @@ export const DEFAULT_SYNC_TIMEOUT_MS = 8500;
 
 export interface GitHubSyncResult {
   success: boolean;
+  upToDate?: boolean;
   repoUrl?: string;
   commitUrl?: string;
   filePath?: string;
@@ -12,6 +14,16 @@ export interface GitHubSyncResult {
   commitMessage?: string;
   error?: string;
   message?: string;
+}
+
+/**
+ * Computes the exact Git blob SHA-1 hash (`sha1("blob <byteLength>\0<content>")`)
+ * used by GitHub's Git Data API so we can detect unchanged files before creating
+ * trees or commits (BUG-15).
+ */
+export function computeGitBlobSha(content: string): string {
+  const buf = Buffer.from(content, 'utf-8');
+  return createHash('sha1').update(`blob ${buf.length}\0`).update(buf).digest('hex');
 }
 
 /**
@@ -368,30 +380,58 @@ export async function syncModuleCodeToGitHub({
       throw new Error('Base tree SHA missing from GitHub commit response.');
     }
 
-    // 7. Read existing tree paths in a single call to accurately classify add vs update (BUG-09)
-    const existingPaths = new Set<string>();
+    // 7. Read existing tree paths + blob SHAs in a single call (BUG-09 & BUG-15)
+    const existingBlobs = new Map<string, string>();
+    let treeInspectComplete = false;
     const treeInspectRes = await ghFetch(`${repoApiBase}/git/trees/${baseTreeSha}?recursive=1`);
     if (treeInspectRes.ok) {
       const treeInspectData = (await treeInspectRes.json()) as {
-        tree?: Array<{ path?: string; type?: string }>;
+        tree?: Array<{ path?: string; type?: string; sha?: string }>;
+        truncated?: boolean;
       };
+      treeInspectComplete = !treeInspectData.truncated;
       for (const node of treeInspectData.tree || []) {
         if (node.path && node.type === 'blob') {
-          existingPaths.add(node.path);
+          existingBlobs.set(node.path, node.sha || '');
         }
       }
     }
 
     const addedFiles: string[] = [];
     const updatedFiles: string[] = [];
+    const changedEntries: Array<{ path: string; content: string }> = [];
+
     for (const entry of entriesToCommit) {
-      if (existingPaths.has(entry.path)) {
-        updatedFiles.push(entry.path);
-      } else {
+      const existingSha = existingBlobs.get(entry.path);
+      if (existingSha === undefined) {
         addedFiles.push(entry.path);
+        changedEntries.push(entry);
+      } else {
+        const localBlobSha = computeGitBlobSha(entry.content);
+        if (existingSha && existingSha === localBlobSha) {
+          // Exact byte-for-byte match with HEAD -> unchanged
+          continue;
+        }
+        updatedFiles.push(entry.path);
+        changedEntries.push(entry);
       }
     }
 
+    // Layer 1 idempotency check (BUG-15): skip write calls completely when all files match HEAD
+    if (treeInspectComplete && changedEntries.length === 0) {
+      const allPaths = entriesToCommit.map((e) => e.path);
+      return {
+        success: true,
+        upToDate: true,
+        repoUrl,
+        commitUrl: `${repoUrl}/commit/${baseCommitSha}`,
+        filePath: allPaths[0],
+        syncedFiles: allPaths,
+        message: 'Codul este deja sincronizat pe GitHub — nicio modificare nouă.',
+      };
+    }
+
+    const entriesForTree = changedEntries.length > 0 ? changedEntries : entriesToCommit;
     const commitMessage = buildCommitMessage({
       moduleNum,
       assignmentTitle,
@@ -399,13 +439,13 @@ export async function syncModuleCodeToGitHub({
       updatedFiles,
     });
 
-    // 8. Create a single new Git Tree containing ALL files atomically (BUG-08 & BUG-10)
+    // 8. Create a single new Git Tree containing ALL changed files atomically (BUG-08 & BUG-10)
     const createTreeRes = await ghFetch(`${repoApiBase}/git/trees`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         base_tree: baseTreeSha,
-        tree: entriesToCommit.map((entry) => ({
+        tree: entriesForTree.map((entry) => ({
           path: entry.path,
           mode: '100644',
           type: 'blob',
@@ -429,6 +469,20 @@ export async function syncModuleCodeToGitHub({
     const newTreeData = (await createTreeRes.json()) as { sha?: string };
     if (!newTreeData.sha) {
       throw new Error('New tree SHA missing from GitHub response.');
+    }
+
+    // Layer 2 idempotency guard (BUG-15): never create an empty commit if GitHub returns the exact same tree SHA
+    if (newTreeData.sha === baseTreeSha) {
+      const allPaths = entriesToCommit.map((e) => e.path);
+      return {
+        success: true,
+        upToDate: true,
+        repoUrl,
+        commitUrl: `${repoUrl}/commit/${baseCommitSha}`,
+        filePath: allPaths[0],
+        syncedFiles: allPaths,
+        message: 'Codul este deja sincronizat pe GitHub — nicio modificare nouă.',
+      };
     }
 
     // 9. Create the single atomic commit pointing to the new tree
@@ -482,11 +536,12 @@ export async function syncModuleCodeToGitHub({
       };
     }
 
-    const syncedFiles = entriesToCommit.map((e) => e.path);
+    const syncedFiles = entriesForTree.map((e) => e.path);
     const commitUrl = newCommitData.html_url || `${repoUrl}/commit/${newCommitSha}`;
 
     return {
       success: true,
+      upToDate: false,
       repoUrl,
       commitUrl,
       filePath: syncedFiles[0],
