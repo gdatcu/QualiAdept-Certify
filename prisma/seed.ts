@@ -1120,11 +1120,29 @@ const curriculum: CurriculumItem[] = [
 ];
 
 async function main() {
+  const modulesArg = process.argv.find((arg) => arg.startsWith('--modules='));
+  const targetModules = modulesArg
+    ? new Set(
+        modulesArg
+          .replace('--modules=', '')
+          .split(',')
+          .map((n) => parseInt(n.trim(), 10))
+          .filter((n) => !Number.isNaN(n))
+      )
+    : null;
+
+  const itemsToSync = targetModules
+    ? curriculum.filter((item) => targetModules.has(item.moduleNumber))
+    : curriculum;
+
   console.log('🌱 Starting database seed (Deterministic Stable IDs)...');
+  console.log(
+    targetModules
+      ? `📚 Surgical upsert for modules: [${Array.from(targetModules).sort((a, b) => a - b).join(', ')}]...`
+      : '📚 Upserting 20-week curriculum modules into database...'
+  );
 
-  console.log('📚 Upserting 20-week curriculum modules into database...');
-
-  for (const item of curriculum) {
+  for (const item of itemsToSync) {
     const existing = await prisma.assignment.findFirst({
       where: { module: item.moduleNumber },
     });
@@ -1163,7 +1181,7 @@ async function main() {
     );
   }
 
-  console.log('✨ Curriculum upserted successfully: 21 Modules synchronized.');
+  console.log(`✨ Curriculum upserted successfully: ${itemsToSync.length} module(s) synchronized.`);
 }
 
 main()
