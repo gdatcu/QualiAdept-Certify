@@ -1,0 +1,121 @@
+name: Sync Curriculum Modules (Safe Upsert)
+
+on:
+  workflow_dispatch:
+    inputs:
+      modules:
+        description: 'Comma-separated module numbers to upsert (e.g. "8,9"), or "all" for full curriculum'
+        required: true
+        default: '8,9'
+        type: string
+
+jobs:
+  sync:
+    name: Backup & Surgical Curriculum Upsert
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate modules input
+        env:
+          INPUT_MODULES: ${{ inputs.modules }}
+        run: |
+          if [[ ! "$INPUT_MODULES" =~ ^(all|[0-9]+(,[0-9]+)*)$ ]]; then
+            echo "❌ Invalid modules input: '$INPUT_MODULES'. Expected 'all' or comma-separated integers (e.g. '8,9')."
+            exit 1
+          fi
+          echo "✓ Validated target modules: $INPUT_MODULES"
+
+      - name: Pre-Sync Safety Backup (pg_dump)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="pre_sync_backup_${TIMESTAMP}.sql"
+          echo "🛡️ Creating pre-sync database backup: ${BACKUP_FILE}..."
+          docker run --rm postgres:17 pg_dump "$SUPABASE_DB_URL" > "${BACKUP_FILE}"
+          if [ ! -s "${BACKUP_FILE}" ]; then
+            echo "❌ Backup file is empty! Aborting sync to protect production data."
+            exit 1
+          fi
+          echo "BACKUP_FILENAME=${BACKUP_FILE}" >> $GITHUB_ENV
+          ls -lh "${BACKUP_FILE}"
+
+      - name: Upload Pre-Sync Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-sync-supabase-backup
+          path: ${{ env.BACKUP_FILENAME }}
+          retention-days: 30
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Surgical Upsert & Data Integrity Verification
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DIRECT_URL: ${{ secrets.SUPABASE_DB_URL }}
+          INPUT_MODULES: ${{ inputs.modules }}
+        run: |
+          node -e '
+            const { PrismaClient } = require("@prisma/client");
+            const prisma = new PrismaClient();
+            (async () => {
+              const [users, submissions, assignments] = await Promise.all([
+                prisma.user.count(),
+                prisma.submission.count(),
+                prisma.assignment.count(),
+              ]);
+              console.log(`📊 BEFORE SYNC -> Users: ${users}, Submissions: ${submissions}, Assignments: ${assignments}`);
+              const fs = require("fs");
+              fs.writeFileSync("/tmp/before_counts.json", JSON.stringify({ users, submissions, assignments }));
+              await prisma.$disconnect();
+            })().catch((e) => { console.error(e); process.exit(1); });
+          '
+
+          if [ "$INPUT_MODULES" = "all" ]; then
+            npx tsx prisma/seed.ts
+          else
+            npx tsx prisma/seed.ts --modules="$INPUT_MODULES"
+          fi
+
+          node -e '
+            const fs = require("fs");
+            const { PrismaClient } = require("@prisma/client");
+            const prisma = new PrismaClient();
+            (async () => {
+              const before = JSON.parse(fs.readFileSync("/tmp/before_counts.json", "utf8"));
+              const [users, submissions, assignments] = await Promise.all([
+                prisma.user.count(),
+                prisma.submission.count(),
+                prisma.assignment.count(),
+              ]);
+              console.log(`📊 AFTER SYNC  -> Users: ${users}, Submissions: ${submissions}, Assignments: ${assignments}`);
+              if (users < before.users || submissions < before.submissions) {
+                console.error("❌ Integrity check failed: row count decreased!");
+                process.exit(1);
+              }
+              const target = process.env.INPUT_MODULES === "all"
+                ? null
+                : process.env.INPUT_MODULES.split(",").map((n) => parseInt(n, 10));
+              const synced = await prisma.assignment.findMany({
+                where: target ? { module: { in: target } } : undefined,
+                orderBy: { module: "asc" },
+                select: { module: true, title: true, validationType: true, unlockDate: true, validationRules: true },
+              });
+              for (const m of synced) {
+                let ruleCount = 0;
+                try { ruleCount = JSON.parse(m.validationRules || "[]").length; } catch {}
+                console.log(`✅ Verified Module ${m.module}: "${m.title}" | ${m.validationType} | ${ruleCount} rules | unlock=${m.unlockDate?.toISOString() ?? "none"}`);
+              }
+              await prisma.$disconnect();
+            })().catch((e) => { console.error(e); process.exit(1); });
+          '
