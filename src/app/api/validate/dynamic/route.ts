@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { sendDiscordTriumphNotification } from '@/lib/webhook';
+import {
+  evaluateStaticRules,
+  parseSubmissionFiles,
+  stripCodeComments,
+  type FeedbackItem,
+  type ValidationResponse,
+} from '@/lib/static-evaluator';
+import {
+  checkUnsafeRunnerPatterns,
+  dispatchGitHubActionsEval,
+  getDynamicRunnerConfig,
+  resolvePrimarySpecFileName,
+} from '@/lib/dynamic-runner';
 
-export interface FeedbackItem {
-  check: string;
-  passed: boolean;
-  message: string;
-}
-
-export interface ValidationResponse {
-  status: 'pass' | 'fail';
-  score: number;
-  feedback: FeedbackItem[];
-}
+export type { FeedbackItem, ValidationResponse };
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,20 +24,25 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON payload' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
     const { codePayload, assignmentId } = body;
+    const locale = (
+      body.locale ||
+      req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] ||
+      'ro'
+    ).toLowerCase();
+    const isEn = locale === 'en';
 
     // 1. ReDoS & Payload Protection
     if (typeof codePayload === 'string' && codePayload.length > 10000) {
-      return NextResponse.json(
-        { error: 'Payload too large' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Payload too large' }, { status: 400 });
+    }
+
+    const parsedFiles = parseSubmissionFiles(body);
+    if (parsedFiles.rawPayload.length > 12000) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 400 });
     }
 
     // Retrieve authenticated user session
@@ -58,7 +66,7 @@ export async function POST(req: NextRequest) {
     // Enrollment Check: Verify user is enrolled or has TRAINER role
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { isEnrolled: true, role: true },
+      select: { isEnrolled: true, role: true, name: true },
     });
 
     if (!dbUser || (!dbUser.isEnrolled && dbUser.role !== 'TRAINER')) {
@@ -81,33 +89,35 @@ export async function POST(req: NextRequest) {
     });
 
     if (!assignment) {
-      return NextResponse.json(
-        { error: 'Assignment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
-    // 2. API Bypass Protection (Progressive Unlocking Enforcement)
-    const userPassedSubmissions = await prisma.submission.findMany({
-      where: {
-        userId,
-        status: 'PASS',
-      },
-      include: {
-        assignment: true,
-      },
-    });
+    // 2. API Bypass Protection (Progressive Unlocking Enforcement for students)
+    if (dbUser.role !== 'TRAINER') {
+      const userPassedSubmissions = await prisma.submission.findMany({
+        where: {
+          userId,
+          status: 'PASS',
+        },
+        include: {
+          assignment: true,
+        },
+      });
 
-    const highestPassedModule = userPassedSubmissions.reduce(
-      (max, sub) => Math.max(max, sub.assignment.module),
-      0
-    );
-
-    if (assignment.module > highestPassedModule + 1) {
-      return NextResponse.json(
-        { error: 'Forbidden: You must complete prior modules before attempting this assignment.' },
-        { status: 403 }
+      const highestPassedModule = userPassedSubmissions.reduce(
+        (max, sub) => Math.max(max, sub.assignment.module),
+        0
       );
+
+      if (assignment.module > highestPassedModule + 1) {
+        return NextResponse.json(
+          {
+            error:
+              'Forbidden: You must complete prior modules before attempting this assignment.',
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Time-based rate limit lock: Ensure 3 seconds between submissions for same user and assignment
@@ -138,52 +148,42 @@ export async function POST(req: NextRequest) {
 
     if (recentSubmissionsCount >= 10) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 10 evaluations per minute to prevent server overload.' },
+        {
+          error:
+            'Rate limit exceeded. Maximum 10 evaluations per minute to prevent server overload.',
+        },
         { status: 429 }
       );
     }
 
-    const code = typeof codePayload === 'string' ? codePayload.trim() : '';
+    const targetFileFilter =
+      typeof body.targetFile === 'string' && body.targetFile.trim().length > 0
+        ? body.targetFile.trim()
+        : null;
 
-    // 3. Anti-Cheat: Strip single-line (//...) and multi-line (/*...*/) comments
-    const cleanCode = code.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '');
+    const primaryFileName = resolvePrimarySpecFileName(assignment.module, parsedFiles.files);
+    const primaryCode =
+      parsedFiles.files[primaryFileName] ||
+      Object.values(parsedFiles.files)[0] ||
+      (typeof codePayload === 'string' ? codePayload.trim() : '');
 
-    const checks: FeedbackItem[] = [];
+    // ------------------------------------------------------------------
+    // STAGE 1: Static Hygiene Gate (runs synchronously on Vercel in ~50ms)
+    // ------------------------------------------------------------------
+    let checks: FeedbackItem[] = [];
 
-    // Evaluate dynamic Playwright regex rules on cleanCode
     if (assignment.validationRules) {
-      try {
-        const rules = JSON.parse(assignment.validationRules);
-        if (Array.isArray(rules)) {
-          for (const r of rules) {
-            const regexPattern = r.regex || r.pattern;
+      const stage1 = evaluateStaticRules({
+        validationRulesJson: assignment.validationRules,
+        parsedFiles,
+        locale,
+        targetFileFilter,
+      });
+      checks = stage1.checks;
+    } else {
+      // Fallback Playwright syntax suite if no custom rules are defined on the assignment
+      const cleanCode = stripCodeComments(primaryCode, primaryFileName);
 
-            if (regexPattern) {
-              const regex = new RegExp(regexPattern, 'i');
-              const passed = cleanCode.length > 0 && regex.test(cleanCode);
-              
-              // Set check card title to user-friendly message (e.g. "Navigates to URL")
-              const checkTitle = r.message || r.check || r.name || 'Playwright Syntax Assertion';
-              
-              // Set details subtitle to clean string without raw regex
-              const details = r.details || (passed ? 'Playwright Syntax Validated' : 'Required Playwright statement missing');
-
-              checks.push({
-                check: checkTitle,
-                passed,
-                message: details,
-              });
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse assignment validationRules JSON in dynamic route:', e);
-      }
-    }
-
-    // Fallback Playwright assertion suite if no custom rules are defined (evaluated on cleanCode)
-    if (checks.length === 0) {
-      // Check 1: Navigation syntax (page.goto)
       const hasGoto = /page\.goto\(/i.test(cleanCode);
       checks.push({
         check: 'Navigates to Target URL',
@@ -191,19 +191,21 @@ export async function POST(req: NextRequest) {
         message: hasGoto
           ? 'Playwright Syntax Validated'
           : 'Missing page.goto() navigation command.',
+        file: primaryFileName,
       });
 
-      // Check 2: Element Locator syntax (page.locator, page.$, page.click, page.fill)
-      const hasLocator = /(page\.locator\(|page\.\$|page\.click\(|page\.fill\()/i.test(cleanCode);
+      const hasLocator = /(page\.locator\(|page\.\$|page\.click\(|page\.fill\(|getByTestId\(|getByRole\()/i.test(
+        cleanCode
+      );
       checks.push({
         check: 'Uses Playwright Locators & Interaction',
         passed: hasLocator,
         message: hasLocator
           ? 'Playwright Syntax Validated'
           : 'Missing page.locator() element locator command.',
+        file: primaryFileName,
       });
 
-      // Check 3: Assertion syntax (expect)
       const hasExpect = /(expect\(|assert|should)/i.test(cleanCode);
       checks.push({
         check: 'Executes Test Assertions',
@@ -211,23 +213,42 @@ export async function POST(req: NextRequest) {
         message: hasExpect
           ? 'Playwright Syntax Validated'
           : 'Missing expect() test assertion statement.',
+        file: primaryFileName,
       });
     }
 
-    // Calculate score
+    // Zero-Trust Security Gate: block Node OS/FS/process escape attempts before runner execution
+    const unsafePatterns = checkUnsafeRunnerPatterns(primaryCode);
+    if (unsafePatterns.length > 0) {
+      checks.push({
+        check: isEn
+          ? '[Security Sandbox] Restricted Node APIs prohibited'
+          : '[Securitate Sandbox] API-uri Node restricționate interzise',
+        passed: false,
+        message: isEn
+          ? `Prohibited APIs detected (${unsafePatterns.join(', ')}). Remove them before running on the cloud evaluator.`
+          : `API-uri interzise detectate (${unsafePatterns.join(', ')}). Elimină-le înainte de execuția în cloud.`,
+        file: primaryFileName,
+      });
+    }
+
     const passedCount = checks.filter((c) => c.passed).length;
     const totalChecks = checks.length;
-    const score = totalChecks > 0 ? Math.round((passedCount / totalChecks) * 100) : 0;
-    const isPass = score === 100;
-    const status = isPass ? 'pass' : 'fail';
-    const dbStatus = isPass ? 'PASS' : 'FAIL';
+    const stage1Score = totalChecks > 0 ? Math.round((passedCount / totalChecks) * 100) : 0;
+    const stage1Passed = stage1Score === 100;
 
-    // Build response payload matching Green Wall format
-    const responsePayload: ValidationResponse = {
-      status,
-      score,
-      feedback: checks,
-    };
+    // Partial per-file checks only run Stage 1 and never persist or trigger GitHub Actions
+    if (targetFileFilter) {
+      const partialPayload: ValidationResponse = {
+        status: stage1Passed ? 'pass' : 'fail',
+        score: stage1Score,
+        feedback: checks,
+        isPartial: true,
+        targetFile: targetFileFilter,
+        stage: 'static',
+      };
+      return NextResponse.json(partialPayload, { status: 200 });
+    }
 
     // Ensure User exists in DB to satisfy foreign key constraints
     const existingUser = await prisma.user.findUnique({ where: { id: userId } });
@@ -243,37 +264,165 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Save submission record in PostgreSQL database
-    await prisma.submission.create({
+    const storedPayload = parsedFiles.rawPayload || (typeof codePayload === 'string' ? codePayload : '');
+
+    // If Stage 1 FAILS, persist FAIL immediately (saves GitHub Actions minutes!)
+    if (!stage1Passed) {
+      const failResponse: ValidationResponse = {
+        status: 'fail',
+        score: stage1Score,
+        feedback: checks,
+        stage: 'static',
+      };
+
+      const created = await prisma.submission.create({
+        data: {
+          userId,
+          assignmentId,
+          codePayload: storedPayload,
+          status: 'FAIL',
+          score: stage1Score,
+          feedbackJSON: JSON.stringify(failResponse),
+        },
+      });
+
+      return NextResponse.json(
+        {
+          ...failResponse,
+          submissionId: created?.id,
+        },
+        { status: 200 }
+      );
+    }
+
+    // ------------------------------------------------------------------
+    // STAGE 2: Dispatch to isolated GitHub Actions Playwright Runner
+    // ------------------------------------------------------------------
+    const runnerConfig = getDynamicRunnerConfig();
+
+    if (runnerConfig) {
+      const pendingPayload: ValidationResponse = {
+        status: 'pending',
+        score: 0,
+        feedback: checks,
+        stage: 'dynamic_queued',
+      };
+
+      const createdSubmission = await prisma.submission.create({
+        data: {
+          userId,
+          assignmentId,
+          codePayload: storedPayload,
+          status: 'PENDING',
+          score: 0,
+          feedbackJSON: JSON.stringify({
+            ...pendingPayload,
+            locale,
+            primaryFileName,
+          }),
+        },
+      });
+
+      const dispatchRes = await dispatchGitHubActionsEval({
+        config: runnerConfig,
+        submissionId: createdSubmission.id,
+        moduleNum: assignment.module,
+        fileName: primaryFileName,
+      });
+
+      if (!dispatchRes.dispatched) {
+        const dispatchFailFeedback: FeedbackItem[] = [
+          ...checks,
+          {
+            check: isEn
+              ? '[Playwright E2E] Cloud Runner Dispatch'
+              : '[Playwright E2E] Lansare Runner Cloud',
+            passed: false,
+            message: isEn
+              ? 'Could not start the cloud Playwright evaluator. Please retry in a few seconds.'
+              : 'Nu s-a putut porni evaluatorul Playwright în cloud. Te rugăm să reîncerci în câteva secunde.',
+            file: primaryFileName,
+          },
+        ];
+        const dispatchFailPayload: ValidationResponse = {
+          status: 'fail',
+          score: Math.round((checks.length / dispatchFailFeedback.length) * 100),
+          feedback: dispatchFailFeedback,
+          stage: 'dynamic_completed',
+          submissionId: createdSubmission.id,
+          executionLogs: dispatchRes.error,
+        };
+
+        await prisma.submission.update({
+          where: { id: createdSubmission.id },
+          data: {
+            status: 'FAIL',
+            score: dispatchFailPayload.score,
+            feedbackJSON: JSON.stringify(dispatchFailPayload),
+          },
+        });
+
+        return NextResponse.json(
+          {
+            error: isEn
+              ? 'Cloud Playwright runner dispatch failed. Please retry.'
+              : 'Lansarea runner-ului Playwright în cloud a eșuat. Te rugăm să reîncerci.',
+            details: dispatchRes.error,
+          },
+          { status: 502 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          ...pendingPayload,
+          submissionId: createdSubmission.id,
+        },
+        { status: 202 }
+      );
+    }
+
+    // Graceful fallback when GitHub Actions runner env vars are not configured (local dev / unit tests)
+    const staticPassResponse: ValidationResponse = {
+      status: 'pass',
+      score: 100,
+      feedback: checks,
+      stage: 'static',
+    };
+
+    const created = await prisma.submission.create({
       data: {
         userId,
         assignmentId,
-        codePayload: codePayload || '',
-        status: dbStatus,
-        score,
-        feedbackJSON: JSON.stringify(responsePayload),
+        codePayload: storedPayload,
+        status: 'PASS',
+        score: 100,
+        feedbackJSON: JSON.stringify(staticPassResponse),
       },
     });
 
-    // Fire non-blocking Discord Triumph Webhook notification if score === 100
-    if (isPass && score === 100) {
-      const studentName = session?.user?.name || existingUser?.name || 'QA Student';
-      try {
-        await Promise.allSettled([
-          sendDiscordTriumphNotification({
-            studentName,
-            userId,
-            moduleNum: assignment.module,
-            assignmentTitle: assignment.title,
-            validationType: 'DYNAMIC',
-          }),
-        ]);
-      } catch (err) {
-        console.error('Post-validation async dispatch error in dynamic route:', err);
-      }
+    const studentName = session?.user?.name || existingUser?.name || 'QA Student';
+    try {
+      await Promise.allSettled([
+        sendDiscordTriumphNotification({
+          studentName,
+          userId,
+          moduleNum: assignment.module,
+          assignmentTitle: assignment.title,
+          validationType: 'DYNAMIC',
+        }),
+      ]);
+    } catch (err) {
+      console.error('Post-validation async dispatch error in dynamic route:', err);
     }
 
-    return NextResponse.json(responsePayload, { status: 200 });
+    return NextResponse.json(
+      {
+        ...staticPassResponse,
+        submissionId: created?.id,
+      },
+      { status: 200 }
+    );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error in dynamic validation API route:', errorMessage);

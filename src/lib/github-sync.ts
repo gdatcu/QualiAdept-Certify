@@ -36,6 +36,7 @@ export function getModuleFilePath(moduleNum: number, validationType?: string): s
   if (moduleNum === 7) return 'app.ts';
   if (moduleNum === 8) return 'pom.ts';
   if (moduleNum === 9) return 'tests/task-tracker.spec.ts';
+  if (moduleNum === 10) return 'tests/task-tracker-e2e.spec.ts';
   if (validationType === 'DYNAMIC') {
     return `tests/e2e/module-${moduleNum}.spec.ts`;
   }
@@ -44,12 +45,16 @@ export function getModuleFilePath(moduleNum: number, validationType?: string): s
 
 /**
  * Resolves a workspace file tab name into its target repository path in GitHub.
- * E.g., for Module 9, `task-tracker.spec.ts` maps to `tests/task-tracker.spec.ts`
+ * E.g., for Module 9, `task-tracker.spec.ts` maps to `tests/task-tracker.spec.ts`,
+ * and for Module 10, `task-tracker-e2e.spec.ts` maps to `tests/task-tracker-e2e.spec.ts`
  * to match `testDir: './tests'` in `playwright.config.ts`.
  */
 export function resolveGitHubFilePath(fileName: string, moduleNum: number): string {
   if (moduleNum === 9 && fileName === 'task-tracker.spec.ts') {
     return 'tests/task-tracker.spec.ts';
+  }
+  if (moduleNum === 10 && fileName === 'task-tracker-e2e.spec.ts') {
+    return 'tests/task-tracker-e2e.spec.ts';
   }
   return fileName;
 }

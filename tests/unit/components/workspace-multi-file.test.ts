@@ -655,6 +655,27 @@ const afiseazaTask = (id: number): void => {
       expect(CURRICULUM_TASKS[9].criteria[0].title).toBe(
         '1. Importă defineConfig și devices din @playwright/test'
       );
+      expect(CURRICULUM_TASKS[10].criteria).toHaveLength(10);
+      expect(CURRICULUM_TASKS[10].criteria[0].title).toBe(
+        '1. Importă test și expect din @playwright/test'
+      );
+    });
+
+    it('configures task-tracker-e2e.spec.ts starter and bilingual guide for Module 10 in both STATIC and DYNAMIC modes', () => {
+      expect(getModuleFiles(10, 'STATIC').map((f) => f.name)).toEqual(['task-tracker-e2e.spec.ts']);
+      expect(getModuleFiles(10, 'DYNAMIC').map((f) => f.name)).toEqual(['task-tracker-e2e.spec.ts']);
+      expect(getWorkspaceFileIcon('task-tracker-e2e.spec.ts')).toBe('🎭');
+
+      const parsed = parseInitialFiles(null, 10, 'STATIC');
+      expect(Object.keys(parsed)).toEqual(['task-tracker-e2e.spec.ts']);
+      expect(parsed['task-tracker-e2e.spec.ts']).toContain('await page.pause();');
+
+      const taskEn = getAssignmentCurriculumTask(
+        { id: 'm10', title: 'S10', description: 'desc', module: 10, validationType: 'STATIC' },
+        'en'
+      );
+      expect(taskEn.criteria).toHaveLength(10);
+      expect(taskEn.criteria[9].title).toContain('Clean Code & Inspector Hygiene');
     });
   });
 });

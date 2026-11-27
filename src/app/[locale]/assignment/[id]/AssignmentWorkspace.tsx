@@ -154,11 +154,14 @@ export function localizeFeedbackItems(
 }
 
 interface ValidationResponse {
-  status: 'pass' | 'fail';
+  status: 'pass' | 'fail' | 'pending';
   score: number;
   feedback: FeedbackItem[];
   isPartial?: boolean;
   targetFile?: string;
+  submissionId?: string;
+  stage?: 'static' | 'dynamic_queued' | 'dynamic_completed';
+  executionLogs?: string;
 }
 
 interface AssignmentData {
@@ -253,6 +256,9 @@ export interface ProjectFile {
 }
 
 export function getModuleFiles(moduleNum: number, validationType: string): ProjectFile[] {
+  if (moduleNum === 10) {
+    return [{ name: 'task-tracker-e2e.spec.ts', language: 'typescript', icon: '🎭' }];
+  }
   if (validationType === 'DYNAMIC') {
     return [{ name: 'e2e.spec.ts', language: 'typescript', icon: '⚡' }];
   }
@@ -1037,6 +1043,88 @@ export const CURRICULUM_TASKS: Record<number, CurriculumModuleTask> = {
         title_en: '11. Zero Hard-Wait Policy (no waitForTimeout, force: true, absolute URL)',
         detail: 'Regulă strictă QA: sunt interzise page.waitForTimeout(...), opțiunea { force: true } și URL-urile absolute în page.goto(...).',
         detail_en: 'Strict QA rule: page.waitForTimeout(...), { force: true }, and absolute URLs in page.goto(...) are forbidden.',
+      },
+    ],
+  },
+  10: {
+    businessTask:
+      'Scrie de la zero, fără Codegen, prima suită E2E completă pentru aplicația Task Tracker v1.1 în fișierul task-tracker-e2e.spec.ts: grupare cu test.describe, setup în test.beforeEach (handler pentru pop-up + navigare relativă), acțiuni de bază (fill, selectOption, click, check, uncheck) și respectarea politicii Clean Code & Inspector Hygiene.',
+    businessTask_en:
+      'Write from scratch, without Codegen, your first complete E2E suite for Task Tracker v1.1 in task-tracker-e2e.spec.ts: grouping with test.describe, setup in test.beforeEach (promo handler + relative navigation), core actions (fill, selectOption, click, check, uncheck), and the Clean Code & Inspector Hygiene Policy.',
+    notes:
+      'Lucrezi local în proiectul task-tracker-e2e (config-ul din S9 rămâne neschimbat) și rulezi suita cu npx playwright test tests/task-tracker-e2e.spec.ts. Starter-ul conține intenționat un apel page.pause() pe care trebuie să-l ștergi complet (inclusiv din comentarii) înainte de Submit.',
+    notes_en:
+      'Work locally in your task-tracker-e2e project (your S9 config stays unchanged) and run npx playwright test tests/task-tracker-e2e.spec.ts. The starter intentionally includes a page.pause() call that you must delete completely (including from comments) before Submit.',
+    criteria: [
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: '1. Importă test și expect din @playwright/test',
+        title_en: '1. Import test and expect from @playwright/test',
+        detail: "Importă ambele simboluri (test și expect, în orice ordine) din '@playwright/test'.",
+        detail_en: "Import both test and expect (in any order) from '@playwright/test'.",
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: "2. Grupează testele într-un test.describe('<titlu descriptiv>', () => { ... })",
+        title_en: "2. Group the tests in a test.describe('<descriptive title>', () => { ... })",
+        detail: 'Grupează toate testele într-un test.describe cu un titlu descriptiv de minimum 3 caractere.',
+        detail_en: 'Group all tests inside a test.describe block with a descriptive title of at least 3 characters.',
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: "3. test.beforeEach cu page.addLocatorHandler pentru close-promo-btn și await page.goto('/')",
+        title_en: "3. test.beforeEach with page.addLocatorHandler for close-promo-btn and await page.goto('/')",
+        detail: "În test.beforeEach(async ({ page }) => { ... }), înregistrează page.addLocatorHandler pentru close-promo-btn și navighează relativ cu await page.goto('/').",
+        detail_en: "Inside test.beforeEach(async ({ page }) => { ... }), register page.addLocatorHandler for close-promo-btn and navigate relatively with await page.goto('/').",
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: '4. Verifică submit-task-btn cu toBeDisabled() înainte și toBeEnabled() după completare',
+        title_en: '4. Check submit-task-btn with toBeDisabled() before and toBeEnabled() after filling in',
+        detail: 'Verifică starea butonului submit-task-btn cu web-first assertions: toBeDisabled() inițial și toBeEnabled() după completarea câmpului.',
+        detail_en: 'Assert submit-task-btn state with web-first assertions: toBeDisabled() initially and toBeEnabled() after filling in.',
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: "5. fill() pe input-task-name, selectOption('high') pe select-task-priority, click() pe submit-task-btn",
+        title_en: "5. fill() on input-task-name, selectOption('high') on select-task-priority, click() on submit-task-btn",
+        detail: "Completează input-task-name cu .fill(...), alege prioritatea 'high' (sau eticheta 'Ridicată') din select-task-priority cu .selectOption(...) și salvează cu .click() pe submit-task-btn.",
+        detail_en: "Fill input-task-name with .fill(...), pick priority 'high' (or label 'Ridicată') in select-task-priority via .selectOption(...), and click submit-task-btn.",
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: "6. Verifică lista cu toContainText(...) și câmpul golit cu toHaveValue('')",
+        title_en: "6. Check the list with toContainText(...) and the cleared field with toHaveValue('')",
+        detail: "Confirmă apariția task-ului în task-list cu .toContainText(...) și resetarea câmpului input-task-name cu .toHaveValue('') sau .toBeEmpty().",
+        detail_en: "Confirm the new task appears in task-list using .toContainText(...) and that input-task-name cleared via .toHaveValue('') or .toBeEmpty().",
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: '7. checkbox-task-1: check() + toBeChecked(), apoi uncheck() + not.toBeChecked()',
+        title_en: '7. checkbox-task-1: check() + toBeChecked(), then uncheck() + not.toBeChecked()',
+        detail: 'Pe checkbox-task-1 folosește .check() (sau .setChecked(true)) + .toBeChecked(), apoi .uncheck() (sau .setChecked(false)) + .not.toBeChecked().',
+        detail_en: 'On checkbox-task-1 use .check() (or .setChecked(true)) + .toBeChecked(), then .uncheck() (or .setChecked(false)) + .not.toBeChecked().',
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: '8. Șterge task-ul 1 (delete-btn-1) și confirmă eliminarea',
+        title_en: '8. Delete task 1 (delete-btn-1) and confirm its removal',
+        detail: 'Dă click pe delete-btn-1 și confirmă eliminarea cu not.toBeAttached(), toBeHidden(), toHaveCount(4), not.toContainText(...) sau not.toBeVisible().',
+        detail_en: 'Click delete-btn-1 and verify removal with not.toBeAttached(), toBeHidden(), toHaveCount(4), not.toContainText(...), or not.toBeVisible().',
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: '9. Minimum 3 teste cu titluri descriptive și fixture-ul { page }',
+        title_en: '9. At least 3 tests with descriptive titles and the { page } fixture',
+        detail: "Suita trebuie să conțină cel puțin 3 teste test('...', async ({ page }) => { ... }) cu titluri descriptive de minimum 8 caractere (nu 'test').",
+        detail_en: "The suite must have at least 3 tests test('...', async ({ page }) => { ... }) with descriptive titles of at least 8 characters (not 'test').",
+      },
+      {
+        file: 'task-tracker-e2e.spec.ts',
+        title: '10. Clean Code & Inspector Hygiene (fără page.pause, waitForTimeout, force: true, URL absolut, expect(await))',
+        title_en: '10. Clean Code & Inspector Hygiene (no page.pause, waitForTimeout, force: true, absolute URL, expect(await))',
+        detail: 'Regulă strictă QA (inclusiv în comentarii!): sunt interzise page.pause(), waitForTimeout(), { force: true }, adresele absolute în goto() și expect(await ...).',
+        detail_en: 'Strict QA rule (including inside comments!): page.pause(), waitForTimeout(), { force: true }, absolute URLs in goto(), and expect(await ...) are forbidden.',
       },
     ],
   },
@@ -1968,6 +2056,29 @@ test('test', async ({ page }) => {
   await page.getByTestId('submit-task-btn').click({ force: true });
 });`;
 
+const STARTER_PW_SPEC_S10 = `// Modulul 10 – Primul tău test E2E scris manual (fără Codegen!)
+// Completează TODO-urile în ordine. Cerințele sunt în Capitolul 6 al materialului.
+import { test, expect } from '@playwright/test';
+
+// TODO 2: grupează toate testele într-un test.describe cu un titlu descriptiv.
+
+// TODO 3: adaugă un test.beforeEach care:
+//   - înregistrează handler-ul pentru butonul close-promo-btn;
+//   - navighează relativ la pagina principală.
+
+test('test', async ({ page }) => {
+  await page.goto('/');
+  await page.pause(); // TODO 10: pauza de debug trebuie ștearsă înainte de Submit
+
+  // TODO 4: verifică faptul că submit-task-btn pornește dezactivat.
+  // TODO 5: completează input-task-name și alege prioritatea high din select-task-priority.
+  // TODO 4 + 6: verifică butonul activ, salvează, apoi verifică lista și câmpul golit.
+});
+
+// TODO 7: un test pentru checkbox-task-1 (bifare și debifare, cu verificarea stării).
+// TODO 8: un test pentru ștergerea task-ului 1 (delete-btn-1) și dispariția lui.
+// TODO 9: minimum 3 teste, fiecare cu un titlu descriptiv (nu 'test').`;
+
 const STARTER_PLAYWRIGHT = `import { test, expect } from '@playwright/test';
 
 test('QualiAdept Task Tracker E2E Test', async ({ page }) => {
@@ -2025,6 +2136,8 @@ export function parseInitialFiles(
       initial['playwright.config.ts'] = STARTER_PW_CONFIG_S9;
     } else if (f.name === 'task-tracker.spec.ts') {
       initial['task-tracker.spec.ts'] = STARTER_PW_SPEC_S9;
+    } else if (f.name === 'task-tracker-e2e.spec.ts') {
+      initial['task-tracker-e2e.spec.ts'] = STARTER_PW_SPEC_S10;
     } else if (f.name === 'e2e.spec.ts') {
       initial['e2e.spec.ts'] = STARTER_PLAYWRIGHT;
     }
@@ -2313,6 +2426,66 @@ export default function AssignmentWorkspace({
     error?: string;
   } | null>(null);
 
+  const [pendingSubmissionId, setPendingSubmissionId] = useState<string | null>(() =>
+    mostRecent?.status === 'PENDING' ? mostRecent.id : null
+  );
+  const [pendingElapsedSec, setPendingElapsedSec] = useState<number>(0);
+
+  // Poll GET /api/submissions/[id] while a Stage 2 GitHub Actions Playwright run is PENDING
+  useEffect(() => {
+    if (!pendingSubmissionId) return;
+
+    let cancelled = false;
+    const timerHandle = window.setInterval(() => {
+      setPendingElapsedSec((prev) => prev + 1);
+    }, 1000);
+
+    const pollOnce = async () => {
+      try {
+        const res = await fetch(`/api/submissions/${encodeURIComponent(pendingSubmissionId)}`, {
+          cache: 'no-store',
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as ValidationResponse & { submittedAt?: string };
+        if (cancelled) return;
+
+        if (data.status === 'pass' || data.status === 'fail') {
+          setValidationResult(data);
+          setPendingSubmissionId(null);
+          setSubmissions((prev) =>
+            prev.map((item) =>
+              item.id === pendingSubmissionId
+                ? {
+                    ...item,
+                    status: data.status.toUpperCase(),
+                    score: data.score,
+                    feedbackJSON: JSON.stringify(data),
+                  }
+                : item
+            )
+          );
+          if (data.status === 'pass') {
+            setIsUnlockedForEdit(false);
+            removeDraftLocally();
+          }
+        }
+      } catch {
+        // Ignore transient network hiccups during polling
+      }
+    };
+
+    const pollHandle = window.setInterval(pollOnce, 2500);
+    // Initial quick check in case runner finished right before reload
+    const initialHandle = window.setTimeout(pollOnce, 1200);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timerHandle);
+      window.clearInterval(pollHandle);
+      window.clearTimeout(initialHandle);
+    };
+  }, [pendingSubmissionId]);
+
   const saveDraftLocally = (payload: Record<string, string> | string) => {
     if (typeof window === 'undefined') return;
     const str = typeof payload === 'string' ? payload : JSON.stringify(payload);
@@ -2526,11 +2699,12 @@ export default function AssignmentWorkspace({
       const result: ValidationResponse = await res.json();
       setValidationResult(result);
       setActiveRightTab('results');
-      setActiveRightTab('results');
+
+      const recordId = result.submissionId || `submission-${Date.now()}`;
 
       // Prepend newly created submission record to history state
       const newRecord: SubmissionRecord = {
-        id: `submission-${Date.now()}`,
+        id: recordId,
         codePayload: payloadString,
         status: result.status.toUpperCase(),
         score: result.score,
@@ -2540,6 +2714,13 @@ export default function AssignmentWorkspace({
 
       setSubmissions((prev) => [newRecord, ...prev]);
       setSelectedHistoryId(newRecord.id);
+
+      if (result.status === 'pending' && result.submissionId) {
+        setPendingSubmissionId(result.submissionId);
+        setPendingElapsedSec(0);
+      } else {
+        setPendingSubmissionId(null);
+      }
 
       if (result.status === 'pass') {
         setIsUnlockedForEdit(false);
@@ -3540,6 +3721,8 @@ export default function AssignmentWorkspace({
                       fileKey = 'playwright.config.ts';
                     } else if (item.check.includes('[task-tracker.spec.ts]')) {
                       fileKey = 'task-tracker.spec.ts';
+                    } else if (item.check.includes('[task-tracker-e2e.spec.ts]')) {
+                      fileKey = 'task-tracker-e2e.spec.ts';
                     } else {
                       fileKey = 'index.html';
                     }
@@ -3685,6 +3868,8 @@ export default function AssignmentWorkspace({
                       fileKey = 'playwright.config.ts';
                     } else if (item.check.includes('[task-tracker.spec.ts]')) {
                       fileKey = 'task-tracker.spec.ts';
+                    } else if (item.check.includes('[task-tracker-e2e.spec.ts]')) {
+                      fileKey = 'task-tracker-e2e.spec.ts';
                     } else {
                       fileKey = 'index.html';
                     }
@@ -3705,7 +3890,9 @@ export default function AssignmentWorkspace({
                   <div
                     className={`rounded-xl p-5 border shadow-lg transition-all ${validationResult.status === 'pass'
                         ? 'bg-emerald-950/40 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]'
-                        : 'bg-rose-950/40 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.15)]'
+                        : validationResult.status === 'pending'
+                          ? 'bg-amber-950/35 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.15)]'
+                          : 'bg-rose-950/40 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.15)]'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -3713,24 +3900,36 @@ export default function AssignmentWorkspace({
                         <div
                           className={`h-12 w-12 rounded-xl flex items-center justify-center font-black text-2xl ${validationResult.status === 'pass'
                               ? 'bg-emerald-500 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                              : 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                              : validationResult.status === 'pending'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]'
                             }`}
                         >
-                          {validationResult.status === 'pass' ? '✓' : '✕'}
+                          {validationResult.status === 'pass' ? (
+                            '✓'
+                          ) : validationResult.status === 'pending' ? (
+                            <span className="h-6 w-6 rounded-full border-2 border-amber-400/30 border-t-amber-300 animate-spin" />
+                          ) : (
+                            '✕'
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-xs font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded ${validationResult.status === 'pass'
                                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  : validationResult.status === 'pending'
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+                                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                 }`}
                             >
                               {validationResult.isPartial && validationResult.targetFile
                                 ? wt.partialCheckBadge(validationResult.targetFile)
                                 : validationResult.status === 'pass'
                                   ? wt.statusPass
-                                  : wt.statusFail}
+                                  : validationResult.status === 'pending'
+                                    ? (locale === 'en' ? 'STAGE 2 · RUNNING IN CLOUD' : 'ETAPA 2 · RULEAZĂ ÎN CLOUD')
+                                    : wt.statusFail}
                             </span>
                           </div>
                           <h3 className="text-xl font-bold text-zinc-50 mt-1">
@@ -3740,7 +3939,11 @@ export default function AssignmentWorkspace({
                                 : wt.partialFailTitle(validationResult.targetFile)
                               : validationResult.status === 'pass'
                                 ? wt.allChecksPassed
-                                : wt.validationFailed}
+                                : validationResult.status === 'pending'
+                                  ? (locale === 'en'
+                                      ? `Stage 1 Passed ✓ · Executing Playwright in Chromium (${pendingElapsedSec}s)...`
+                                      : `Etapa 1 Trecută ✓ · Rulează Playwright în Chromium (${pendingElapsedSec}s)...`)
+                                  : wt.validationFailed}
                           </h3>
                         </div>
                       </div>
@@ -3748,10 +3951,12 @@ export default function AssignmentWorkspace({
                       {/* Score Badge Gauge */}
                       <div className="flex flex-col items-end">
                         <span className="text-3xl font-black font-mono tracking-tight text-zinc-50">
-                          {validationResult.score}%
+                          {validationResult.status === 'pending' ? '⏳' : `${validationResult.score}%`}
                         </span>
                         <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-mono">
-                          {wt.score}
+                          {validationResult.status === 'pending'
+                            ? (locale === 'en' ? 'Cloud E2E' : 'E2E Cloud')
+                            : wt.score}
                         </span>
                       </div>
                     </div>
@@ -3969,6 +4174,26 @@ export default function AssignmentWorkspace({
                       })}
                     </div>
                   </div>
+
+                  {/* Collapsible Playwright Execution Logs (Stage 2 Cloud Runner) */}
+                  {validationResult.executionLogs && (
+                    <details className="bg-zinc-950/70 border border-cyan-900/50 rounded-xl p-3.5 group">
+                      <summary className="cursor-pointer list-none flex items-center justify-between text-xs font-mono text-cyan-300 font-semibold">
+                        <span>
+                          🎭 {locale === 'en' ? 'Playwright Browser Execution Logs' : 'Loguri Execuție Browser Playwright'}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 group-open:hidden">
+                          {locale === 'en' ? 'Expand ▾' : 'Extinde ▾'}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 hidden group-open:inline">
+                          {locale === 'en' ? 'Collapse ▴' : 'Restrânge ▴'}
+                        </span>
+                      </summary>
+                      <pre className="mt-3 bg-zinc-900/90 border border-zinc-800 rounded-lg p-3 text-[11px] font-mono text-zinc-200 leading-relaxed overflow-x-auto max-h-72 whitespace-pre-wrap">
+                        <code>{validationResult.executionLogs}</code>
+                      </pre>
+                    </details>
+                  )}
                 </div>
                 );
               })()}

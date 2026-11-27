@@ -193,17 +193,23 @@ describe('github-sync Unit Tests', () => {
       expect(getModuleFilePath(9)).toBe('tests/task-tracker.spec.ts');
     });
 
-    it('maps dynamic module to Playwright spec path', () => {
-      expect(getModuleFilePath(10, 'DYNAMIC')).toBe('tests/e2e/module-10.spec.ts');
+    it('maps module 10 to tests/task-tracker-e2e.spec.ts', () => {
+      expect(getModuleFilePath(10)).toBe('tests/task-tracker-e2e.spec.ts');
+      expect(getModuleFilePath(10, 'DYNAMIC')).toBe('tests/task-tracker-e2e.spec.ts');
+    });
+
+    it('maps generic dynamic module to Playwright spec path', () => {
+      expect(getModuleFilePath(12, 'DYNAMIC')).toBe('tests/e2e/module-12.spec.ts');
     });
 
     it('maps general module to app.js', () => {
       expect(getModuleFilePath(3)).toBe('app.js');
     });
 
-    it('resolves Module 9 task-tracker.spec.ts under tests/ while keeping playwright.config.ts at root', () => {
+    it('resolves Module 9 and Module 10 spec files under tests/ while keeping playwright.config.ts at root', () => {
       expect(resolveGitHubFilePath('playwright.config.ts', 9)).toBe('playwright.config.ts');
       expect(resolveGitHubFilePath('task-tracker.spec.ts', 9)).toBe('tests/task-tracker.spec.ts');
+      expect(resolveGitHubFilePath('task-tracker-e2e.spec.ts', 10)).toBe('tests/task-tracker-e2e.spec.ts');
     });
   });
 

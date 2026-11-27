@@ -1,99 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as cheerio from 'cheerio';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { sendDiscordTriumphNotification } from '@/lib/webhook';
+import {
+  evaluateStaticRules,
+  parseSubmissionFiles,
+  stripCodeComments,
+  type FeedbackItem,
+  type MultiFilePayload,
+  type ValidationResponse,
+} from '@/lib/static-evaluator';
 
-export interface FeedbackItem {
-  check: string;
-  passed: boolean;
-  message: string;
-  file?: string;
-  ruleIndex?: number;
-  diagnosticIndex?: number;
-}
-
-export interface ValidationResponse {
-  status: 'pass' | 'fail';
-  score: number;
-  feedback: FeedbackItem[];
-  isPartial?: boolean;
-  targetFile?: string;
-}
-
-export interface MultiFilePayload {
-  files: Record<string, string>;
-}
-
-export function parseSubmissionFiles(body: any): {
-  rawPayload: string;
-  files: Record<string, string>;
-  htmlCode: string;
-  cssCode: string;
-  jsCode: string;
-  tsCode: string;
-} {
-  let files: Record<string, string> = {};
-  let rawPayload = '';
-
-  if (body.files && typeof body.files === 'object' && !Array.isArray(body.files)) {
-    files = { ...body.files };
-    rawPayload = JSON.stringify({ files });
-  } else if (typeof body.codePayload === 'string') {
-    rawPayload = body.codePayload;
-    try {
-      const parsed = JSON.parse(body.codePayload);
-      if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
-        files = { ...parsed.files };
-      } else {
-        files = { 'index.html': body.codePayload };
-      }
-    } catch {
-      files = { 'index.html': body.codePayload };
-    }
-  } else if (typeof body.codePayload === 'object' && body.codePayload?.files) {
-    files = { ...body.codePayload.files };
-    rawPayload = JSON.stringify(body.codePayload);
-  } else if (typeof body.htmlCode === 'string') {
-    rawPayload = body.htmlCode;
-    try {
-      const parsed = JSON.parse(body.htmlCode);
-      if (parsed && typeof parsed.files === 'object' && !Array.isArray(parsed.files)) {
-        files = { ...parsed.files };
-      } else {
-        files = { 'index.html': body.htmlCode };
-      }
-    } catch {
-      files = { 'index.html': body.htmlCode };
-    }
-  }
-
-  const htmlCode =
-    files['index.html'] ||
-    files['sandbox.html'] ||
-    files['main.html'] ||
-    (Object.keys(files).length === 1 ? Object.values(files)[0] : '') ||
-    '';
-  const cssCode = files['style.css'] || files['styles.css'] || files['index.css'] || '';
-  const jsCode = files['app.js'] || files['script.js'] || files['index.js'] || '';
-  const tsCode = files['app.ts'] || files['index.ts'] || files['main.ts'] || '';
-
-  return { rawPayload, files, htmlCode, cssCode, jsCode, tsCode };
-}
-
-export function stripCodeComments(code: string, fileName?: string): string {
-  if (!code) return '';
-  if (fileName?.endsWith('.css')) {
-    return code.replace(/\/\*[\s\S]*?\*\//g, '');
-  }
-  if (fileName?.endsWith('.js') || fileName?.endsWith('.ts')) {
-    return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\r\n]*/g, '$1');
-  }
-  if (fileName?.endsWith('.html')) {
-    return code.replace(/<!--[\s\S]*?-->/g, '');
-  }
-  return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
-}
+export { parseSubmissionFiles, stripCodeComments };
+export type { FeedbackItem, MultiFilePayload, ValidationResponse };
 
 export async function POST(req: NextRequest) {
   try {
@@ -107,7 +26,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { rawPayload, files, htmlCode, cssCode, jsCode, tsCode } = parseSubmissionFiles(body);
+    const parsedFiles = parseSubmissionFiles(body);
+    const { rawPayload, files, htmlCode } = parsedFiles;
     const locale = (body.locale || req.headers.get('accept-language')?.split(',')[0]?.split('-')[0] || 'ro').toLowerCase();
     const isEn = locale === 'en';
 
@@ -203,9 +123,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse HTML with cheerio
-    const $ = cheerio.load(htmlCode);
-
     // Fetch target assignment details
     const targetAssignment = await prisma.assignment.findUnique({
       where: { id: assignmentId },
@@ -218,277 +135,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const targetFileFilter = typeof body.targetFile === 'string' && body.targetFile.trim().length > 0 ? body.targetFile.trim() : null;
+    const targetFileFilter =
+      typeof body.targetFile === 'string' && body.targetFile.trim().length > 0
+        ? body.targetFile.trim()
+        : null;
 
-    // Perform static validation checks
-    const checks: FeedbackItem[] = [];
-
-    // Evaluate dynamic rules if set by trainer
-    if (targetAssignment?.validationRules) {
-      try {
-        const rules = JSON.parse(targetAssignment.validationRules);
-        if (Array.isArray(rules)) {
-          for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
-            const r = rules[ruleIndex];
-            let passed = false;
-            let diagnosticIndex: number | undefined;
-            const checkType = r.check || r.type || 'exists';
-            const selector = r.selector || r.tag || r.value;
-            let checkName = (isEn && r.name_en) ? r.name_en : (r.name || r.title || '');
-            let msg = '';
-
-            const defaultPassMsg = isEn ? 'Requirement validated successfully.' : 'Cerință validată cu succes.';
-            const passMsg = (isEn && r.successMessage_en)
-              ? r.successMessage_en
-              : (r.successMessage || defaultPassMsg);
-            const failMsg = (isEn && r.message_en)
-              ? r.message_en
-              : r.message;
-
-            // Target file code resolution
-            const targetFileName = r.file || (r.target === 'css' ? 'style.css' : r.target === 'ts' ? 'app.ts' : r.target === 'js' ? 'app.js' : 'index.html');
-
-            if (targetFileFilter && targetFileName !== targetFileFilter) {
-              continue;
-            }
-
-            const targetCode = targetFileName
-              ? (files[targetFileName] || (targetFileName === 'style.css' ? cssCode : targetFileName === 'app.ts' ? tsCode : targetFileName === 'app.js' ? jsCode : ''))
-              : htmlCode;
-
-            if (checkType === 'regex' || r.type === 'regex') {
-              const pattern = r.pattern || r.value || '';
-              const regex = new RegExp(pattern, 'i');
-
-              // Strip comments so instructional comments do not produce false positive passes
-              const cleanTargetCode = stripCodeComments(targetCode, targetFileName);
-              const cleanCssCode = stripCodeComments(cssCode, 'style.css');
-              const cleanJsCode = stripCodeComments(jsCode, 'app.js');
-
-              // Test against clean code without comments
-              passed = regex.test(cleanTargetCode) || (targetFileName === undefined && (regex.test(cleanCssCode) || regex.test(cleanJsCode)));
-              checkName = checkName || r.check || (isEn ? `Pattern check` : `Verificare conformitate cod`);
-
-              let specificDiagMsg: string | undefined;
-              if (!passed && Array.isArray(r.diagnostics)) {
-                for (let dIdx = 0; dIdx < r.diagnostics.length; dIdx++) {
-                  const diag = r.diagnostics[dIdx];
-                  if (diag && typeof diag.pattern === 'string') {
-                    try {
-                      if (new RegExp(diag.pattern, 'i').test(cleanTargetCode)) {
-                        diagnosticIndex = dIdx;
-                        specificDiagMsg = (isEn && diag.message_en) ? diag.message_en : diag.message;
-                        break;
-                      }
-                    } catch {
-                      // Ignore malformed diagnostic regex
-                    }
-                  }
-                }
-              }
-
-              msg = passed
-                ? passMsg
-                : (specificDiagMsg || failMsg || (isEn ? `Code does not match required structure.` : `Codul nu respectă cerința necesară.`));
-            } else if (checkType === 'regexInverted' || checkType === 'notRegex') {
-              const pattern = r.pattern || r.value || '';
-              const regex = new RegExp(pattern, 'i');
-              const cleanTargetCode = stripCodeComments(targetCode, targetFileName);
-
-              // Inverted check: passes if the prohibited pattern is NOT found
-              passed = !regex.test(cleanTargetCode);
-              checkName = checkName || r.check || (isEn ? `Negative pattern check` : `Verificare excludere tipuri`);
-
-              // Optional contextual diagnostics for inverted regex failures (e.g. M09 Rule 11)
-              let specificDiagMsg: string | undefined;
-              if (!passed && Array.isArray(r.diagnostics)) {
-                for (let dIdx = 0; dIdx < r.diagnostics.length; dIdx++) {
-                  const diag = r.diagnostics[dIdx];
-                  if (diag?.pattern) {
-                    try {
-                      if (new RegExp(diag.pattern, 'i').test(cleanTargetCode)) {
-                        specificDiagMsg = isEn && diag.message_en ? diag.message_en : diag.message;
-                        diagnosticIndex = dIdx;
-                        break;
-                      }
-                    } catch {
-                      // Ignore malformed diagnostic regex
-                    }
-                  }
-                }
-              }
-
-              msg = passed
-                ? passMsg
-                : (specificDiagMsg || failMsg || (isEn ? `Prohibited pattern detected in code.` : `Codul conține elemente interzise.`));
-            } else if (checkType === 'hasClass') {
-              const expectedClass = r.expected || r.value;
-              const matches = $(selector);
-              passed =
-                matches.length > 0 &&
-                matches.toArray().some((el) => {
-                  const classAttr = (el as any).attribs?.class || '';
-                  return classAttr.split(/\s+/).includes(expectedClass);
-                });
-              checkName = checkName || `Element "${selector}" has class "${expectedClass}"`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Element "${selector}" is missing required class "${expectedClass}".` : `Elementul "${selector}" nu are clasa obligatorie "${expectedClass}".`));
-            } else if (checkType === 'hasAttribute') {
-              const attrName = (r.attrName || r.attr || r.value || '').toLowerCase();
-              const matches = $(selector);
-              passed =
-                matches.length > 0 &&
-                matches.toArray().some((el) => {
-                  const attribs = (el as any).attribs || {};
-                  return Object.keys(attribs).some((k) => k.toLowerCase() === attrName);
-                });
-              checkName = checkName || `Element "${selector}" has attribute "${attrName}"`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Element "${selector}" is missing attribute "${attrName}".` : `Elementul "${selector}" nu conține atributul "${attrName}".`));
-            } else if (checkType === 'attribute') {
-              const attrName = (r.attrName || r.attr || '').toLowerCase();
-              const expected = (r.expected || r.value || '').trim();
-              const matches = $(selector);
-              passed =
-                matches.length > 0 &&
-                matches.toArray().some((el) => {
-                  const attribs = (el as any).attribs || {};
-                  const matchedKey = Object.keys(attribs).find((k) => k.toLowerCase() === attrName);
-                  const val = matchedKey ? attribs[matchedKey] : undefined;
-                  return val !== undefined && val.trim() === expected;
-                });
-              checkName = checkName || `Element "${selector}" [${attrName}="${expected}"]`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Element "${selector}" attribute "${attrName}" expected "${expected}".` : `Elementul "${selector}" atributul "${attrName}" trebuia să fie "${expected}".`));
-            } else if (checkType === 'attributeRegex') {
-              const attrName = (r.attrName || r.attr || '').toLowerCase();
-              const pattern = r.pattern || r.expected || r.value;
-              const regex = new RegExp(pattern, 'i');
-              const matches = $(selector);
-              passed =
-                matches.length > 0 &&
-                matches.toArray().some((el) => {
-                  const attribs = (el as any).attribs || {};
-                  const matchedKey = Object.keys(attribs).find((k) => k.toLowerCase() === attrName);
-                  const val = matchedKey ? attribs[matchedKey] : undefined;
-                  return val !== undefined && regex.test(val.trim());
-                });
-              checkName = checkName || `Element "${selector}" [${attrName}]`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Element "${selector}" attribute "${attrName}" did not match pattern.` : `Elementul "${selector}" atributul "${attrName}" nu are valoarea așteptată.`));
-            } else if (checkType === 'textContains') {
-              const expectedText = (r.expected || r.value || '').trim().toLowerCase();
-              const matches = $(selector);
-              passed = matches.length > 0 && matches.text().toLowerCase().includes(expectedText);
-              checkName = checkName || `Element "${selector}" contains text "${expectedText}"`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Element "${selector}" does not contain "${expectedText}".` : `Elementul "${selector}" nu conține textul "${expectedText}".`));
-            } else if (r.type === 'tag') {
-              const tagSelector = r.value || r.selector || r.tag;
-              passed = $(tagSelector).length > 0;
-              checkName = checkName || `<${tagSelector}> tag exists`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Missing required <${tagSelector}> tag.` : `Tag-ul obligatoriu <${tagSelector}> lipsește.`));
-            } else if (r.type === 'attr') {
-              const rawAttr = r.value || r.selector;
-              const attrSelector =
-                rawAttr.startsWith('[') || rawAttr.startsWith('#') || rawAttr.startsWith('.')
-                  ? rawAttr
-                  : `[${rawAttr}]`;
-              passed = $(attrSelector).length > 0;
-              checkName = checkName || `Selector "${rawAttr}" exists`;
-              msg = passed
-                ? passMsg
-                : (failMsg || (isEn ? `Missing required attribute or selector "${rawAttr}".` : `Selectorul sau atributul "${rawAttr}" lipsește.`));
-            } else {
-              // checkType === 'exists' or default selector check
-              const targetSelector = selector || r.check;
-              if (targetSelector) {
-                passed = $(targetSelector).length > 0;
-                checkName = checkName || (r.check && r.check !== 'exists' ? r.check : `Element "${targetSelector}" exists`);
-                msg = passed
-                  ? passMsg
-                  : (failMsg || (isEn ? `Missing element matching "${targetSelector}".` : `Elementul "${targetSelector}" lipsește din pagină.`));
-              }
-            }
-
-            if (checkName) {
-              const feedbackEntry: FeedbackItem = {
-                check: checkName,
-                passed,
-                message: msg,
-                file: targetFileName || 'index.html',
-                ruleIndex,
-              };
-              if (diagnosticIndex !== undefined) {
-                feedbackEntry.diagnosticIndex = diagnosticIndex;
-              }
-              checks.push(feedbackEntry);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse assignment validationRules JSON:', e);
-      }
-    }
-
-    // If targetFileFilter is specified and no dynamic rules matched that specific file:
-    if (targetFileFilter && checks.length === 0) {
-      checks.push({
-        check: `Validare ${targetFileFilter}`,
-        passed: true,
-        message: `Fișierul ${targetFileFilter} este conform. Nu există cerințe obligatorii pentru acest fișier în acest modul.`,
-        file: targetFileFilter,
-      });
-    }
-
-    // Fallback to default legacy Session 1 checks ONLY if no dynamic rules were provided for the assignment and no target file was filtered
-    if (checks.length === 0 && !targetFileFilter && !targetAssignment?.validationRules) {
-      // Check a: Existence of <main> tag
-      const hasMainTag = $('main').length > 0;
-      checks.push({
-        check: 'Main tag exists',
-        passed: hasMainTag,
-        message: hasMainTag
-          ? 'Semantic <main> tag is present.'
-          : 'Missing <main> tag. Expected a semantic <main> element.',
-      });
-
-      // Check b: Existence of element with id="add-task-section"
-      const hasAddTaskSection = $('#add-task-section').length > 0;
-      checks.push({
-        check: 'Add task section exists',
-        passed: hasAddTaskSection,
-        message: hasAddTaskSection
-          ? 'Element with id="add-task-section" is present.'
-          : 'Missing element with id="add-task-section".',
-      });
-
-      // Check c: Existence of a button with data-testid="submit-btn"
-      const hasSubmitBtn = $('button[data-testid="submit-btn"]').length > 0;
-      checks.push({
-        check: 'Submit button exists',
-        passed: hasSubmitBtn,
-        message: hasSubmitBtn
-          ? 'Button with data-testid="submit-btn" is present.'
-          : 'Missing button element with data-testid="submit-btn".',
-      });
-    }
-
-    // Calculate score
-    const passedCount = checks.filter((c) => c.passed).length;
-    const totalChecks = checks.length;
-    const score = totalChecks > 0 ? Math.round((passedCount / totalChecks) * 100) : 100;
-    const isPass = score === 100;
-    const status = isPass ? 'pass' : 'fail';
-    const dbStatus = isPass ? 'PASS' : 'FAIL';
-    const isPartial = Boolean(targetFileFilter);
+    // Perform static validation checks via shared evaluator
+    const { checks, score, isPass, status, dbStatus, isPartial } = evaluateStaticRules({
+      validationRulesJson: targetAssignment.validationRules,
+      parsedFiles,
+      locale,
+      targetFileFilter,
+    });
 
     // Build standardized feedback object
     const responsePayload: ValidationResponse = {
@@ -501,7 +159,6 @@ export async function POST(req: NextRequest) {
 
     // Save submission to database using Prisma ONLY for full project submissions (not partial file tests)
     if (!isPartial) {
-      // Ensure User exists in DB to satisfy foreign key constraints
       const existingUser = await prisma.user.findUnique({ where: { id: userId } });
       if (!existingUser) {
         await prisma.user.create({
@@ -545,7 +202,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Return standardized JSON response
     return NextResponse.json(responsePayload, { status: 200 });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

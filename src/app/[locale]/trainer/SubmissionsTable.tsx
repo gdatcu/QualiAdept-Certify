@@ -42,8 +42,11 @@ interface SubmissionsTableProps {
 interface ParsedFeedback {
   status?: string;
   score?: number;
+  stage?: string;
   manualOverride?: boolean;
   overriddenAt?: string;
+  executionLogs?: string;
+  runUrl?: string;
   feedback?: Array<{
     check: string;
     passed: boolean;
@@ -57,7 +60,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
   const locale = useLocale();
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>(initialSubmissions);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Record<string, 'code' | 'feedback'>>({});
+  const [activeTab, setActiveTab] = useState<Record<string, 'code' | 'feedback' | 'logs'>>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASS' | 'FAIL' | 'PENDING'>('ALL');
   const [overridingId, setOverridingId] = useState<string | null>(null);
@@ -73,7 +76,7 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
   };
 
   // Switch tab inside expanded details
-  const setTab = (id: string, tab: 'code' | 'feedback') => {
+  const setTab = (id: string, tab: 'code' | 'feedback' | 'logs') => {
     setActiveTab((prev) => ({ ...prev, [id]: tab }));
   };
 
@@ -402,6 +405,18 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                                 >
                                   {t('tabRawCode', { bytes: sub.codePayload.length })}
                                 </button>
+                                {(feedbackData.executionLogs || feedbackData.runUrl) && (
+                                  <button
+                                    onClick={() => setTab(sub.id, 'logs')}
+                                    className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                                      currentTab === 'logs'
+                                        ? 'bg-cyan-950 text-cyan-200 border border-cyan-800 font-bold'
+                                        : 'text-zinc-400 hover:text-zinc-200'
+                                    }`}
+                                  >
+                                    🎭 {t('tabExecutionLogs')}
+                                  </button>
+                                )}
                               </div>
                             </div>
 
@@ -477,12 +492,54 @@ export default function SubmissionsTable({ initialSubmissions }: SubmissionsTabl
                               </div>
                             )}
 
+                            {/* TAB 3: PLAYWRIGHT EXECUTION LOGS (DYNAMIC RUNNER) */}
+                            {currentTab === 'logs' && (
+                              <div className="space-y-2.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="text-xs font-mono text-cyan-300 font-semibold">
+                                    🎭 {t('executionLogsTitle')}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {feedbackData.runUrl && (
+                                      <a
+                                        href={feedbackData.runUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-2.5 py-1 bg-cyan-950/70 hover:bg-cyan-900/70 text-cyan-200 border border-cyan-700/60 text-xs font-mono rounded transition-colors"
+                                      >
+                                        {t('viewGithubRun')}
+                                      </a>
+                                    )}
+                                    {feedbackData.executionLogs && (
+                                      <button
+                                        onClick={() => handleCopyCode(`${sub.id}-logs`, feedbackData.executionLogs || '')}
+                                        className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono rounded transition-colors cursor-pointer"
+                                      >
+                                        {copiedId === `${sub.id}-logs` ? (
+                                          <span className="text-emerald-400 font-semibold">{t('copied')}</span>
+                                        ) : (
+                                          t('copyLogs')
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <pre className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 text-xs font-mono text-zinc-200 leading-relaxed overflow-x-auto max-h-96 whitespace-pre-wrap selection:bg-cyan-500/30">
+                                  <code>{feedbackData.executionLogs || t('noFeedbackRecorded')}</code>
+                                </pre>
+                              </div>
+                            )}
+
                             {/* MANUAL OVERRIDE FOOTER */}
                             <div className="pt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
                               <div className="text-xs text-zinc-400 font-mono">
                                 {isPass ? (
                                   <span className="text-emerald-400 flex items-center gap-1">
                                     {t('meetsRequirements')}
+                                  </span>
+                                ) : sub.status === 'PENDING' ? (
+                                  <span className="text-amber-400">
+                                    {t('pendingNotice')}
                                   </span>
                                 ) : (
                                   <span className="text-rose-400">
